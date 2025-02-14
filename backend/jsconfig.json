@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["./src/config/*"],
+      "@models/*": ["./src/models/*"],
+      "@middleware/*": ["./src/middleware/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@validation/*": ["./src/validation/*"],
+      "@views/*": ["pages/*"],
+      "@src/*": ["./src/*"]
+    }
+  },
+  "exclude": ["node_modules"]
+}

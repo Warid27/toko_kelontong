@@ -1,0 +1,163 @@
+// import React from "react";
+// import { IoSearchOutline } from "react-icons/io5";
+// import Image from "next/image";
+// import { MdKeyboardArrowDown } from "react-icons/md";
+// import { FaUserEdit } from "react-icons/fa";
+
+// const Profile = () => {
+//   return (
+//     <div className="w-full h-screen pt-16 ">
+//       <div className="bg-white shadow-lg w-full flex flex-row p-2 justify-between">
+//         <div className="flex flex-col">
+//           <p className="text-2xl font-bold">Profile</p>
+//           <p>Detailed information about your profile</p>
+//         </div>
+//         <div className="flex flex-row space-x-4">
+//           <div className="relative mt-2">
+//             <input
+//               type="text"
+//               placeholder="Search anything here"
+//               className="pl-10 pr-4 py-2 border border-black rounded-md w-full max-w-xs bg-white"
+//             />
+//             <IoSearchOutline className="absolute left-3 top-3 text-black" />
+//           </div>
+//           <div className="avatar">
+//             <div className="w-14 rounded-full">
+//               <Image
+//                 src="/User-avatar.png"
+//                 alt="avatar"
+//                 width={20}
+//                 height={20}
+//               />
+//             </div>
+//           </div>
+//           <button className="button btn-ghost btn-sm rounded-lg mt-3">
+//             <MdKeyboardArrowDown className="text-2xl mt-1" />
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="flex flex-col items-center p-10 bg-white min-h-screen">
+//         {/* Profile Header */}
+//         <div className="flex items-center w-full max-w-4xl justify-between">
+//           <div className="flex items-center space-x-4">
+//             <Image
+//               src="/User-avatar.png"
+//               alt="avatar"
+//               width={20}
+//               height={20}
+//               className="w-20 h-20 rounded-full object-cover"
+//             />
+//             <h1 className="text-2xl font-bold">NAMA USER</h1>
+//           </div>
+//           <button className="bg-yellow-400 text-white px-4 py-2 rounded-md flex items-center space-x-2">
+//             <FaUserEdit />
+//             <span>Edit Profile</span>
+//           </button>
+//         </div>
+
+//         {/* Profile Form */}
+//         <form
+//           className="grid grid-cols-2 gap-6 w-full max-w-4xl mt-10"
+//           onSubmit={(e) => {
+//             e.preventDefault();
+//             handleUpdateData(e);
+//           }}
+//         >
+//           <div>
+//             <label
+//               className="block text-gray-700 text-sm font-bold mb-2"
+//               htmlFor="username"
+//             >
+//               Username
+//             </label>
+//             <input
+//               className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+//               placeholder="Username"
+//               type="text"
+//               value={"username" || "-"}
+//               readOnly={true}
+//             />
+//           </div>
+//           <div>
+//             <label
+//               className="block text-gray-700 text-sm font-bold mb-2"
+//               htmlFor="company"
+//             >
+//               Company
+//             </label>
+//             <input
+//               className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+//               placeholder="company"
+//               type="text"
+//               value={"company"}
+//               readOnly={true}
+//             />
+//           </div>
+//           <div>
+//             <label
+//               className="block text-gray-700 text-sm font-bold mb-2"
+//               htmlFor="password"
+//             >
+//               Password
+//             </label>
+//             <input
+//               className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+//               placeholder="password"
+//               type="password"
+//               value={"password"}
+//               readOnly={true}
+//             />
+//           </div>
+//           <div>
+//             <label
+//               className="block text-gray-700 text-sm font-bold mb-2"
+//               htmlFor="store"
+//             >
+//               Store
+//             </label>
+//             <input
+//               className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+//               placeholder="store"
+//               type="text"
+//               value={"store"}
+//               readOnly={true}
+//             />
+//           </div>
+//           <div>
+//             <label
+//               className="block text-gray-700 text-sm font-bold mb-2"
+//               htmlFor="rule"
+//             >
+//               Rule
+//             </label>
+//             <input
+//               className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+//               placeholder="rule"
+//               type="text"
+//               value={"rule"}
+//               readOnly={true}
+//             />
+//           </div>
+//           <div>
+//             <label
+//               className="block text-gray-700 text-sm font-bold mb-2"
+//               htmlFor="status"
+//             >
+//               Status
+//             </label>
+//             <input
+//               className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+//               placeholder="status"
+//               type="text"
+//               value={"status"}
+//               readOnly={true}
+//             />
+//           </div>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Profile;

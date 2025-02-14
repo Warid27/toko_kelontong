@@ -1,0 +1,298 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Informasi Pemesanan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <script>
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.body.style.overflowY = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.body.style.overflowY = 'auto';
+        }
+
+        function incrementValue(id) {
+            var value = parseInt(document.getElementById(id).innerText, 10);
+            value = isNaN(value) ? 0 : value;
+            value++;
+            document.getElementById(id).innerText = value;
+        }
+
+        function decrementValue(id) {
+            var value = parseInt(document.getElementById(id).innerText, 10);
+            value = isNaN(value) ? 0 : value;
+            value = value > 0 ? value - 1 : 0;
+            document.getElementById(id).innerText = value;
+        }
+    </script>
+</head>
+<body class="bg-gray-100">
+    <!-- Navbar -->
+    <nav class="bg-green-500 p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <a class="text-black text-lg font-semibold ml-4" href="#">Home</a>
+            <a class="text-black text-lg font-semibold" href="#">Contact Us</a>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="relative">
+                <input class="px-4 py-2 rounded-full pr-10" placeholder="search" type="text"/>
+                <i class="fas fa-search text-black absolute right-3 top-1/2 transform -translate-y-1/2"></i>
+            </div>
+            <i class="fas fa-heart text-black"></i>
+            <i class="fas fa-shopping-cart text-black"></i>
+            <i class="fas fa-user text-black"></i>
+        </div>
+    </nav>
+    <!-- Main Content -->
+    <div class="container mx-auto p-4 max-w-3xl">
+        <div class="flex items-center space-x-2 mb-4">
+            <i class="fas fa-arrow-left text-2xl"></i>
+            <h1 class="text-2xl font-bold">INFORMASI PEMESANAN</h1>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <label class="block text-gray-700" for="nama-pelanggan">Nama Pelanggan</label>
+                <input class="w-full mt-2 p-2 border rounded-lg" id="nama-pelanggan" type="text"/>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <label class="block text-gray-700" for="nomor-meja">Nomor Meja</label>
+                <input class="w-full mt-2 p-2 border rounded-lg" id="nomor-meja" type="text"/>
+            </div>
+        </div>
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold">Keranjang anda</h2>
+            <p class="text-gray-600">Anda memiliki 3 item di dalam keranjang</p>
+        </div>
+        <div class="space-y-4">
+            <div class="bg-white p-4 rounded-lg shadow-md flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img alt="Sabun image" class="w-16 h-16 rounded-lg" src="https://storage.googleapis.com/a1aa/image/hQojDoNodjvexH2PUtxNQeKn9ZKBBzSXWANv6FuCXgI.jpg"/>
+                    <div>
+                        <h3 class="text-lg font-semibold">Sabun</h3>
+                        <p class="text-gray-600">1 kg</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-lg" id="quantity-sabun">12</span>
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-chevron-up cursor-pointer" onclick="incrementValue('quantity-sabun')"></i>
+                        <i class="fas fa-chevron-down cursor-pointer" onclick="decrementValue('quantity-sabun')"></i>
+                    </div>
+                    <span class="text-lg">Rp 420.000</span>
+                    <i class="fas fa-trash text-black cursor-pointer"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img alt="Kopi image" class="w-16 h-16 rounded-lg" src="https://storage.googleapis.com/a1aa/image/iOi_4HV61IjNaTb7-suuTHDapM-5Qa2e5EkxGW3Kl-Y.jpg"/>
+                    <div>
+                        <h3 class="text-lg font-semibold">Kopi</h3>
+                        <p class="text-gray-600">sachet</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-lg" id="quantity-kopi">1</span>
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-chevron-up cursor-pointer" onclick="incrementValue('quantity-kopi')"></i>
+                        <i class="fas fa-chevron-down cursor-pointer" onclick="decrementValue('quantity-kopi')"></i>
+                    </div>
+                    <span class="text-lg">Rp 210.000</span>
+                    <i class="fas fa-trash text-black cursor-pointer"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img alt="Teh image" class="w-16 h-16 rounded-lg" src="https://storage.googleapis.com/a1aa/image/AO0io05guLXbBe0Mr_V-SpVEo3kx_eZACq0BcCVtN_8.jpg"/>
+                    <div>
+                        <h3 class="text-lg font-semibold">Teh</h3>
+                        <p class="text-gray-600">Tong tji</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-lg" id="quantity-teh">1</span>
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-chevron-up cursor-pointer" onclick="incrementValue('quantity-teh')"></i>
+                        <i class="fas fa-chevron-down cursor-pointer" onclick="decrementValue('quantity-teh')"></i>
+                    </div>
+                    <span class="text-lg">Rp 120.000</span>
+                    <i class="fas fa-trash text-black cursor-pointer"></i>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end mt-4">
+            <h2 class="text-2xl font-bold">Rp 820.000</h2>
+        </div>
+        <div class="flex justify-between mt-4">
+            <button class="bg-blue-500 text-white px-6 py-2 rounded-lg w-1/2 mr-2" onclick="openModal('takeHomeModal')">Take Home</button>
+            <button class="bg-green-500 text-white px-6 py-2 rounded-lg w-1/2 ml-2" onclick="openModal('openBillModal')">Open Bill</button>
+        </div>
+    </div>
+    <!-- Take Home Modal -->
+    <div class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden" id="takeHomeModal">
+        <div class="bg-white rounded-lg shadow-lg p-4 w-full max-w-lg mt-40 overflow-y-auto max-h-screen relative">
+            <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onclick="closeModal('takeHomeModal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="bg-orange-500 text-white text-center py-2 rounded-t-lg">
+                <h2 class="font-bold">Ringkasan Belanja</h2>
+            </div>
+            <div class="p-4">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold">Produk</span>
+                    <span class="font-bold">Qty</span>
+                    <span class="font-bold">Harga</span>
+                </div>
+                <div class="flex justify-between py-2">
+                    <span>J.Cool To Go</span>
+                    <span>1</span>
+                    <span>68.000</span>
+                </div>
+                <div class="flex justify-between text-green-500 py-2">
+                    <span>Biaya Kirim</span>
+                    <span>0</span>
+                </div>
+                <div class="flex justify-between border-t pt-2 font-bold">
+                    <span>Total Harga</span>
+                    <span class="text-red-500">Rp. 68.000</span>
+                </div>
+            </div>
+            <div class="bg-orange-500 text-white text-center py-2 rounded-t-lg mt-4">
+                <h2 class="font-bold">Pilih Metode Pembayaran</h2>
+            </div>
+            <div class="p-4">
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="Credit/Debit Card logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/J8hQG0kMGD5i-AaUTC5ToPCptfiQQZdihclDgqvlc7o.jpg" width="20"/>
+                    <span>Credit/Debit Card (Visa/Master)</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="BCA Virtual Account logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/ZHRiQ8ZkDx0Au-7nRq8bgglmF0LgjiIY7urZOhhjx1o.jpg" width="20"/>
+                    <span>BCA Virtual Account</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="Mandiri Bill Payment logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/JC5gyMV9HASfrnO_MIhRy9QHaCdeoUo4lu5trp_gvfM.jpg" width="20"/>
+                    <span>Mandiri Bill Payment</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="Octoclicks (CIMB Clicks) logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/tzYrfJ_devh390mvcCpas-LX5wEwjb740NFD5p5Clxc.jpg" width="20"/>
+                    <span>Octoclicks (CIMB Clicks)</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="Gopay logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/AZb7B7YLFMgifKDUOI1oENPCUx9ORgYyJ5Gtv-wPFOM.jpg" width="20"/>
+                    <span>Gopay</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="QRIS logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/PHFcmmcFXL20zXlL6cAfBJyAwxVn8UeGkKfRWlgD4cg.jpg" width="20"/>
+                    <span>QRIS (Gopay, Ovo, Dana, ShopeePay, QRIS bank lainnya)</span>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="bg-orange-500 text-white text-center py-2 rounded-t-lg">
+                    <h2 class="font-bold">Kupon Promo</h2>
+                </div>
+                <div class="p-4">
+                    <input class="w-full border rounded p-2" placeholder="Masukkan kode kupon" type="text"/>
+                </div>
+            </div>
+            <div class="p-4">
+                <button class="w-full bg-brown-500 text-white py-2 rounded mb-2" style="background-color: #8B4513;">BAYAR</button>
+                <button class="w-full bg-yellow-500 text-black py-2 rounded">MAKAN DI TEMPAT</button>
+            </div>
+            <div class="flex justify-end">
+                <button class="bg-gray-500 text-white px-4 py-2 rounded mr-2" onclick="closeModal('takeHomeModal')">Batal</button>
+            </div>
+        </div>
+    </div>
+    <!-- Open Bill Modal -->
+    <div class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden" id="openBillModal">
+        <div class="bg-white rounded-lg shadow-lg p-4 w-full max-w-lg mt-40 overflow-y-auto max-h-screen relative">
+            <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onclick="closeModal('openBillModal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="bg-orange-500 text-white text-center py-2 rounded-t-lg">
+                <h2 class="font-bold">Ringkasan Belanja</h2>
+            </div>
+            <div class="p-4">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold">Produk</span>
+                    <span class="font-bold">Qty</span>
+                    <span class="font-bold">Harga</span>
+                </div>
+                <div class="flex justify-between py-2">
+                    <span>J.Cool To Go</span>
+                    <span>1</span>
+                    <span>68.000</span>
+                </div>
+                <div class="flex justify-between text-green-500 py-2">
+                    <span>Biaya Kirim</span>
+                    <span>0</span>
+                </div>
+                <div class="flex justify-between border-t pt-2 font-bold">
+                    <span>Total Harga</span>
+                    <span class="text-red-500">Rp. 68.000</span>
+                </div>
+            </div>
+            <div class="bg-orange-500 text-white text-center py-2 rounded-t-lg mt-4">
+                <h2 class="font-bold">Pilih Metode Pembayaran</h2>
+            </div>
+            <div class="p-4">
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="Credit/Debit Card logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/J8hQG0kMGD5i-AaUTC5ToPCptfiQQZdihclDgqvlc7o.jpg" width="20"/>
+                    <span>Credit/Debit Card (Visa/Master)</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="BCA Virtual Account logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/ZHRiQ8ZkDx0Au-7nRq8bgglmF0LgjiIY7urZOhhjx1o.jpg" width="20"/>
+                    <span>BCA Virtual Account</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="Mandiri Bill Payment logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/JC5gyMV9HASfrnO_MIhRy9QHaCdeoUo4lu5trp_gvfM.jpg" width="20"/>
+                    <span>Mandiri Bill Payment</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="Octoclicks (CIMB Clicks) logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/tzYrfJ_devh390mvcCpas-LX5wEwjb740NFD5p5Clxc.jpg" width="20"/>
+                    <span>Octoclicks (CIMB Clicks)</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="Gopay logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/AZb7B7YLFMgifKDUOI1oENPCUx9ORgYyJ5Gtv-wPFOM.jpg" width="20"/>
+                    <span>Gopay</span>
+                </div>
+                <div class="flex items-center py-2">
+                    <input class="mr-2" name="payment" type="radio"/>
+                    <img alt="QRIS logo" class="mr-2" height="20" src="https://storage.googleapis.com/a1aa/image/PHFcmmcFXL20zXlL6cAfBJyAwxVn8UeGkKfRWlgD4cg.jpg" width="20"/>
+                    <span>QRIS (Gopay, Ovo, Dana, ShopeePay, QRIS bank lainnya)</span>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="bg-orange-500 text-white text-center py-2 rounded-t-lg">
+                    <h2 class="font-bold">Kupon Promo</h2>
+                </div>
+                <div class="p-4">
+                    <input class="w-full border rounded p-2" placeholder="Masukkan kode kupon" type="text"/>
+                </div>
+            </div>
+            <div class="p-4">
+                <button class="w-full bg-brown-500 text-white py-2 rounded mb-2" style="background-color: #8B4513;">BAYAR</button>
+                <button class="w-full bg-yellow-500 text-black py-2 rounded">MAKAN DI TEMPAT</button>
+            </div>
+            <div class="flex justify-end">
+                <button class="bg-gray-500 text-white px-4 py-2 rounded mr-2" onclick="closeModal('openBillModal')">Batal</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

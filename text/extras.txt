@@ -1,0 +1,176 @@
+import { useState } from "react";
+
+const Extras = () => {
+
+  const [formData, setFormData] = useState({
+    id_product: extrasData._id,
+    id_extras: extrasData?._id || "",
+    name: extrasData?.name || "",
+    deskripsi: extrasData?.deskripsi || "",
+    extrasDetails: detailExtrasData || [],
+  });
+
+  // Handle input changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Add a new extras detail field
+  const addExtrasDetail = () => {
+    setFormData((prev) => ({
+      ...prev,
+      extrasDetails: [
+        ...prev.extrasDetails,
+        { name: "", deskripsi: "" }, // Default values for new field
+      ],
+    }));
+  };
+
+  // Remove an extras detail field
+  const removeExtrasDetail = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      extrasDetails: prev.extrasDetails.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch("/api/extras", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        alert("Extras submitted successfully!");
+      } else {
+        alert("Failed to submit extras.");
+      }
+    } catch (error) {
+      console.error("Error submitting extras:", error);
+      alert("An error occurred while submitting extras.");
+    }
+  };
+
+  return (
+    <form id="extrasForm" onSubmit={handleSubmit}>
+      {/* ID Product */}
+      <div className="form-group">
+        <label htmlFor="id_product">ID Product</label>
+        <p>{productData.name_product}</p>
+        <input
+          type="text"
+          name="id_product"
+          required
+          value={formData.id_product}
+          readOnly
+        />
+        <input
+          type="text"
+          name="id_extras"
+          value={formData.id_extras}
+          onChange={handleChange}
+        />
+      </div>
+
+      {/* Name */}
+      <div className="form-group">
+        <label htmlFor="name">Name</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          required
+          value={formData.name}
+          onChange={handleChange}
+        />
+      </div>
+
+      {/* Deskripsi */}
+      <div className="form-group">
+        <label htmlFor="deskripsi">Deskripsi</label>
+        <input
+          id="deskripsi"
+          type="text"
+          name="deskripsi"
+          required
+          value={formData.deskripsi}
+          onChange={handleChange}
+        />
+      </div>
+
+      {/* Extras Details */}
+      <div id="sizeDetailsContainer">
+        {formData.extrasDetails.map((detail, index) => (
+          <div key={index} className="size-detail">
+            <div className="form-group">
+              <label>Size Name</label>
+              <input
+                type="text"
+                name={`extrasDetails[${index}][name]`}
+                required
+                value={detail.name}
+                onChange={(e) => {
+                  const newDetails = [...formData.extrasDetails];
+                  newDetails[index].name = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    extrasDetails: newDetails,
+                  }));
+                }}
+              />
+            </div>
+            <div className="form-group">
+              <label>Deskripsi</label>
+              <input
+                type="text"
+                name={`extrasDetails[${index}][deskripsi]`}
+                required
+                value={detail.deskripsi}
+                onChange={(e) => {
+                  const newDetails = [...formData.extrasDetails];
+                  newDetails[index].deskripsi = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    extrasDetails: newDetails,
+                  }));
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              className="button remove-button"
+              onClick={() => removeExtrasDetail(index)}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Buttons */}
+      <button
+        type="button"
+        className="button add-button"
+        onClick={addExtrasDetail}
+      >
+        Add Extras Detail
+      </button>
+      <button type="submit" className="button submit-button">
+        Submit
+      </button>
+    </form>
+  );
+};
+
+export default Extras;

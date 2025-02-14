@@ -1,0 +1,26 @@
+import React from "react";
+import Sidebar from "@/components/nav/sidebar";
+import Navbar from "@/components/nav/navbar";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
+
+const Dashboard = () => {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+    }
+  }, [router]);
+
+  return (
+    <div className="flex">
+      <Navbar />
+      <Sidebar />
+    </div>
+  );
+};
+
+export default Dashboard;

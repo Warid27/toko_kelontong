@@ -1,0 +1,124 @@
+<html>
+  <head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+  </head>
+  <body class="flex flex-col md:flex-row min-h-screen">
+    <!-- Left Green Section -->
+    <div
+      class="w-full md:w-1/2 bg-green-500 flex items-start justify-start p-8"
+    >
+      <h1 class="text-2xl font-bold text-black">Toko Kelontong</h1>
+    </div>
+    <!-- Right White Section -->
+    <div
+      class="w-full md:w-1/2 bg-white flex flex-col justify-center items-center p-8"
+    >
+      <form class="w-full max-w-sm" action="/register" method="POST">
+        <h2 class="text-4xl font-bold mb-8">Register</h2>
+        <div class="mb-4">
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="first-name"
+            >Username</label
+          >
+          <input
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            id="first-name"
+            type="text"
+            placeholder="Username"
+            name="username"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="role"
+            >Rule</label
+          >
+          <select
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            id="rule"
+            name="rule"
+          >
+            <option selected>=== Pilih Rule ===</option>
+            <option value="1">Superdmin</option>
+            <option value="2">Admin</option>
+            <option value="3">Manajer</option>
+            <option value="4">Kasir</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="company"
+            >Company</label
+          >
+          <select
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            id="company"
+            name="id_company"
+          >
+            <option selected>=== Pilih Company ===</option>
+            <% company.forEach((c) => { %>
+            <option value="<%= c._id %>"><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="store"
+            >Store</label
+          >
+          <select
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            id="store"
+            name="id_store"
+          >
+            <option selected>=== Pilih Store ===</option>
+            <% store.forEach((c) => { %>
+            <option value="<%= c._id %>"><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="mb-4 relative">
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="password"
+            >Password</label
+          >
+          <input
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+            id="password"
+            type="password"
+            placeholder="**********"
+            name="password"
+          />
+          <i class="fas fa-eye absolute right-3 top-10 text-gray-500"></i>
+        </div>
+        <div class="mb-6 flex items-center">
+          <input class="mr-2 leading-tight" type="checkbox" id="terms" />
+          <label class="text-sm text-gray-700" for="terms">
+            I agree to the Terms of Service and Privacy Policy.
+          </label>
+        </div>
+        <div class="flex items-center justify-between">
+          <button
+            class="bg-black text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+            type="submit"
+          >
+            Create an account
+          </button>
+        </div>
+      </form>
+      <p class="text-center text-sm text-gray-700 mt-1">
+        Already have an account?
+        <a href="/login" class="link-opacity-100">Login</a>.
+      </p>
+      <p class="text-center text-gray-500 text-xs mt-8">
+        ©2024 All Rights Reserves. Carakan.
+      </p>
+    </div>
+  </body>
+</html>

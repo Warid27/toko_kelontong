@@ -1,0 +1,547 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Daftar Toko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <style>
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 34px;
+        height: 20px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 34px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 14px;
+        width: 14px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: #ffcc00;
+      }
+      input:checked + .slider:before {
+        transform: translateX(14px);
+      }
+      td {
+        max-width: 200px; /* Sesuaikan dengan lebar maksimal yang diinginkan */
+        word-wrap: break-word;
+      }
+      .hover-effect:hover {
+        background-color: #f8f9fa;
+        color: #0056b3;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <div class="flex h-screen">
+      <!-- Sidebar -->
+      <div class="w-64 bg-white shadow-md">
+        <div class="p-6">
+          <h1 class="text-2xl font-bold mb-6">Daftar Toko</h1>
+          <ul>
+            <li class="mb-4">
+              <a
+                class="flex items-center text-gray-700 hover:text-gray-900"
+                href="#"
+              >
+                <i class="fas fa-chart-line mr-3"> </i>
+                <span> Analytics </span>
+              </a>
+            </li>
+            <li class="mb-4">
+              <a class="flex items-center text-green-500 font-bold" href="#">
+                <i class="fas fa-building mr-3"> </i>
+                <span> Daftar Toko </span>
+              </a>
+            </li>
+            <li class="mb-4">
+              <a
+                class="flex items-center text-gray-700 hover:text-gray-900"
+                href="#"
+              >
+                <i class="fas fa-bars mr-3"> </i>
+                <span> Menu </span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="flex items-center text-gray-700 hover:text-gray-900"
+                href="#"
+              >
+                <i class="fas fa-sign-out-alt mr-3"> </i>
+                <span> Log Out </span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col">
+        <!-- Header -->
+        <header class="bg-green-500 p-4 flex justify-between items-center">
+          <div class="text-white text-lg font-bold">Daftar Toko</div>
+          <div class="flex items-center">
+            <input
+              class="p-2 rounded-md border border-gray-300 mr-4"
+              placeholder="Search anything..."
+              type="text"
+            />
+            <button
+              type="button"
+              class="bg-yellow-400 text-white px-4 py-2 rounded-md mr-4"
+              onclick="showModals('add', 'add')"
+            >
+              + Tambah Toko
+            </button>
+            <i class="fas fa-th-large text-white text-xl mr-4"> </i>
+            <img
+              alt="User profile picture"
+              class="rounded-full"
+              height="40"
+              src="https://storage.googleapis.com/a1aa/image/HXmX3EafRP8SkyEH9n9gnOOAqR0O-lJt4_efQNkt9sk.jpg"
+              width="40"
+            />
+          </div>
+        </header>
+        <!-- Content -->
+        <div class="p-6 flex-1 overflow-y-auto">
+          <div class="bg-white shadow-md rounded-lg p-4">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="text-gray-500">
+                  <th class="py-2">Nama Toko</th>
+                  <th class="py-2">Alamat</th>
+                  <th class="py-2">Status</th>
+                  <th class="py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% data.forEach((c) => { %>
+                <tr class="border-t">
+                  <td class="py-2"><%= c.name %></td>
+                  <td class="py-2"><%= c.address %></td>
+                  <td class="py-2">
+                    <label class="switch">
+                      <input type="checkbox" data-id="<%= c._id %>"
+                      onchange="updateStatus(this)" <%= c.status == 0 ?
+                      'checked' : '' %>>
+                      <span class="slider"></span>
+                    </label>
+                  </td>
+                  <td class="py-2 text-right position-relative">
+                    <div class="dropdown">
+                      <i
+                        class="fas fa-ellipsis-h text-gray-500 cursor-pointer"
+                        id="dropdownMenuButton<%= c._id %>"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                      ></i>
+                      <ul
+                        class="dropdown-menu dropdown-menu-end"
+                        aria-labelledby="dropdownMenuButton<%= c._id %>"
+                      >
+                        <li>
+                          <button
+                            class="dropdown-item hover-effect"
+                            type="button"
+                            onclick="showModals(`<%= c._id %>`, 'get')"
+                          >
+                            Info
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            class="dropdown-item hover-effect"
+                            type="button"
+                            onclick="showModals(`<%= c._id %>`, 'edit')"
+                          >
+                            Edit
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+
+                <% }) %>
+              </tbody>
+            </table>
+            <div class="flex justify-between items-center mt-4">
+              <div>
+                <label class="text-gray-500" for="rows"> Show rows: </label>
+                <select
+                  class="ml-2 p-2 border border-gray-300 rounded-md"
+                  id="rows"
+                >
+                  <option>10 items</option>
+                  <option>20 items</option>
+                  <option>30 items</option>
+                </select>
+              </div>
+              <div class="flex items-center">
+                <button class="p-2 border border-gray-300 rounded-md mr-2">
+                  1
+                </button>
+                <button class="p-2 border border-gray-300 rounded-md mr-2">
+                  2
+                </button>
+                <button class="p-2 border border-gray-300 rounded-md mr-2">
+                  3
+                </button>
+                <span class="p-2"> ... </span>
+                <button class="p-2 border border-gray-300 rounded-md">
+                  50
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/swal/sweetalert2.all.min.js"></script>
+
+    <script>
+      async function deleteStore(id) {
+        const result = await Swal.fire({
+          title: "Are you sure?",
+          text: "You won't be able to revert this!",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Yes, delete it!",
+          cancelButtonText: "No, cancel!",
+        });
+
+        if (result.isConfirmed) {
+          try {
+            const response = await fetch(`/store/delete/${id}`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+            });
+
+            if (!response.ok) throw new Error(`Error ${response.status}`);
+
+            Swal.fire(
+              "Deleted!",
+              "The store has been deleted.",
+              "success"
+            ).then(() => {
+              location.reload();
+            });
+          } catch (error) {
+            Swal.fire("Error", "Failed to delete store!", "error");
+          }
+        }
+      }
+
+      async function getstore(id) {
+        try {
+          const response = await fetch("/store/getstore", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ id: id }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error("Error fetching store:", error);
+          return null;
+        }
+      }
+      async function getcompany(id) {
+        try {
+          const response = await fetch("/company/getcompany", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ id: id }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error("Error fetching company:", error);
+          return null;
+        }
+      }
+      async function updateStatus(checkbox) {
+        const productId = checkbox.getAttribute("data-id");
+        const newStatus = checkbox.checked ? 0 : 1;
+
+        try {
+          const response = await fetch("/store/editstore", {
+            method: "POST", // Ensure this matches the backend
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              id: productId,
+              status: newStatus,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.message || "Failed to update status");
+          }
+
+          // Reload only if the request is successful
+          location.reload();
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Gagal memperbarui status: " + error.message);
+          // Reset the checkbox state if the request fails
+          checkbox.checked = !checkbox.checked;
+        }
+      }
+
+      // ===== MODALS =====
+      async function showModals(id, modalsType) {
+        const modalId = `modal-${id}`;
+        let modalElement = document.getElementById(modalId);
+
+        if (!modalElement) {
+          modalElement = createModalElement(modalId);
+          document.body.insertAdjacentHTML("beforeend", modalElement.outerHTML);
+          modalElement = document.getElementById(modalId);
+        }
+
+        const { title, body, button, formTop, formBottom } =
+          await getModalContent(id, modalsType);
+
+        modalElement.querySelector(".modal-title").textContent = title;
+        modalElement.querySelector(".modal-body").innerHTML = body;
+        modalElement.querySelector(".modal-footer").innerHTML = `
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        ${button}
+    `;
+        modalElement.querySelector(".modal-content").innerHTML = `
+        ${formTop}
+        <div class="modal-header">
+            <h5 class="modal-title">${title}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">${body}</div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            ${button}
+        </div>
+        ${formBottom}
+    `;
+
+        new bootstrap.Modal(modalElement).show();
+      }
+
+      async function getModalContent(id, modalsType) {
+        let title = "Default Title";
+        let body = "<p>Data not found!</p>";
+        let button = "";
+        let formTop = "";
+        let formBottom = "";
+
+        switch (modalsType) {
+          case "get":
+            const data = await getstore(id);
+            if (!data) {
+              alert("Failed to fetch store data!");
+              return { title, body, button, formTop, formBottom };
+            }
+            const dataCompany = await getcompany(data.id_company);
+            title = "Data Toko";
+            button = `<button type="button" class="btn btn-danger" onclick="deleteStore('${id}')">Delete</button>`;
+            body = generateStoreDetails(data, dataCompany);
+            break;
+
+          case "add":
+            formTop = "<form action='store/addstore' method='POST'>";
+            formBottom = "</form>";
+            title = "Tambah Data Toko";
+            body = generateAddForm();
+            button = `<button type="submit" class="btn btn-primary">Submit</button>`;
+            break;
+
+          case "edit":
+            const editData = await getstore(id);
+            if (!editData) {
+              alert("Failed to fetch store data!");
+              return { title, body, button, formTop, formBottom };
+            }
+            const editDataCompany = await getcompany(editData.id_company);
+            formTop = "<form action='store/editstore' method='POST'>";
+            formBottom = "</form>";
+            title = "Edit Data Toko";
+            body = generateEditForm(editData, editDataCompany);
+            button = `<button type="submit" class="btn btn-primary">Update</button>`;
+            break;
+
+          default:
+            console.log("ERROR: Invalid modalsType!");
+        }
+
+        return { title, body, button, formTop, formBottom };
+      }
+
+      function generateStoreDetails(data, dataCompany) {
+        return `
+        <p class="row"><span class="col-3">ID Toko</span><span class="col-1">:</span><span class="col-8">${
+          data._id
+        }</span></p>
+        <p class="row"><span class="col-3">Nama Toko</span><span class="col-1">:</span><span class="col-8">${
+          data.name
+        }</span></p>
+        <p class="row"><span class="col-3">Alamat</span><span class="col-1">:</span><span class="col-8">${
+          data.address
+        }</span></p>
+        <p class="row"><span class="col-3">Status</span><span class="col-1">:</span><span class="col-8">${
+          data.status === 1 ? "Inactive" : "Active"
+        }</span></p>
+        <p class="row"><span class="col-3">Perusahaan</span><span class="col-1">:</span><span class="col-8">${
+          dataCompany?.name || "Unknown"
+        }</span></p>
+        <p class="row"><span class="col-3">Created At</span><span class="col-1">:</span><span class="col-8">${new Date(
+          data.created_at
+        ).toLocaleString()}</span></p>
+    `;
+      }
+
+      function generateAddForm() {
+        return `
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" placeholder="Name" name="name" id="name">
+        </div>
+        <div class="mb-3">
+            <label for="address" class="form-label">Alamat</label>
+            <input type="text" class="form-control" placeholder="Alamat" name="address" id="address">
+        </div>
+        <div class="mb-3">
+            <label for="company" class="form-label">Perusahaan</label>
+            <select name="id_company" id="company" class="form-select">
+                <option selected>=== Pilih Perusahaan ===</option>
+                <% dataCompany.forEach((t) => { %>
+                    <option value="<%= t._id %>"><%= t.name %></option>
+                <% }) %>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select name="status" id="type" class="form-select">
+                <option selected>=== Pilih Status ===</option>
+                <option value="0">Active</option>
+                <option value="1">Inactive</option>
+            </select>
+        </div>
+    `;
+      }
+
+      function generateEditForm(data, dataCompany) {
+        return `
+        <input type="hidden" name="id" value="${data._id}">
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" placeholder="Name" name="name" id="name" value="${
+              data.name
+            }">
+        </div>
+        <div class="mb-3">
+            <label for="address" class="form-label">Alamat</label>
+            <input type="text" class="form-control" placeholder="Alamat" name="address" id="address" value="${
+              data.address
+            }">
+        </div>
+        <div class="mb-3">
+            <label for="company" class="form-label">Perusahaan</label>
+            <select name="id_company" id="company" class="form-select">
+                <option selected>=== Pilih Perusahaan ===</option>
+                <% dataCompany.forEach((t) => { %>
+                    <option value="<%= t._id %>" <%= data.id_company == dataCompany._id ? "selected" : ""   %> ><%= t.name %></option> 
+                <% }) %>
+            </select>
+        </div>
+        <div class="mb-3">
+          <label for="status" class="form-label">Status</label>
+          <select name="status" id="type" class="form-select">
+            <option value="0"  ${
+              data.status == 0 ? "selected" : ""
+            }>Active</option>
+            <option value="1" ${
+              data.status == 1 ? "selected" : ""
+            }>Inactive</option>
+          </select>
+        </div>
+    `;
+      }
+
+      function createModalElement(modalId) {
+        const div = document.createElement("div");
+        div.className = "modal fade";
+        div.id = modalId;
+        div.setAttribute("tabindex", "-1");
+        div.setAttribute("aria-labelledby", `${modalId}Label`);
+        div.setAttribute("aria-hidden", "true");
+        div.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="${modalId}Label"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body"></div>
+                <div class="modal-footer"></div>
+            </div>
+        </div>
+    `;
+        return div;
+      }
+    </script>
+  </body>
+</html>

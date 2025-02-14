@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: black;
+  @apply bg-[#F7F7F7];
+}
+
+.hasatu{
+  text-align: center;
+  font-size: xx-large;
+}
+
+.toggle:checked {
+  border-color: #24D164;
+  background-color: #24D164; /* Kuning */
+}
+
+table *{
+  text-align: center;
+}

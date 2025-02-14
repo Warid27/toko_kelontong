@@ -1,0 +1,82 @@
+
+  // return (
+  //   <div className="min-h-screen flex">
+  //     <div className="flex-1 flex items-center justify-center bg-[#F7F7F7]">
+  //       <form
+  //         onSubmit={handleRegister}
+  //         className="bg-white px-20 rounded shadow-md w-full h-full flex flex-col justify-center"
+  //       >
+  //         <h1 className="text-2xl font-bold mb-4">Sign up to Kasir</h1>
+  //         <div className="mb-4">
+  //           <label className="block text-sm font-medium text-gray-700">
+  //             Username
+  //           </label>
+  //           <input
+  //             type="text"
+  //             value={username}
+  //             onChange={(e) => setUsername(e.target.value)}
+  //             className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white"
+  //             required
+  //           />
+  //         </div>
+  //         <div className="mb-4">
+  //           <label className="block text-sm font-medium text-gray-700">
+  //             Password
+  //           </label>
+  //           <div className="relative">
+  //             <input
+  //               type={showPassword ? "text" : "password"}
+  //               value={password}
+  //               onChange={(e) => setPassword(e.target.value)}
+  //               className="mt-1 block w-full border border-gray-300 bg-white rounded-md p-2"
+  //               required
+  //             />
+  //             <button
+  //               type="button"
+  //               onClick={() => setShowPassword(!showPassword)}
+  //               className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+  //             >
+  //               {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+  //             </button>
+  //           </div>
+  //           {errorMessage && (
+  //             <p className="text-red-500 mt-2">{errorMessage}</p>
+  //           )}{" "}
+  //           {/* Display error message */}
+  //         </div>
+  //         <button
+  //           type="submit"
+  //           className="w-full bg-[#FDDC05] hover:bg-[#fdd805] font-bold p-2 rounded"
+  //         >
+  //           PROCEED
+  //         </button>
+  //         <p className="mt-2">
+  //           Already have an account?{" "}
+  //           <button
+  //             className="text-[#FDDC05] font-semibold"
+  //             onClick={() => router.push("/login")}
+  //           >
+  //             Register
+  //           </button>
+  //         </p>
+  //       </form>
+  //     </div>
+  //     <div className="flex-1 flex flex-col items-center justify-center">
+  //       <p className="text-2xl font-bold mb-4 absolute top-4">
+  //         Kasir Dashboard Admin
+  //       </p>
+  //       <div className="flex justify-center w-full">
+  //         <Image
+  //           src="/register.svg"
+  //           alt="Register Illustration"
+  //           className="w-3/4 h-auto"
+  //           width={120}
+  //           height={120}
+  //         />
+  //       </div>
+  //       <p className="mt-4 absolute bottom-4 font-bold">
+  //         ©2024 All Rights Reserved. Carakan.
+  //       </p>
+  //     </div>
+  //   </div>
+  // );

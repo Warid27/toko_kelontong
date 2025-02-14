@@ -1,0 +1,16 @@
+# Mengabaikan folder node_modules
+node_modules/
+uploads/
+
+# Mengabaikan file .env
+.env
+
+# Opsional: Jika Anda ingin mengabaikan file log atau cache
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Opsional: Mengabaikan file sistem operasi tertentu
+.DS_Store
+Thumbs.db

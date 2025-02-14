@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile</title>
+    <link rel="stylesheet" href="../public/css/user.css" />
+  </head>
+  <body>
+    <div class="container">
+      <aside class="sidebar">
+        <ul>
+          <li><a href="#">Analytics</a></li>
+          <li><a href="#">Daftar Perusahaan</a></li>
+          <li><a href="#">Menu</a></li>
+          <li><a href="/login" onclick="logout()">Log Out</a></li>
+        </ul>
+      </aside>
+      <main class="profile-content">
+        <header class="profile-header">
+          <h1>Profile</h1>
+          <p>Detailed information about your store</p>
+          <div class="search">
+            <input type="text" placeholder="Search anything..." />
+            <img
+              src="https://icons.veryicon.com/png/o/miscellaneous/standard/avatar-15.png"
+              alt="User avatar"
+              class="user-avatar"
+            />
+          </div>
+        </header>
+        <section class="profile-details">
+          <div class="profile-card">
+            <img
+              src="https://icons.veryicon.com/png/o/miscellaneous/standard/avatar-15.png"
+              alt="Avatar"
+              class="avatar"
+            />
+            <h2><%= data.username %></h2>
+            <button class="edit-btn">Edit Profile</button>
+          </div>
+          <div class="profile-info">
+            <div>
+              <label>Username</label>
+              <p><%= data.username %></p>
+            </div>
+            <div>
+              <label>Password</label>
+              <p><%= data.password %></p>
+            </div>
+            <div>
+              <label>Rule</label>
+              <p><%= data.rule %></p>
+            </div>
+            <div>
+              <label>Company</label>
+              <p>
+                <%= (dataCompany.find(company => company._id ===
+                data.id_company) || { name: 'Not Found' }).name %>
+              </p>
+            </div>
+            <div>
+              <label>Store</label>
+              <p>
+                <%= (dataStore.find(store => store._id === data.id_store) || {
+                name: 'Not Found' }).name %>
+              </p>
+            </div>
+            <div>
+              <label>Status</label>
+              <p><%= data.status %></p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      async function logout() {
+        await fetch("/logout", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "text/html",
+          },
+        });
+      }
+    </script>
+  </body>
+</html>
