@@ -16,6 +16,8 @@ const Kasir = () => {
   const [products, setProducts] = useState([]);
   const [payments, setPayments] = useState([]);
   const [table_custList, setTable_custList] = useState([]);
+  const [orderList, setOrderList] = useState([]);
+  const [itemCampaignList, setItemCampaignList] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   //   const [orderList, setOrderList] = useState([]);
   //   const orderListRef = useRef(orderList); // Create a ref to track the latest state
@@ -30,7 +32,8 @@ const Kasir = () => {
   // State untuk modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpenInfo, setIsModalOpenInfo] = useState(false);
-  const tax = 12/100
+  const tax = 12 / 100;
+
   // Update the ref whenever the state changes
   //   useEffect(() => {
   //     orderListRef.current = orderList;
@@ -56,6 +59,52 @@ const Kasir = () => {
       }
     };
     fetchTable_cust();
+  }, []);
+  useEffect(() => {
+    const fetchItemCampaign = async () => {
+      try {
+        const response = await client.post(
+          "/itemcampaign/listitemcampaigns",
+          {}
+        );
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /itemcampaign/listitemcampaign:",
+            data
+          );
+          setItemCampaignList([]);
+        } else {
+          setItemCampaignList(data);
+        }
+      } catch (error) {
+        console.error("Error fetching item campaign:", error);
+        setItemCampaignList([]);
+      }
+    };
+    fetchItemCampaign();
+  }, []);
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const response = await client.post("/order/listorder", {});
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          console.error("Unexpected data format from /order/listorder:", data);
+          setOrderList([]);
+        } else {
+          setOrderList(data);
+        }
+      } catch (error) {
+        console.error("Error fetching Order:", error);
+        setOrder([]);
+      }
+    };
+    fetchOrder();
   }, []);
   useEffect(() => {
     const fetchProduct = async () => {
@@ -94,7 +143,7 @@ const Kasir = () => {
     const storedCartItems = JSON.parse(Cookies.get("kasirItems") || "[]");
     setKasirItems(storedCartItems);
   }, []);
-  
+
   const handleCartUpdate = () => {
     setKasirItemsUpdate((prev) => !prev);
   };
@@ -109,7 +158,7 @@ const Kasir = () => {
         id: product._id,
       });
       setSelectedProduct(response.data); // Set the selected product with fetched data
-      setIsModalOpen(false)
+      setIsModalOpen(false);
       setIsModalOpenInfo(true); // Open the modal
     } catch (error) {
       console.error("Error fetching product details:", error);
@@ -117,46 +166,56 @@ const Kasir = () => {
   };
 
   // Add Sales
+
   const handleSales = async (e) => {
     e.preventDefault();
+    console.log(kasirItems);
     try {
       // Validate orderList
-
       // Prepare data for the API request
       const prepareSalesData = () => {
         const totalNumberItem = kasirItems.length;
-
         const salesDetail = kasirItems.map((item) => ({
           id_product: item.product.id,
+          id_company: item.product.id_company,
+          id_store: item.product.id_store,
+          id_item_campaign: item.product.id_item_campaign,
           name: item.product.name,
           product_code: item.product.product_code,
-          item_price: Number(item.product.price),
+          item_price: Number(item.product.priceAfterDiscount),
           item_quantity: item.quantity,
           item_discount: 0,
         }));
-
         const salesCode = `INV/${Date.now()}/${crypto.randomUUID()}`;
-        const tax = 0.12
+        const tax = 0.12;
         const totalQty = kasirItems.reduce(
           (total, item) => total + item.quantity,
           0
         );
         const totalPrice = kasirItems.reduce(
-          (total, item) => total + item.product.price * item.quantity,
+          (total, item) =>
+            total + item.product.priceAfterDiscount * item.quantity,
           0
         );
-        const totalPriceWithTax = kasirItems.reduce(
-          (total, item) => total + item.product.price * item.quantity,
-          0
-        ) * (1 + tax); // Pajak ditambahkan setelah semua harga dihitung
-        
+        const totalPriceWithTax =
+          kasirItems.reduce(
+            (total, item) =>
+              total + item.product.priceAfterDiscount * item.quantity,
+            0
+          ) *
+          (1 + tax);
+
+        const id_user = localStorage.getItem("id_user");
+        // const id_store = localStorage.getItem("id_store");
+        // const id_company = localStorage.getItem("id_company");
         return {
           no: salesCode,
-          id_user: "67a034f9962111a02fcc5ad2", // Consider making this dynamic
-          id_store: "679b448102f7087c0369c23c", // Consider making this dynamic
-          id_order: "679b448102f7087c0369c23c",
+          id_user: id_user || "TIDAK TERDETEKSI LE", // Consider making this dynamic
+          id_order: kasirItems[0]?.informasi
+            ? kasirItems[0].informasi.id_order || null
+            : null,
           id_sales_campaign: "67adf9ffcf892c7756288622", // Consider making this dynamic
-          id_payment_type: selectedMethod._id,
+          id_payment_type: "67ae07107f2282a509936fb7",
           tax: tax,
           status: 1, // 1 = active, 2 = pending
           total_price: totalPriceWithTax,
@@ -169,31 +228,49 @@ const Kasir = () => {
 
       const token = localStorage.getItem("token");
       const salesData = prepareSalesData();
-
       // Make the API call
       const response = await client.post("sales/addsales", salesData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.status === 201) {
-        Swal.fire("Sukses!", "Berhasil Order.", "success");
-        await clearKasir(); // Clear kasir only after successful API call
-        window.location.reload(); // Refresh the page
+        const orderId = kasirItems[0]?.informasi?.id_order || null;
+
+        if (orderId != null) {
+          const responseOrder = await client.put(
+            `api/order/${orderId}`,
+            {
+              status: 1,
+            },
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (responseOrder.status === 200) {
+            await clearKasir();
+            Swal.fire("Sukses!", "Berhasil Order.", "success");
+            window.location.reload();
+            return;
+          }
+          Swal.fire("Error!", "ERROR LE.", "error");
+        } else {
+          await clearKasir();
+          Swal.fire("Sukses!", "Berhasil Order.", "success");
+          window.location.reload();
+        }
       }
     } catch (error) {
-      // Handle errors gracefully
       let errorMessage = "An unexpected error occurred.";
       if (error.response) {
         errorMessage = `Error: ${JSON.stringify(error.response.data)}`;
       } else if (error.message) {
         errorMessage = error.message;
       }
-
       console.error(errorMessage);
       Swal.fire("Error!", errorMessage, "error");
     }
   };
-
   // nama pelanggan
   const [customerName, setCustomerName] = useState({
     nama: "",
@@ -225,7 +302,7 @@ const Kasir = () => {
     const updatedItems = [...kasirItems];
     updatedItems[index].quantity = newQuantity;
     updatedItems[index].totalPrice =
-      updatedItems[index].product.price * newQuantity;
+      updatedItems[index].product.priceAfterDiscount * newQuantity;
     setKasirItems(updatedItems);
     Cookies.set("kasirItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
   };
@@ -310,15 +387,26 @@ const Kasir = () => {
               htmlFor="customerName"
               className="absolute top-2 left-4 text-sm text-black-500 bg-white px-1 font-semibold"
             >
-              Nama Pelanggan
+              Masukkan Nama
             </label>
-            <input
-              id="customerName"
-              type="text"
-              value={customerName.nama}
-              onChange={customerhandleChange}
-              className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
-            />
+
+            {kasirItems[0]?.informasi ? (
+              <input
+                id="customerName"
+                type="text"
+                value={kasirItems[0].informasi.person_name || "error"}
+                disabled={true}
+                className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
+              />
+            ) : (
+              <input
+                id="customerName"
+                type="text"
+                value={customerName?.nama || ""}
+                onChange={customerhandleChange}
+                className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
+              />
+            )}
           </div>
           <div className="relative w-full">
             <label className="absolute top-2 left-4 text-sm text-black-500 bg-white px-1 font-semibold">
@@ -328,7 +416,9 @@ const Kasir = () => {
               id="nomer"
               name="id_table_cust"
               className="bg-white shadow appearance-none border rounded w-full p-4 h-20 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={tableNumber.nomor}
+              value={
+                kasirItems[0]?.informasi?.id_table_cust || tableNumber.nomor
+              }
               onChange={tableHandleChange}
               required
             >
@@ -399,14 +489,23 @@ const Kasir = () => {
                       )}
                     </div>
                   </div>
+                  {/* <p>{item.product.diskon ? item.product.diskon : "manok"}</p> */}
 
                   <div className="flex items-center">
                     <p className="font-semibold mr-4">
+                      {item.product.price != item.product.priceAfterDiscount ? (
+                        <s className="font-bold mr-4 text-red-500 italic">
+                          Rp.
+                          {new Intl.NumberFormat("id-ID").format(
+                            item.product.price
+                          )}
+                        </s>
+                      ) : null}
                       Rp.
                       {new Intl.NumberFormat("id-ID").format(
-                        item.product.price
+                        item.product.priceAfterDiscount
                       )}
-                    </p>{" "}
+                    </p>
                     {/* Harga satuan */}
                     <div className="flex items-center">
                       <input
@@ -454,22 +553,23 @@ const Kasir = () => {
             Sub Total: Rp.
             {new Intl.NumberFormat("id-ID").format(
               kasirItems.reduce(
-                (total, item) => total + item.quantity * item.product.price,
+                (total, item) =>
+                  total + item.quantity * item.product.priceAfterDiscount,
                 0
               )
             )}
           </p>
           <p className="text-lg font-bold mb-4">Diskon: -</p>
-          <p className="text-lg font-bold mb-4">
-            Pajak: {tax * 100}%
-          </p>
+          <p className="text-lg font-bold mb-4">Pajak: {tax * 100}%</p>
           <p className="text-lg font-bold mb-4">
             Total: Rp.
             {new Intl.NumberFormat("id-ID").format(
               kasirItems.reduce(
-                (total, item) => total + item.quantity * item.product.price,
+                (total, item) =>
+                  total + item.quantity * item.product.priceAfterDiscount,
                 0
-              ) * (1 + tax) // Tambahkan pajak ke total
+              ) *
+                (1 + tax) // Tambahkan pajak ke total
             )}
           </p>
 
@@ -483,164 +583,246 @@ const Kasir = () => {
             </button>
           </div>
         </div>
-
       </div>
 
       {isModalOpen && (
         <Modal onClose={closeModal} title={"Tambah Pesanan"}>
-          <br/>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.map((product) => (
-                <div key={product._id} onClick={() => handleCardClick(product)}>
-                  <Card
-                    lebar={50}
-                    tinggi={50}
-                    image={product.image || "https://placehold.co/100x100"}
-                    nama={product.name_product}
-                    harga={`Rp ${new Intl.NumberFormat("id-ID").format(
-                      product.sell_price
-                    )}`}
-                  />
-                </div>
-              ))}
-            </div>
-        
+          <br />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {products.map((product) => (
+              <div key={product._id} onClick={() => handleCardClick(product)}>
+                {}
+                <Card
+                  lebar={50}
+                  tinggi={50}
+                  image={product.image || "https://placehold.co/100x100"}
+                  nama={product.name_product}
+                  // harga={`Rp ${new Intl.NumberFormat("id-ID").format(
+                  //   product.sell_price
+                  // )}`}
+                  harga={`Rp ${new Intl.NumberFormat("id-ID").format(
+                    Math.max(
+                      product.sell_price *
+                        (1 -
+                          (product.id_item_campaign
+                            ? itemCampaignList.find(
+                                (icl) => {
+                                  const today = new Date().toISOString().split("T")[0];
+                                  return icl._id === product.id_item_campaign &&
+                                  icl.start_date <= today &&
+                                  icl.end_date >= today}
+                              )?.value || 0
+                            : 0)),
+                      0 // Pastikan harga tidak negatif
+                    )
+                  )}`}
+                />
+              </div>
+            ))}
+          </div>
         </Modal>
       )}
 
       {isModalOpenInfo && (
-              <Modal onClose={closeModalInfo}>
-                <div>
-                  <Image
-                    src={selectedProduct?.image || "https://placehold.co/100x100"}
-                    alt={selectedProduct?.name_product}
-                    width={100}
-                    height={100}
-                    className="w-[500px] h-[550px] mb-4"
-                  />
-                  <p className="text-xl font-bold">{selectedProduct?.name_product}</p>
-                  <p>{selectedProduct?.deskripsi}</p>
+        <Modal onClose={closeModalInfo}>
+          <div>
+            <Image
+              src={selectedProduct?.image || "https://placehold.co/100x100"}
+              alt={selectedProduct?.name_product}
+              width={100}
+              height={100}
+              className="w-[500px] h-[550px] mb-4"
+            />
+            <p className="text-xl font-bold">{selectedProduct?.name_product}</p>
+            <p>{selectedProduct?.deskripsi}</p>
 
-                  <p className="font-semibold mt-4 mb-2">Extras</p>
-                  <div className="flex flex-wrap space-x-2">
-                    {selectedProduct?.id_extras?.extrasDetails.map((extra) => (
-                      <button
-                        key={extra._id}
-                        className={`p-2 rounded-md ${
-                          selectedExtra === extra._id
-                            ? "bg-[#FDDC05] text-black font-semibold"
-                            : "bg-white border-[#FDDC05] border-2"
-                        }`}
-                        onClick={() => setSelectedExtra(extra._id)}
-                      >
-                        {extra.name}
-                      </button>
-                    ))}
-                  </div>
+            <p className="font-semibold mt-4 mb-2">Extras</p>
+            <div className="flex flex-wrap space-x-2">
+              {selectedProduct?.id_extras?.extrasDetails.map((extra) => (
+                <button
+                  key={extra._id}
+                  className={`p-2 rounded-md ${
+                    selectedExtra === extra._id
+                      ? "bg-[#FDDC05] text-black font-semibold"
+                      : "bg-white border-[#FDDC05] border-2"
+                  }`}
+                  onClick={() => setSelectedExtra(extra._id)}
+                >
+                  {extra.name}
+                </button>
+              ))}
+            </div>
 
-                  <p className="font-semibold mt-4 mb-2">Size</p>
-                  <div className="flex flex-wrap space-x-2">
-                    {selectedProduct?.id_size?.sizeDetails.map((size) => (
-                      <button
-                        key={size._id}
-                        className={`p-2 rounded-md ${
-                          selectedSize === size._id
-                            ? "bg-[#FDDC05] text-black font-semibold"
-                            : "bg-white border-[#FDDC05] border-2"
-                        }`}
-                        onClick={() => setSelectedSize(size._id)}
-                      >
-                        {size.name}
-                      </button>
-                    ))}
-                  </div>
+            <p className="font-semibold mt-4 mb-2">Size</p>
+            <div className="flex flex-wrap space-x-2">
+              {selectedProduct?.id_size?.sizeDetails.map((size) => (
+                <button
+                  key={size._id}
+                  className={`p-2 rounded-md ${
+                    selectedSize === size._id
+                      ? "bg-[#FDDC05] text-black font-semibold"
+                      : "bg-white border-[#FDDC05] border-2"
+                  }`}
+                  onClick={() => setSelectedSize(size._id)}
+                >
+                  {size.name}
+                </button>
+              ))}
+            </div>
 
-                  {/* Kontrol jumlah produk */}
-                  <div className="flex items-center place-content-center mt-4">
-                    <button
-                      onClick={() => setQuantity(Math.max(0, quantity - 1))}
-                      className="py-2 px-3 border border-black rounded-md"
-                    >
-                      <FaMinus />
-                    </button>
-                    <span className="mx-4">{quantity}</span>{" "}
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="py-2 px-3 border border-black rounded-md"
-                    >
-                      <FaPlus />
-                    </button>
-                  </div>
+            {/* Kontrol jumlah produk */}
+            <div className="flex items-center place-content-center mt-4">
+              <button
+                onClick={() => setQuantity(Math.max(0, quantity - 1))}
+                className="py-2 px-3 border border-black rounded-md"
+              >
+                <FaMinus />
+              </button>
+              <span className="mx-4">{quantity}</span>{" "}
+              <button
+                onClick={() => setQuantity(quantity + 1)}
+                className="py-2 px-3 border border-black rounded-md"
+              >
+                <FaPlus />
+              </button>
+            </div>
 
-                  <button
-                    onClick={() => {
-                      const kasirItems = JSON.parse(Cookies.get("kasirItems") || "[]");
+            <button
+              onClick={() => {
+                const kasirItems = JSON.parse(
+                  Cookies.get("kasirItems") || "[]"
+                );
 
-                      // console.log("COOKIES BEFORE:", cartItems);
+                // console.log("COOKIES BEFORE:", cartItems);
 
-                      // Cek apakah item dengan extras & size yang sama sudah ada
-                      const existingIndex = kasirItems.findIndex(
-                        (item) =>
-                          // console.log(item.product._id),
-                          item.product.id === selectedProduct._id &&
-                          item.selectedExtra?._id === selectedExtra &&
-                          item.selectedSize?._id === selectedSize
-                      );
+                // Cek apakah item dengan extras & size yang sama sudah ada
+                const existingIndex = kasirItems.findIndex(
+                  (item) =>
+                    // console.log(item.product._id),
+                    item.product.id === selectedProduct._id &&
+                    item.selectedExtra?._id === selectedExtra &&
+                    item.selectedSize?._id === selectedSize
+                );
 
-                      if (existingIndex !== -1) {
-                        // Jika produk dengan extras dan size yang sama sudah ada, tambahkan jumlahnya
-                        kasirItems[existingIndex].quantity += quantity;
-                      } else {
-                        // Jika belum ada, tambahkan sebagai item baru
-                        const newItem = {
-                          product: {
-                            // ...prevProduct  ini bikin ngebug sialannnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
-                            id: selectedProduct._id,
-                            name: selectedProduct.name_product,
-                            image: selectedProduct.image,
-                            price: selectedProduct.sell_price,
-                          },
-                          quantity,
-                          selectedExtra: selectedExtra
-                            ? {
-                                _id: selectedExtra,
-                                name: selectedProduct?.id_extras?.extrasDetails.find(
-                                  (extra) => extra._id === selectedExtra
-                                )?.name,
-                              }
-                            : null,
-                          selectedSize: selectedSize
-                            ? {
-                                _id: selectedSize,
-                                name: selectedProduct?.id_size?.sizeDetails.find(
-                                  (size) => size._id === selectedSize
-                                )?.name,
-                              }
-                            : null,
-                        };
-                        // console.log("YUDAAA", newItem.selectedExtra);
-                        // kasirItems.push(newItem);
-                        // console.log("item barunya", newItem);
-                        addNewItems(newItem)
-                      }
-                      // Cookies.set("kasirItems", JSON.stringify(kasirItems), {
-                      //   expires: 7,
-                      // });
-                      // console.log("Menambahkan ke keranjang:", cartItems);
-                      console.log("COOKIESSSS:", Cookies.get("kasirItems"));
-                      closeModalInfo();
-                      handleCartUpdate();
-                    }}
-                    className={`mt-4 w-full p-2 rounded-md ${
-                      quantity === 0 ? "bg-gray-400" : "bg-green-500 text-white"
-                    }`}
-                    disabled={quantity === 0}
-                  >
-                    Tambah ke Keranjang
-                  </button>
-                </div>
-              </Modal>
-            )}
+                if (existingIndex !== -1) {
+                  // Jika produk dengan extras dan size yang sama sudah ada, tambahkan jumlahnya
+                  kasirItems[existingIndex].quantity += quantity;
+                } else {
+                  const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD untuk membandingkan tanggal
+
+                  const campaign = itemCampaignList.find(
+                    (icl) =>
+                      icl._id === selectedProduct.id_item_campaign &&
+                      icl.start_date <= today &&
+                      icl.end_date >= today
+                  );
+
+                  const discountValue = campaign ? campaign.value : 0;
+
+                  const newItem = {
+                    product: {
+                      id: selectedProduct._id,
+                      id_company: selectedProduct.id_company,
+                      id_store: selectedProduct.id_store,
+                      id_item_campaign:
+                        selectedProduct.id_item_campaign || null,
+                      name: selectedProduct.name_product,
+                      image: selectedProduct.image,
+                      price: selectedProduct.sell_price,
+                      diskon: discountValue, // Diskon hanya jika campaign masih berlaku
+                      priceAfterDiscount:
+                        selectedProduct.sell_price * (1 - discountValue), // Harga setelah diskon
+                    },
+                    quantity,
+                    selectedExtra: selectedExtra
+                      ? {
+                          _id: selectedExtra,
+                          name: selectedProduct?.id_extras?.extrasDetails.find(
+                            (extra) => extra._id === selectedExtra
+                          )?.name,
+                        }
+                      : null,
+                    selectedSize: selectedSize
+                      ? {
+                          _id: selectedSize,
+                          name: selectedProduct?.id_size?.sizeDetails.find(
+                            (size) => size._id === selectedSize
+                          )?.name,
+                        }
+                      : null,
+                  };
+
+                  console.log("item barunya", newItem);
+                  addNewItems(newItem);
+
+                  // Jika belum ada, tambahkan sebagai item baru
+                  // const newItem = {
+                  //   product: {
+                  //     // ...prevProduct  // ini bikin ngebug
+                  //     id: selectedProduct._id,
+                  //     id_company : selectedProduct.id_company,
+                  //     id_store : selectedProduct.id_store,
+                  //     id_item_campaign : selectedProduct.id_item_campaign || null,
+                  //     name: selectedProduct.name_product,
+                  //     image: selectedProduct.image,
+                  //     price: selectedProduct.sell_price,
+                  //     diskon:
+                  //       selectedProduct.id_item_campaign != null
+                  //         ? itemCampaignList.find(
+                  //             (icl) =>
+                  //               icl._id == selectedProduct.id_item_campaign
+                  //           )?.value
+                  //         : 0,
+                  //     priceAfterDiscount:
+                  //       selectedProduct.sell_price *
+                  //       (1 -
+                  //         (selectedProduct.id_item_campaign != null
+                  //           ? itemCampaignList.find(
+                  //               (icl) =>
+                  //                 icl._id == selectedProduct.id_item_campaign
+                  //             )?.value || 0
+                  //           : 0)),
+                  //   },
+                  //   quantity,
+                  //   selectedExtra: selectedExtra
+                  //     ? {
+                  //         _id: selectedExtra,
+                  //         name: selectedProduct?.id_extras?.extrasDetails.find(
+                  //           (extra) => extra._id === selectedExtra
+                  //         )?.name,
+                  //       }
+                  //     : null,
+                  //   selectedSize: selectedSize
+                  //     ? {
+                  //         _id: selectedSize,
+                  //         name: selectedProduct?.id_size?.sizeDetails.find(
+                  //           (size) => size._id === selectedSize
+                  //         )?.name,
+                  //       }
+                  //     : null,
+                  // };
+                  // console.log("YUDAAA", newItem.selectedExtra);
+                  // kasirItems.push(newItem);
+                  // console.log("item barunya", newItem);
+                  // addNewItems(newItem);
+                }
+                // Cookies.set("kasirItems", JSON.stringify(kasirItems), {
+                //   expires: 7,
+                // });
+                // console.log("Menambahkan ke keranjang:", cartItems);
+                closeModalInfo();
+                handleCartUpdate();
+              }}
+              className={`mt-4 w-full p-2 rounded-md ${
+                quantity === 0 ? "bg-gray-400" : "bg-green-500 text-white"
+              }`}
+              disabled={quantity === 0}
+            >
+              Tambah ke Keranjang
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

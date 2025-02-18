@@ -1,6 +1,16 @@
 import { Schema, model } from "mongoose";
 
 const orderDetailSchema = new Schema({
+  id_store: {
+    type: Schema.Types.ObjectId,
+    ref: "store",
+    default: null,
+  },
+  id_company: {
+    type: Schema.Types.ObjectId,
+    ref: "company",
+    default: null,
+  },
   id_product: {
     type: Schema.Types.ObjectId,
     ref: "product",
@@ -27,27 +37,18 @@ const orderSchema = new Schema({
   no: { type: String, required: true },
   code: { type: String, required: true },
   person_name: { type: String, required: true },
-  status: { type: Number, required: true },
+  status: { type: Number, enum: [1, 2], required: true, default: 2 },
   id_table_cust: {
     type: Schema.Types.ObjectId,
     ref: "table_cust",
     required: true,
   },
-  keterangan: { type: Number, required: true },
-  id_store: {
-    type: Schema.Types.ObjectId,
-    ref: "store",
-    required: true,
-  },
-  id_company: {
-    type: Schema.Types.ObjectId,
-    ref: "company",
-    required: true,
-  },
+  keterangan: { type: String, required: true },
+
   id_user: {
     type: Schema.Types.ObjectId,
     ref: "user",
-    required: true,
+    default: null,
   },
   orderDetails: [orderDetailSchema],
 });

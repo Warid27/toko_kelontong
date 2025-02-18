@@ -16,6 +16,7 @@ import tableRoutes from "@routes/table-routes";
 import paymentRoutes from "@routes/payment-routes";
 import salesRoutes from "@routes/sales-routes";
 import salesCampaignRoutes from "@routes/salesCampaign-routes";
+import itemCampaignRoutes from "@routes/itemCampaign-routes";
 
 import categoryRoutes from "@routes/category-routes";
 const app = new Hono();
@@ -41,6 +42,7 @@ app.route("/register", registerRoutes);
 app.route("/type", typeRoutes);
 app.route("/sales", salesRoutes);
 app.route("/salescampaign", salesCampaignRoutes);
+app.route("/itemcampaign", itemCampaignRoutes);
 app.route("/category", categoryRoutes);
 app.route("/api", apiRoutes);
 

@@ -35,8 +35,6 @@ const parseRequestBody = async (c) => {
     return { error: "Invalid request body" };
   }
 };
-
-// Login Route
 router.post("/", async (c) => {
   try {
     // Parse request body
@@ -45,8 +43,9 @@ router.post("/", async (c) => {
       return c.json({ message: error }, 400); // Bad Request
     }
 
-    // Find user in the database
-    const user = await UserModels.findOne({ username });
+    // Find user in the database, including the 'status' field
+    const user = await UserModels.findOne({ username }).select("+status"); // Ensure 'status' is included
+
     if (!user) {
       return c.json({ message: "Wrong username or password" }, 401); // Unauthorized
     }
@@ -55,6 +54,16 @@ router.post("/", async (c) => {
     const isPasswordMatch = password === user.password;
     if (!isPasswordMatch) {
       return c.json({ message: "Wrong username or password" }, 401); // Unauthorized
+    }
+
+    // Check if the user's account is activated (status === 0)
+    if (user.status !== 0) {
+      return c.json(
+        {
+          message: "Login failed, user account not activated",
+        },
+        403
+      ); // Forbidden
     }
 
     // Generate a simple token (for demonstration purposes)
@@ -69,6 +78,7 @@ router.post("/", async (c) => {
         username: user.username,
         id_store: user.id_store,
         id_company: user.id_company,
+        rule: user.rule,
       },
     });
   } catch (error) {

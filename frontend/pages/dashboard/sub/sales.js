@@ -16,13 +16,11 @@ const SalesMain = () => {
   const [saleses, setSaleses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [salesToUpdate, setSalesToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
-  const [selectedMethod, setSelectedMethod] = useState(null);
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  // Function
-  const [expandedPayments, setexpandedPayments] = useState({});
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   // LIST
   const [userList, setUserList] = useState([]); // State for list of users
@@ -30,22 +28,7 @@ const SalesMain = () => {
   const [storeList, setStoreList] = useState([]); // State for list of users
   const [orderList, setOrderList] = useState([]); // State for list of users
   const [sales_campaignList, setsales_campaignList] = useState([]); // State for list of users
-  const [payments, setPayments] = useState([]);
-
-  const [salesDataAdd, setSalesDataAdd] = useState({
-    no: "",
-    id_user: "",
-    id_store: "",
-    id_order: "",
-    id_sales_campaign: "",
-    id_payment_type: "",
-    tax: "",
-    total_price: "",
-    total_discount: "",
-    total_quantity: "",
-    total_number_item: "",
-    status: "",
-  });
+  const [paymentList, setPaymentList] = useState([]);
 
   const [salesDataUpdate, setSalesDataUpdate] = useState({
     id: "",
@@ -53,6 +36,7 @@ const SalesMain = () => {
     id_user: "",
     id_store: "",
     id_order: "",
+    id_company: "",
     id_sales_campaign: "",
     id_payment_type: "",
     tax: "",
@@ -70,8 +54,8 @@ const SalesMain = () => {
   const closeModalAdd = () => {
     setIsModalOpen(false);
   };
-  const openModalUpdate = () => {
-    setIsUpdateModalOpen(true);
+  const closeModalInfo = () => {
+    setIsInfoModalOpen(false);
   };
 
   const closeModalUpdate = () => {
@@ -250,130 +234,39 @@ const SalesMain = () => {
   }, []);
 
   useEffect(() => {
-    const fetchPayments = async () => {
+    const fetchPayment = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await client.post("/payment/listpayment", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await client.post("/payment/listpayment", {});
+        const data = response.data;
 
-        // Flatten the paymentName arrays into a single list
-        const flattenedPayments = response.data.flatMap((paymentType) =>
-          paymentType.paymentName.map((payment) => ({
-            ...payment,
-            payment_method: paymentType.payment_method,
-          }))
-        );
-
-        setPayments(flattenedPayments);
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /payment/listpayment:",
+            data
+          );
+          setPaymentList([]);
+        } else {
+          setPaymentList(data);
+        }
+        console.log("PAYMENT LIST:", paymentList);
       } catch (error) {
         console.error("Error fetching payments:", error);
-        setError("Failed to load payment methods. Please try again later.");
+        setPaymentList([]);
       }
     };
-    fetchPayments();
+    fetchPayment();
   }, []);
 
   // HANDLE
+
+  const handleInfoDetails = (sales) => {
+    setSalesToUpdate(sales); // Menyimpan produk yang dipilih
+    setIsInfoModalOpen(true);
+  };
   const handleUpdateSales = (sales) => {
     setSalesToUpdate(sales); // Menyimpan produk yang dipilih
     setIsUpdateModalOpen(true);
-
-    console.log(sales);
-  };
-
-  const deleteSalesById = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "No, cancel!",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await client.delete(`/api/sales/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.status === 200) {
-          Swal.fire("Berhasil", "Produk berhasil dihapus!", "success");
-          setSaleses((prevSaleses) => prevSaleses.filter((p) => p._id !== id));
-        }
-      } catch (error) {
-        console.error("Gagal menghapus produk:", error.message);
-        Swal.fire("Gagal", "Produk tidak dapat dihapus!", "error");
-      }
-    }
-  };
-
-  const handleChangeAdd = (e) => {
-    const { name, value } = e.target;
-    setSalesDataAdd((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmitAdd = async (e) => {
-    e.preventDefault();
-
-    try {
-      const token = localStorage.getItem("token");
-      // Ensure all required fields are filled
-      if (
-        !salesDataAdd.no ||
-        !salesDataAdd.id_user ||
-        !salesDataAdd.id_store ||
-        !salesDataAdd.id_order ||
-        !salesDataAdd.id_sales_campaign ||
-        !salesDataAdd.tax ||
-        !salesDataAdd.total_price ||
-        !salesDataAdd.total_discount ||
-        !salesDataAdd.total_quantity ||
-        !salesDataAdd.total_number_item ||
-        !selectedMethod._id
-      ) {
-        alert("Please fill all required fields.");
-        return;
-      }
-
-      // Send sales data to the backend
-      const response = await client.post(
-        "/sales/addsales",
-        {
-          no: salesDataAdd.no || "",
-          id_user: salesDataAdd.id_user || "",
-          id_store: salesDataAdd.id_store || "",
-          id_user: salesDataAdd.id_user || "",
-          id_order: salesDataAdd.id_order || "",
-          id_sales_campaign: salesDataAdd.id_sales_campaign || "",
-          id_payment_type: selectedMethod._id || "",
-          tax: salesDataAdd.tax || "",
-          total_price: salesDataAdd.total_price || "",
-          total_discount: salesDataAdd.total_discount || "",
-          total_quantity: salesDataAdd.total_quantity || "",
-          total_number_item: salesDataAdd.total_number_item || "",
-          status: 1,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      Swal.fire("Berhasil", "Produk berhasil ditambahkan!", "success");
-
-      window.location.reload();
-    } catch (error) {
-      console.error("Error adding sales:", error);
-    }
   };
 
   useEffect(() => {
@@ -383,7 +276,7 @@ const SalesMain = () => {
         no: salesToUpdate.no || "",
         id_user: salesToUpdate.id_user || "",
         id_store: salesToUpdate.id_store || "",
-        id_user: salesToUpdate.id_user || "",
+        id_company: salesToUpdate.id_company || "",
         id_order: salesToUpdate.id_order || "",
         id_sales_campaign: salesToUpdate.id_sales_campaign || "",
         id_payment_type: salesToUpdate.id_payment_type || "",
@@ -393,69 +286,11 @@ const SalesMain = () => {
         total_quantity: salesToUpdate.total_quantity || "",
         total_number_item: salesToUpdate.total_number_item || "",
         status: salesToUpdate.status || "",
+        salesDetails: salesToUpdate.salesDetails || "",
       });
     }
   }, [salesToUpdate]);
 
-  const handleChangeUpdate = (e) => {
-    const { name, value } = e.target;
-    setSalesDataUpdate((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmitUpdate = async (e) => {
-    e.preventDefault();
-
-    try {
-      const token = localStorage.getItem("token");
-      const response = await client.put(
-        `/api/sales/${salesDataUpdate.id}`,
-        {
-          no: salesDataUpdate.no,
-          id_user: salesDataUpdate.id_user,
-          id_store: salesDataUpdate.id_store,
-          id_user: salesDataUpdate.id_user,
-          id_order: salesDataUpdate.id_order,
-          id_sales_campaign: salesDataUpdate.id_sales_campaign,
-          id_payment_type: salesDataUpdate.id_payment_type,
-          tax: salesDataUpdate.tax,
-          total_price: salesDataUpdate.total_price,
-          total_discount: salesDataUpdate.total_discount,
-          total_quantity: salesDataUpdate.total_quantity,
-          total_number_item: salesDataUpdate.total_number_item,
-          status: salesDataUpdate.status,
-        },
-
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("Sales updated successfully:", response.data);
-      window.location.reload();
-    } catch (error) {
-      console.error("Error updating sales:", error);
-    }
-  };
-
-  // FUNGSI
-  // PAYMENTS
-  const groupedPayments = payments.reduce((acc, payment) => {
-    if (!acc[payment.payment_method]) {
-      acc[payment.payment_method] = [];
-    }
-    acc[payment.payment_method].push(payment);
-    return acc;
-  }, {});
-  const togglePayments = (payments) => {
-    setexpandedPayments((prev) => ({
-      ...prev,
-      [payments]: !prev[payments],
-    }));
-  };
   // LOADING
   if (isLoading) {
     return (
@@ -508,12 +343,12 @@ const SalesMain = () => {
             </select>
           </div>
           <div>
-            <button
+            {/* <button
               className="button bg-[#FDDC05] text-white p-2 rounded-lg font-bold"
               onClick={openModalAdd}
             >
               + Tambah Sales
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -557,17 +392,11 @@ const SalesMain = () => {
                         <input
                           type="checkbox"
                           className="toggle"
-                          checked={sales.status === 2}
+                          checked={sales.status === 1}
                           onChange={() => handleStatus(sales._id, sales.status)}
                         />
                       </td>
                       <td className="flex">
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => deleteSalesById(sales._id)}
-                        >
-                          <MdDelete />
-                        </button>
                         <button
                           className=" p-3 rounded-lg text-2xl "
                           onClick={() => handleUpdateSales(sales)}
@@ -576,7 +405,7 @@ const SalesMain = () => {
                         </button>
                         <button
                           className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateSalesDetails(sales)}
+                          onClick={() => handleInfoDetails(sales)}
                         >
                           <FaInfoCircle />
                         </button>
@@ -590,767 +419,124 @@ const SalesMain = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <Modal onClose={closeModalAdd} title={"Tambah Sales"}>
-          <form onSubmit={handleSubmitAdd}>
-            <p className="font-semibold mt-4">Nomor Sales</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="text"
-              name="no"
-              value={salesDataAdd.no}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-              maxLength={100}
-            />
-            <p className="font-semibold mt-4">Pajak</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="tax"
-              value={salesDataAdd.tax}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Total Harga</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="total_price"
-              value={salesDataAdd.total_price}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Total Diskon</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="total_discount"
-              value={salesDataAdd.total_discount}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Total Jumlah</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="total_quantity"
-              value={salesDataAdd.total_quantity}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Total Jumlah Barang</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="total_number_item"
-              value={salesDataAdd.total_number_item}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Pengguna</p>
-            <p className="mb-2 text-sm text-slate-500">Include Pengguna</p>
-            {/* === USER === */}
-            {
-              <select
-                name="user"
-                id="user"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataAdd((prevState) => ({
-                    ...prevState,
-                    id_user: e.target.value,
-                  }))
-                }
-                value={salesDataAdd.id_user}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Pengguna ===
-                </option>
+      {isUpdateModalOpen && (
+        <Modal onClose={closeModalUpdate} title={"Data Sales"}>
+          <div className="grid grid-cols-[auto_auto_1fr] gap-y-2 font-sans">
+            <span className="text-left font-bold pr-2">Nomor Sales</span>
+            <span className="font-bold px-2">:</span>
+            <span className="text-gray-700">{salesDataUpdate.no}</span>
 
-                {userList.length === 0 ? (
-                  <option value="default">No user available</option>
-                ) : (
-                  userList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.username}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-            <p className="font-semibold mt-4 mb-2">Toko</p>
-            <p className="mb-2 text-sm text-slate-500">Include Toko</p>
-            {/* === TOKO === */}
-            {
-              <select
-                name="store"
-                id="store"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataAdd((prevState) => ({
-                    ...prevState,
-                    id_store: e.target.value,
-                  }))
-                }
-                value={salesDataAdd.id_store}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Toko ===
-                </option>
+            <span className="text-left font-bold pr-2">Pajak</span>
+            <span className="font-bold px-2">:</span>
+            <span className="text-gray-700">{salesDataUpdate.tax || "-"}</span>
 
-                {storeList.length === 0 ? (
-                  <option value="default">No store available</option>
-                ) : (
-                  storeList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-            <p className="font-semibold mt-4 mb-2">Perusahaan</p>
-            <p className="mb-2 text-sm text-slate-500">Include Perusahaan</p>
-            {/* === PERUSAHAAN === */}
-            {
-              <select
-                name="company"
-                id="company"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataAdd((prevState) => ({
-                    ...prevState,
-                    id_company: e.target.value,
-                  }))
-                }
-                value={salesDataAdd.id_company}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Perusahaan ===
-                </option>
+            <span className="text-left font-bold pr-2">Total Harga</span>
+            <span className="font-bold px-2">:</span>
+            <span className="text-gray-700">
+              {salesDataUpdate.total_price || "-"}
+            </span>
 
-                {companyList.length === 0 ? (
-                  <option value="default">No company available</option>
-                ) : (
-                  companyList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
+            <span className="text-left font-bold pr-2">Total Diskon</span>
+            <span className="font-bold px-2">:</span>
+            <span className="text-gray-700">
+              {salesDataUpdate.total_discount || "-"}
+            </span>
 
-            <p className="font-semibold mt-4 mb-2">Pemesanan</p>
-            <p className="mb-2 text-sm text-slate-500">Include Pemesanan</p>
-            {/* === ORDER === */}
-            {
-              <select
-                name="order"
-                id="order"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataAdd((prevState) => ({
-                    ...prevState,
-                    id_order: e.target.value,
-                  }))
-                }
-                value={salesDataAdd.id_order}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Pemesanan ===
-                </option>
+            <span className="text-left font-bold pr-2">Total Jumlah</span>
+            <span className="font-bold px-2">:</span>
+            <span className="text-gray-700">
+              {salesDataUpdate.total_quantity || "-"}
+            </span>
 
-                {orderList.length === 0 ? (
-                  <option value="default">No order available</option>
-                ) : (
-                  orderList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.person_name}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-            <p className="font-semibold mt-4 mb-2">Sales Promo</p>
-            <p className="mb-2 text-sm text-slate-500">Include Sales Promo</p>
-            {/* === SALES CAMPAIGN === */}
-            {
-              <select
-                name="sales_campaign"
-                id="sales_campaign"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataAdd((prevState) => ({
-                    ...prevState,
-                    id_sales_campaign: e.target.value,
-                  }))
-                }
-                value={salesDataAdd.id_sales_campaign}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Promo ===
-                </option>
+            <span className="text-left font-bold pr-2">
+              Total Jumlah Barang
+            </span>
+            <span className="font-bold px-2">:</span>
+            <span className="text-gray-700">
+              {salesDataUpdate.total_number_item || "-"}
+            </span>
 
-                {sales_campaignList.length === 0 ? (
-                  <option value="default">No sales_campaign available</option>
-                ) : (
-                  sales_campaignList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.campaign_name}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-            <p className="font-semibold mt-4 mb-2">Tipe Pembayaran</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include Tipe Pembayaran
-            </p>
-            {/* === PEMBAYARAN === */}
+            <span className="text-left font-bold pr-2">Pengguna</span>
+            <span className="font-bold px-2">:</span>
+            <span>
+              {userList.length > 0
+                ? userList.find((c) => c._id === salesDataUpdate.id_user)
+                    ?.username || "Belum ada data pengguna"
+                : "Tidak ada data pengguna"}
+            </span>
 
-            {/* Pilih Metode Pembayaran */}
-            <div className="border rounded-lg mb-4 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-              <div className="bg-orange-500 text-white p-3 rounded-t-lg font-bold">
-                Pilih Metode Pembayaran
-              </div>
-              <div className="p-2 space-y-1">
-                {Object.keys(groupedPayments).map((payments) => (
-                  <div key={payments}>
-                    {/* Payments Header */}
-                    <div
-                      className="flex items-center justify-between cursor-pointer p-2 bg-gray-100 rounded-md hover:bg-gray-200"
-                      onClick={() => togglePayments(payments)}
-                    >
-                      <span className="font-semibold">{payments}</span>
-                      <span
-                        className={`transition-transform duration-200 ${
-                          expandedPayments[payments] ? "rotate-180" : ""
-                        }`}
-                      >
-                        <IoIosArrowDropdown />
-                      </span>
-                    </div>
+            <span className="text-left font-bold pr-2">Nama Toko</span>
+            <span className="font-bold px-2">:</span>
+            <span>
+              {storeList.length > 0
+                ? storeList.find((c) => c._id === salesDataUpdate.id_store)
+                    ?.name || "Belum ada data toko"
+                : "Tidak ada data toko"}
+            </span>
 
-                    {/* Payment Methods (Dropdown Content) */}
-                    {expandedPayments[payments] && (
-                      <div className="pl-4 mt-2 space-y-2">
-                        {groupedPayments[payments].map((payment) => (
-                          <label
-                            key={payment._id}
-                            className="flex items-center cursor-pointer w-full p-2 gap-3 rounded-md hover:bg-orange-50 peer-checked:bg-orange-50"
-                          >
-                            <div className="relative w-6 h-6 flex items-center justify-center">
-                              <div className="absolute w-5 h-5 bg-white rounded-full border-2 border-gray-400"></div>
-                              <input
-                                type="radio"
-                                name="paymentMethod"
-                                value={payment._id}
-                                checked={selectedMethod?._id === payment._id}
-                                onChange={() => setSelectedMethod(payment)}
-                                className="peer relative w-5 h-5 rounded-full border-2 border-gray-400 appearance-none checked:border-orange-500 transition-all duration-200"
-                                aria-label={payment.payment_name}
-                              />
-                              <div className="absolute w-3 h-3 bg-orange-500 rounded-full scale-0 peer-checked:scale-100 transition-all duration-200"></div>
-                            </div>
-                            <div className="flex items-center justify-center gap-5">
-                              <img
-                                src={payment.image}
-                                alt={`${payment.payment_name} logo`}
-                                className="object-contain w-8 h-8"
-                              />
-                              <span>{payment.payment_name}</span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex justify-end mt-5">
-              <button type="button" className="mr-2" onClick={closeModalAdd}>
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
-                Kirim
-              </button>
-            </div>
-          </form>
+            <span className="text-left font-bold pr-2">Perusahaan</span>
+            <span className="font-bold px-2">:</span>
+            <span>
+              {companyList.length > 0
+                ? companyList.find((c) => c._id === salesDataUpdate.id_company)
+                    ?.name || "Belum ada data perusahaan"
+                : "Tidak ada data perusahaan"}
+            </span>
+
+            <span className="text-left font-bold pr-2">Pemesanan</span>
+            <span className="font-bold px-2">:</span>
+            <span>
+              {orderList.length > 0
+                ? orderList.find((c) => c._id === salesDataUpdate.id_order)
+                    ?.person_name || "Belum ada data pemesanan"
+                : "Tidak ada data pemesanan"}
+            </span>
+
+            <span className="text-left font-bold pr-2">Promo</span>
+            <span className="font-bold px-2">:</span>
+            <span>
+              {sales_campaignList.length > 0
+                ? sales_campaignList.find(
+                    (c) => c._id === salesDataUpdate.id_sales_campaign
+                  )?.campaign_name || "Belum ada data promo"
+                : "Tidak ada data promo"}
+            </span>
+
+            <span className="text-left font-bold pr-2">Pembayaran</span>
+            <span className="font-bold px-2">:</span>
+            <span>
+              {paymentList.length > 0
+                ? paymentList.find(
+                    (c) => c._id === salesDataUpdate.id_payment_type
+                  )?.payment_method || "Belum ada data pembayaran"
+                : "Tidak ada data pembayaran"}
+            </span>
+          </div>
         </Modal>
       )}
 
-      {isUpdateModalOpen && (
-        <Modal onClose={closeModalUpdate} title={"Edit Sales"}>
-          <form onSubmit={handleSubmitUpdate}>
-            {/* <p className="font-semibold">Gambar Produk</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Format .jpg .jpeg .png dan minimal ukuran 300 x 300px
-            </p>
-            <div className="upload-container">
-              <label className="upload-label">
-                <input
-                  type="hidden"
-                  name="_id"
-                  value={salesDataUpdate._id}
-                  onChange={handleChangeUpdate}
-                  className="border rounded-md p-2 w-full bg-white"
-                  required
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChangeUpdate}
-                  style={{ display: "none" }}
-                />
-                <div className="upload-content">
-                  {salesDataUpdate.image ? (
-                    <Image
-                      src={
-                        "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                      }
-                      alt="Uploaded Image"
-                      width={80}
-                      height={80}
-                      className="uploaded-image"
-                    />
-                  ) : (
-                    <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                      <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
-                      <p className="text-sm text-[#FDDC05]">New Image</p>
-                    </div>
-                  )}
-                </div>
-              </label>
-            </div>
+      {/* === INFO === */}
+      {isInfoModalOpen && (
+        <Modal onClose={closeModalInfo} title={"Sales Detail"}>
+          {salesDataUpdate.salesDetails?.map((detail, index) => (
+            <div key={index}>
+              <div>Detail {index + 1}</div>
+              <div className="grid grid-cols-[auto_auto_1fr] gap-y-2 font-sans">
+                <span className="text-left font-bold pr-2">Kode Produk</span>
+                <span className="font-bold px-2">:</span>
+                <span className="text-gray-700">
+                  {detail.product_code || "-"}
+                </span>
 
-            <p className="font-semibold mt-4">Nama Produk</p>
-            <input
-              type="text"
-              name="name_sales"
-              value={salesDataUpdate.name_sales}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Stock</p>
-            <input
-              type="text"
-              name="stock"
-              value={salesDataUpdate.stock}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Barcode</p>
-            <input
-              type="text"
-              name="barcode"
-              value={salesDataUpdate.barcode}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Harga</p>
-            <input
-              type="text"
-              name="sell_price"
-              value={salesDataUpdate.sell_price}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Sales Code</p>
-            <input
-              type="text"
-              name="sales_code"
-              value={salesDataUpdate.sales_code}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Deskripsi Produk</p>
-            <textarea
-              name="deskripsi"
-              value={salesDataUpdate.deskripsi}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Category</p>
-            <select
-              id="category"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={salesDataUpdate.id_category_sales}
-              onChange={(e) =>
-                setSalesDataUpdate((prevState) => ({
-                  ...prevState,
-                  id_category_sales: e.target.value,
-                }))
-              }
-              required
-            >
-              <option value="" disabled>
-                === Pilih Category ===
-              </option>
-
-              {categoryList.length === 0 ? (
-                <option value="default" disabled>
-                  No category available
-                </option>
-              ) : (
-                categoryList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name_category}
-                  </option>
-                ))
-              )}
-            </select> */}
-            <p className="font-semibold mt-4">Nomor Sales</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="text"
-              name="no"
-              value={salesDataUpdate.no}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-              maxLength={100}
-            />
-            <p className="font-semibold mt-4">Pajak</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="tax"
-              value={salesDataUpdate.tax}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Total Harga</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="total_price"
-              value={salesDataUpdate.total_price}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Total Diskon</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="total_discount"
-              value={salesDataUpdate.total_discount}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Total Jumlah</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="total_quantity"
-              value={salesDataUpdate.total_quantity}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Total Jumlah Barang</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 10 characters to make it more interesting
-            </p>
-            <input
-              type="number"
-              name="total_number_item"
-              value={salesDataUpdate.total_number_item}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Pengguna</p>
-            <p className="mb-2 text-sm text-slate-500">Include Pengguna</p>
-            {/* === USER === */}
-            {
-              <select
-                name="user"
-                id="user"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataUpdate((prevState) => ({
-                    ...prevState,
-                    id_user: e.target.value,
-                  }))
-                }
-                value={salesDataUpdate.id_user}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Pengguna ===
-                </option>
-
-                {userList.length === 0 ? (
-                  <option value="default">No user available</option>
-                ) : (
-                  userList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.username}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-            <p className="font-semibold mt-4 mb-2">Toko</p>
-            <p className="mb-2 text-sm text-slate-500">Include Toko</p>
-            {/* === TOKO === */}
-            {
-              <select
-                name="store"
-                id="store"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataUpdate((prevState) => ({
-                    ...prevState,
-                    id_store: e.target.value,
-                  }))
-                }
-                value={salesDataUpdate.id_store}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Toko ===
-                </option>
-
-                {storeList.length === 0 ? (
-                  <option value="default">No store available</option>
-                ) : (
-                  storeList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-            <p className="font-semibold mt-4 mb-2">Perusahaan</p>
-            <p className="mb-2 text-sm text-slate-500">Include Perusahaan</p>
-            {/* === PERUSAHAAN === */}
-            {
-              <select
-                name="company"
-                id="company"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataUpdate((prevState) => ({
-                    ...prevState,
-                    id_company: e.target.value,
-                  }))
-                }
-                value={salesDataUpdate.id_company}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Perusahaan ===
-                </option>
-
-                {companyList.length === 0 ? (
-                  <option value="default">No company available</option>
-                ) : (
-                  companyList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-
-            <p className="font-semibold mt-4 mb-2">Pemesanan</p>
-            <p className="mb-2 text-sm text-slate-500">Include Pemesanan</p>
-            {/* === ORDER === */}
-            {
-              <select
-                name="order"
-                id="order"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataUpdate((prevState) => ({
-                    ...prevState,
-                    id_order: e.target.value,
-                  }))
-                }
-                value={salesDataUpdate.id_order}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Pemesanan ===
-                </option>
-
-                {orderList.length === 0 ? (
-                  <option value="default">No order available</option>
-                ) : (
-                  orderList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.person_name}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-            <p className="font-semibold mt-4 mb-2">Sales Promo</p>
-            <p className="mb-2 text-sm text-slate-500">Include Sales Promo</p>
-            {/* === SALES CAMPAIGN === */}
-            {
-              <select
-                name="sales_campaign"
-                id="sales_campaign"
-                className="border rounded-md p-2 w-full bg-white"
-                onChange={(e) =>
-                  setSalesDataUpdate((prevState) => ({
-                    ...prevState,
-                    id_sales_campaign: e.target.value,
-                  }))
-                }
-                value={salesDataUpdate.id_sales_campaign}
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Promo ===
-                </option>
-
-                {sales_campaignList.length === 0 ? (
-                  <option value="default">No sales_campaign available</option>
-                ) : (
-                  sales_campaignList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.campaign_name}
-                    </option>
-                  ))
-                )}
-              </select>
-            }
-            <p className="font-semibold mt-4 mb-2">Tipe Pembayaran</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include Tipe Pembayaran
-            </p>
-            {/* === PEMBAYARAN === */}
-
-            {/* Pilih Metode Pembayaran */}
-            <div className="border rounded-lg mb-4 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-              <div className="bg-orange-500 text-white p-3 rounded-t-lg font-bold">
-                Pilih Metode Pembayaran
+                <span className="text-left font-bold pr-2">
+                  Nama Sales Detail
+                </span>
+                <span className="font-bold px-2">:</span>
+                <span className="text-gray-700">{detail.name || "-"}</span>
               </div>
-              <div className="p-2 space-y-1">
-                {Object.keys(groupedPayments).map((payments) => (
-                  <div key={payments}>
-                    {/* Payments Header */}
-                    <div
-                      className="flex items-center justify-between cursor-pointer p-2 bg-gray-100 rounded-md hover:bg-gray-200"
-                      onClick={() => togglePayments(payments)}
-                    >
-                      <span className="font-semibold">{payments}</span>
-                      <span
-                        className={`transition-transform duration-200 ${
-                          expandedPayments[payments] ? "rotate-180" : ""
-                        }`}
-                      >
-                        <IoIosArrowDropdown />
-                      </span>
-                    </div>
-
-                    {/* Payment Methods (Dropdown Content) */}
-                    {expandedPayments[payments] && (
-                      <div className="pl-4 mt-2 space-y-2">
-                        {groupedPayments[payments].map((payment) => (
-                          <label
-                            key={payment._id}
-                            className="flex items-center cursor-pointer w-full p-2 gap-3 rounded-md hover:bg-orange-50 peer-checked:bg-orange-50"
-                          >
-                            <div className="relative w-6 h-6 flex items-center justify-center">
-                              <div className="absolute w-5 h-5 bg-white rounded-full border-2 border-gray-400"></div>
-                              <input
-                                type="radio"
-                                name="paymentMethod"
-                                value={payment._id}
-                                checked={selectedMethod?._id === payment._id}
-                                onChange={() => setSelectedMethod(payment)}
-                                className="peer relative w-5 h-5 rounded-full border-2 border-gray-400 appearance-none checked:border-orange-500 transition-all duration-200"
-                                aria-label={payment.payment_name}
-                              />
-                              <div className="absolute w-3 h-3 bg-orange-500 rounded-full scale-0 peer-checked:scale-100 transition-all duration-200"></div>
-                            </div>
-                            <div className="flex items-center justify-center gap-5">
-                              <img
-                                src={payment.image}
-                                alt={`${payment.payment_name} logo`}
-                                className="object-contain w-8 h-8"
-                              />
-                              <span>{payment.payment_name}</span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <hr></hr>
             </div>
-            {/* PEMISAH */}
-            <div className="flex justify-end mt-4">
-              <button
-                type="button"
-                className="mr-2 bg-gray-400 text-white p-2 rounded-lg"
-                onClick={closeModalUpdate}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
-                Simpan Perubahan
-              </button>
-            </div>
-          </form>
+          ))}
         </Modal>
       )}
     </div>

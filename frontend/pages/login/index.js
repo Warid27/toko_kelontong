@@ -31,8 +31,9 @@ const Login = () => {
       localStorage.setItem("username", response.data.user.username);
       localStorage.setItem("id_store", response.data.user.id_store);
       localStorage.setItem("id_company", response.data.user.id_company);
+      localStorage.setItem("rule", response.data.user.rule);
 
-      router.push("/dashboard");
+      router.push("/dashboard");  
     } catch (error) {
       console.error("Error during login:", error);
 
@@ -44,6 +45,14 @@ const Login = () => {
           text: "Invalid username or password",
           confirmButtonText: "Try Again",
         });
+      } else if (error.response && error.response.status === 403) {
+        Swal.fire({
+          icon: "error",
+          title: "Login Failed",
+          text: "User account not activated",
+          confirmButtonText: "Try Again",
+        });
+        return;
       } else {
         Swal.fire({
           icon: "error",

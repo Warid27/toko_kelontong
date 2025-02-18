@@ -43,6 +43,10 @@ const productSchema = new Schema({
     ref: "store",
     required: true,
   },
+  id_item_campaign: {
+    type: Schema.Types.ObjectId,
+    ref: "itemCampaign",
+  },
   id_company: {
     type: Schema.Types.ObjectId,
     ref: "company",

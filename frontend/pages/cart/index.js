@@ -126,30 +126,29 @@ const Cart = () => {
   };
 
   // Wait Order
-  const waitForOrder = async (orderCodeReal, maxRetries = 5, delay = 1000) => {
-    let retries = 0;
-    while (retries < maxRetries) {
-      await fetchOrder(); // Fetch the latest order list
+  // const waitForOrder = async (orderCodeReal, maxRetries = 5, delay = 1000) => {
+  //   let retries = 0;
+  //   while (retries < maxRetries) {
+  //     await fetchOrder(); // Fetch the latest order list
 
-      // Use the ref to access the latest orderList
-      const currentOrderList = orderListRef.current;
+  //     // Use the ref to access the latest orderList
+  //     const currentOrderList = orderListRef.current;
 
-      // Check if the orderList contains the new order
-      const order = currentOrderList.find((ol) => ol.code === orderCodeReal);
-      if (order) {
-        return order; // Return the matching order
-      }
+  //     // Check if the orderList contains the new order
+  //     const order = currentOrderList.find((ol) => ol.code === orderCodeReal);
+  //     if (order) {
+  //       return order; // Return the matching order
+  //     }
 
-      retries++;
-      await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
-    }
+  //     retries++;
+  //     await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
+  //   }
 
-    throw new Error(
-      `Order not found after ${maxRetries} retries: ${orderCodeReal}`
-    );
-  };
+  //   throw new Error(
+  //     `Order not found after ${maxRetries} retries: ${orderCodeReal}`
+  //   );
+  // };
   // Add Order
-
   const handleAddOrder = async (e) => {
     e.preventDefault();
 
@@ -186,19 +185,31 @@ const Cart = () => {
       const orderCode = "ORD/" + Date.now() + "/" + crypto.randomUUID();
       const orderCodeReal = orderCode;
 
+      const Tanggal_Lengkap = new Date().toISOString().split("T")[0]; // Full date in "YYYY-MM-DD" format
+      const Tahun_lengkap = Tanggal_Lengkap.split("-")[0]; // Full year, e.g., "2023"
+      const Tahun = Tahun_lengkap.slice(-2); // Last two digits of the year, e.g., "23"
+      const Bulan = Tanggal_Lengkap.split("-")[1]; // Month, e.g., "10" for October
+      const Tanggal = Tanggal_Lengkap.slice(-2); // Day, e.g., "05"
+
+      // Count of items in cartItems
+      const ordersToday = cartItems.length;
+
+      // Generate the unique identifier
+      const no = `${Tanggal}${Bulan}${Tahun}${ordersToday + 1}`;
+
       // Send POST request to create the order
       const response = await client.post(
         "order/addorder",
         {
-          no: "123",
+          no: no,
           code: orderCodeReal,
           person_name: customerName.nama,
-          status: 1,
+          status: 2,
           id_table_cust: tableNumber.nomor,
           keterangan: 1,
-          id_store: "67a30e78cb191b12b2a6c2ba", // Replace with dynamic value if available
-          id_company: "679dcb0cc076b05c739a596e", // Replace with dynamic value if available
-          id_user: "67a034f9962111a02fcc5ad2", // Replace with dynamic value if available
+          // id_store: "67a30e78cb191b12b2a6c2ba", // Replace with dynamic value if available
+          // id_company: "679dcb0cc076b05c739a596e", // Replace with dynamic value if available
+          // id_user: "67a034f9962111a02fcc5ad2", // Replace with dynamic value if available
           orderDetails: orderDetails,
         },
         {
@@ -207,16 +218,23 @@ const Cart = () => {
       );
 
       if (response.status === 201) {
-        // Wait for the order to appear in the orderList
-        const order = await waitForOrder(orderCodeReal);
+        // Only order
+        Swal.fire("Sukses!", "Berhasil Order.", "success");
+        await clearCart();
+        window.location.reload();
 
-        // Process sales
-        try {
-          await handleSales(orderCodeReal);
-        } catch (salesError) {
-          console.error("Error in handleSales:", salesError.message);
-          alert("Error: Failed to process sales. Please try again.");
-        }
+        // ORDER AND SALES
+
+        // // Wait for the order to appear in the orderList
+        // const order = await waitForOrder(orderCodeReal);
+
+        // // Process sales
+        // try {
+        //   await handleSales(orderCodeReal);
+        // } catch (salesError) {
+        //   console.error("Error in handleSales:", salesError.message);
+        //   alert("Error: Failed to process sales. Please try again.");
+        // }
       }
     } catch (erroraddorder) {
       // Handle errors
@@ -232,94 +250,94 @@ const Cart = () => {
   };
 
   // Add Sales
-  const handleSales = async (orderCodeReal) => {
-    try {
-      // Validate orderList
-      const validateOrderList = () => {
-        const currentOrderList = orderListRef.current;
-        if (!Array.isArray(currentOrderList) || currentOrderList.length === 0) {
-          throw new Error("Error: orderList is empty.");
-        }
-        return currentOrderList;
-      };
+  // const handleSales = async (orderCodeReal) => {
+  //   try {
+  //     // Validate orderList
+  //     const validateOrderList = () => {
+  //       const currentOrderList = orderListRef.current;
+  //       if (!Array.isArray(currentOrderList) || currentOrderList.length === 0) {
+  //         throw new Error("Error: orderList is empty.");
+  //       }
+  //       return currentOrderList;
+  //     };
 
-      const validateOrder = (currentOrderList, orderCode) => {
-        const order = currentOrderList.find((ol) => ol.code === orderCode);
-        if (!order) {
-          throw new Error(`No matching order found for code: ${orderCode}`);
-        }
-        return order;
-      };
+  //     const validateOrder = (currentOrderList, orderCode) => {
+  //       const order = currentOrderList.find((ol) => ol.code === orderCode);
+  //       if (!order) {
+  //         throw new Error(`No matching order found for code: ${orderCode}`);
+  //       }
+  //       return order;
+  //     };
 
-      // Validate inputs
-      const currentOrderList = validateOrderList();
-      const order = validateOrder(currentOrderList, orderCodeReal);
+  //     // Validate inputs
+  //     const currentOrderList = validateOrderList();
+  //     const order = validateOrder(currentOrderList, orderCodeReal);
 
-      // Prepare data for the API request
-      const prepareSalesData = () => {
-        const totalNumberItem = cartItems.length;
+  //     // Prepare data for the API request
+  //     const prepareSalesData = () => {
+  //       const totalNumberItem = cartItems.length;
 
-        const salesDetail = cartItems.map((item) => ({
-          id_product: item.product.id,
-          name: item.product.name,
-          product_code: item.product.product_code,
-          item_price: Number(item.product.price),
-          item_quantity: item.quantity,
-          item_discount: 0,
-        }));
+  //       const salesDetail = cartItems.map((item) => ({
+  //         id_product: item.product.id,
+  //         name: item.product.name,
+  //         product_code: item.product.product_code,
+  //         item_price: Number(item.product.price),
+  //         item_quantity: item.quantity,
+  //         item_discount: 0,
+  //       }));
 
-        const salesCode = `INV/${Date.now()}/${crypto.randomUUID()}`;
-        const totalQty = cartItems.reduce(
-          (total, item) => total + item.quantity,
-          0
-        );
-        const totalPrice = cartItems.reduce(
-          (total, item) => total + item.product.price * item.quantity,
-          0
-        );
-        return {
-          no: salesCode,
-          id_user: "67a034f9962111a02fcc5ad2", // Consider making this dynamic
-          id_store: "679b448102f7087c0369c23c", // Consider making this dynamic
-          id_order: order._id,
-          id_sales_campaign: "67adf9ffcf892c7756288622", // Consider making this dynamic
-          id_payment_type: selectedMethod._id,
-          tax: 0,
-          status: 1, // 1 = active, 2 = pending
-          total_price: totalPrice,
-          total_quantity: totalQty,
-          total_discount: 0,
-          total_number_item: totalNumberItem,
-          salesDetails: salesDetail,
-        };
-      };
+  //       const salesCode = `INV/${Date.now()}/${crypto.randomUUID()}`;
+  //       const totalQty = cartItems.reduce(
+  //         (total, item) => total + item.quantity,
+  //         0
+  //       );
+  //       const totalPrice = cartItems.reduce(
+  //         (total, item) => total + item.product.price * item.quantity,
+  //         0
+  //       );
+  //       return {
+  //         no: salesCode,
+  //         id_user: "67a034f9962111a02fcc5ad2", // Consider making this dynamic
+  //         id_store: "679b448102f7087c0369c23c", // Consider making this dynamic
+  //         id_order: order._id,
+  //         id_sales_campaign: "67adf9ffcf892c7756288622", // Consider making this dynamic
+  //         id_payment_type: selectedMethod._id,
+  //         tax: 0,
+  //         status: 1, // 1 = active, 2 = pending
+  //         total_price: totalPrice,
+  //         total_quantity: totalQty,
+  //         total_discount: 0,
+  //         total_number_item: totalNumberItem,
+  //         salesDetails: salesDetail,
+  //       };
+  //     };
 
-      const token = localStorage.getItem("token");
-      const salesData = prepareSalesData();
+  //     const token = localStorage.getItem("token");
+  //     const salesData = prepareSalesData();
 
-      // Make the API call
-      const response = await client.post("sales/addsales", salesData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+  //     // Make the API call
+  //     const response = await client.post("sales/addsales", salesData, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
 
-      if (response.status === 201) {
-        Swal.fire("Sukses!", "Berhasil Order.", "success");
-        await clearCart(); // Clear cart only after successful API call
-        window.location.reload(); // Refresh the page
-      }
-    } catch (error) {
-      // Handle errors gracefully
-      let errorMessage = "An unexpected error occurred.";
-      if (error.response) {
-        errorMessage = `Error: ${JSON.stringify(error.response.data)}`;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+  //     if (response.status === 201) {
+  //       Swal.fire("Sukses!", "Berhasil Order.", "success");
+  //       await clearCart(); // Clear cart only after successful API call
+  //       window.location.reload(); // Refresh the page
+  //     }
+  //   } catch (error) {
+  //     // Handle errors gracefully
+  //     let errorMessage = "An unexpected error occurred.";
+  //     if (error.response) {
+  //       errorMessage = `Error: ${JSON.stringify(error.response.data)}`;
+  //     } else if (error.message) {
+  //       errorMessage = error.message;
+  //     }
 
-      console.error(errorMessage);
-      Swal.fire("Error!", errorMessage, "error");
-    }
-  };
+  //     console.error(errorMessage);
+  //     Swal.fire("Error!", errorMessage, "error");
+  //   }
+  // };
 
   // nama pelanggan
   const [customerName, setCustomerName] = useState({
@@ -419,7 +437,6 @@ const Cart = () => {
     try {
       setCartItems([]); // Reset the cart state
       Cookies.set("cartItems", JSON.stringify([]), { expires: 7 }); // Update cookies
-      console.log("Cart items cleared and cookies updated.");
     } catch (error) {
       console.error("Error clearing cart items:", error.message);
       Swal.fire("Error!", "Failed to clear cart items.", "error");
@@ -603,178 +620,33 @@ const Cart = () => {
             )}
           </p>
           <div className="flex justify-between">
-            {/* Tombol Take Home */}
-            <button
+            {/* <button
               onClick={openModal}
               className="py-2 px-4 rounded-lg w-1/2 mr-2 font-bold"
               style={{ backgroundColor: "#FFA461", color: "black" }}
             >
               Take Home
             </button>
-            {/* Tombol Open Bill */}
             <button
               onClick={openModal}
               className="py-2 px-4 rounded-lg w-1/2 font-bold"
               style={{ backgroundColor: "#FDDC05", color: "black" }}
             >
               Open Bill
+            </button> */}
+            <button
+              onClick={handleAddOrder}
+              className="py-2 px-4 rounded-lg w-full font-bold"
+              style={{ backgroundColor: "#FDDC05", color: "black" }}
+            >
+              Submit
             </button>
           </div>
         </div>
+
+        {/* DISINI DULU ADA MODAL UNTUK MENAMBAHKAN DATA SECARA ONLINE (ORDER DAN SALES) */}
+        {/* ADA DI paymentModal.js */}
       </div>
-      {/* Modal */}
-      {isModalOpen && (
-        <Modal onClose={closeModal} title={"Pembayaran"}>
-          {/* bg-opacity dan blur biar gak ngelag */}
-          <div className="bg-opacity-100">
-            {/* Ringkasan Belanja */}
-
-            <div className="border rounded-lg mb-4 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
-              <div className="bg-orange-500 text-white p-3 rounded-t-lg font-bold">
-                Ringkasan Belanja
-              </div>
-              <div className="p-4">
-                {/* Header Produk - Qty - Harga */}
-                <div className="flex justify-between text-gray-500 font-semibold text-sm pb-2 border-b border-gray-300">
-                  <p className="w-1/2">Produk</p>
-                  <p className="w-1/4 text-center">Qty</p>
-                  <p className="w-1/4 text-right">Harga</p>
-                </div>
-                {/* Daftar Produk */}
-                {cartItems.map((item, index) => (
-                  <div key={index} className="flex justify-between py-2">
-                    <p className="w-1/2 font-semibold">{item.product.name}</p>
-                    <p className="w-1/4 text-center">{item.quantity}</p>
-                    <p className="w-1/4 text-right font-semibold">
-                      Rp {item.product.price.toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-
-                {/* Biaya Kirim */}
-                <div className="flex justify-between text-green-500 font-semibold mt-2">
-                  <p>Jumlah Item</p>
-                  <p>{cartItems.length}</p>
-                </div>
-
-                {/* Biaya Kirim */}
-                <div className="flex justify-between text-green-500 font-semibold mt-2">
-                  <p>Biaya Kirim</p>
-                  <p>0</p>
-                </div>
-
-                {/* Border dashed line */}
-                <div className="border-b border-dashed border-gray-300 my-2"></div>
-
-                {/* Total Harga */}
-                <div className="flex justify-between font-bold text-lg mt-3">
-                  <p className="text-black">Total Harga</p>
-                  <p className="text-orange-500">
-                    Rp.{" "}
-                    {cartItems
-                      .reduce(
-                        (total, item) =>
-                          total + item.quantity * item.product.price,
-                        0
-                      )
-                      .toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Pilih Metode Pembayaran */}
-            <div className="border rounded-lg mb-4 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-              <div className="bg-orange-500 text-white p-3 rounded-t-lg font-bold">
-                Pilih Metode Pembayaran
-              </div>
-              <div className="p-2 space-y-1">
-                {Object.keys(groupedPayments).map((payments) => (
-                  <div key={payments}>
-                    {/* Payments Header */}
-                    <div
-                      className="flex items-center justify-between cursor-pointer p-2 bg-gray-100 rounded-md hover:bg-gray-200"
-                      onClick={() => togglePayments(payments)}
-                    >
-                      <span className="font-semibold">{payments}</span>
-                      <span
-                        className={`transition-transform duration-200 ${
-                          expandedPayments[payments] ? "rotate-180" : ""
-                        }`}
-                      >
-                        <IoIosArrowDropdown />
-                      </span>
-                    </div>
-
-                    {/* Payment Methods (Dropdown Content) */}
-                    {expandedPayments[payments] && (
-                      <div className="pl-4 mt-2 space-y-2">
-                        {groupedPayments[payments].map((payment) => (
-                          <label
-                            key={payment._id}
-                            className="flex items-center cursor-pointer w-full p-2 gap-3 rounded-md hover:bg-orange-50 peer-checked:bg-orange-50"
-                          >
-                            <div className="relative w-6 h-6 flex items-center justify-center">
-                              <div className="absolute w-5 h-5 bg-white rounded-full border-2 border-gray-400"></div>
-                              <input
-                                type="radio"
-                                name="paymentMethod"
-                                value={payment._id}
-                                checked={selectedMethod?._id === payment._id}
-                                onChange={() => setSelectedMethod(payment)}
-                                className="peer relative w-5 h-5 rounded-full border-2 border-gray-400 appearance-none checked:border-orange-500 transition-all duration-200"
-                                aria-label={payment.payment_name}
-                              />
-                              <div className="absolute w-3 h-3 bg-orange-500 rounded-full scale-0 peer-checked:scale-100 transition-all duration-200"></div>
-                            </div>
-                            <div className="flex items-center justify-center gap-5">
-                              <img
-                                src={payment.image}
-                                alt={`${payment.payment_name} logo`}
-                                className="object-contain w-8 h-8"
-                              />
-                              <span>{payment.payment_name}</span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Kupon Promo */}
-            <div className="border rounded-lg shadow-md overflow-hidden">
-              <div className="bg-orange-500 text-white p-3 font-bold">
-                Kupon Promo
-              </div>
-              <div className="p-4">
-                <input
-                  type="text"
-                  placeholder="Masukkan kode promo"
-                  className="w-full p-3 border border-gray-300 rounded-md bg-white text-black placeholder-gray-400 outline-none focus:ring-2 focus:ring-orange-400"
-                />
-              </div>
-            </div>
-
-            {/* Tombol Bayar dan Makan di Tempat */}
-            <div className="flex flex-col gap-3 mt-4">
-              <button
-                className="w-full py-3 rounded-md font-bold text-white bg-[#642416] hover:bg-[#4e1b10] transition-all"
-                onClick={handleButtonClick}
-              >
-                BAYAR
-              </button>
-              <button
-                className="w-full py-3 rounded-md font-bold text-black bg-[#fddc05] hover:bg-[#e6c304] transition-all"
-                onClick={handleButtonClick}
-              >
-                Makan di Tempat
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

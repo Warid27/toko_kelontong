@@ -20,8 +20,10 @@ export default function Home() {
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [cartUpdate, setCartUpdated] = useState(false);
-
+  const [itemCampaignList, setItemCampaignList] = useState([]);
   const router = useRouter();
+  const [stores, setStores] = useState([]);
+
   useEffect(() => {
     if (router.isReady) {
       setQueryReady(true);
@@ -65,6 +67,67 @@ export default function Home() {
     }
   }, [queryReady, router.query]);
 
+  useEffect(() => {
+    const fetchItemCampaign = async () => {
+      try {
+        const response = await client.post(
+          "/itemcampaign/listitemcampaigns",
+          {}
+        );
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /itemcampaign/listitemcampaign:",
+            data
+          );
+          setItemCampaignList([]);
+        } else {
+          setItemCampaignList(data);
+        }
+      } catch (error) {
+        console.error("Error fetching item campaign:", error);
+        setItemCampaignList([]);
+      }
+    };
+    fetchItemCampaign();
+  }, []);
+
+  useEffect(() => {
+    const getStores = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const { id_store, id_company, id_category_product } = router.query;
+
+        if (!id_store) {
+          console.error("id_store is missing in query");
+          setIsLoading(false);
+          return;
+        }
+        console.log("ID STORE:", id_store);
+        const response = await client.post(
+          "/store/getstore",
+          { id: id_store },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Set the fetched stores into state
+        setStores(response.data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching stores:", error);
+        setIsLoading(false);
+      }
+    };
+
+    getStores();
+  }, []);
+
   const handleCardClick = async (product) => {
     try {
       const response = await client.post("product/getproduct", {
@@ -105,7 +168,7 @@ export default function Home() {
       <div className="p-10">
         <div className="flex justify-center">
           <Image
-            src="/Header.svg"
+            src={stores.banner}
             alt="header"
             layout="responsive"
             width={100}
@@ -150,10 +213,27 @@ export default function Home() {
                 <Card
                   image={product.image || "https://placehold.co/100x100"}
                   nama={product.name_product}
-                  harga={
-                    `Rp ${new Intl.NumberFormat("id-ID").format(
-                      product.sell_price
-                    )}`
+                  harga={`Rp ${new Intl.NumberFormat("id-ID").format(
+                    Math.max(
+                      product.sell_price *
+                        (1 -
+                          (product.id_item_campaign
+                            ? itemCampaignList.find(
+                                (icl) => {
+                                  const today = new Date().toISOString().split("T")[0];
+                                  return icl._id === product.id_item_campaign &&
+                                  icl.start_date <= today &&
+                                  icl.end_date >= today}
+                              )?.value || 0
+                            : 0)),
+                      0 // Pastikan harga tidak negatif
+                    )
+                  )}`
+                  // harga={
+                  //   `Rp ${new Intl.NumberFormat("id-ID").format(
+                  //     product.sell_price
+                  //   )
+                  // }`
                     // product.price_before !== product.price_after ? (
                     //   <div>
                     //     <span className="line-through text-red-500">
@@ -174,7 +254,7 @@ export default function Home() {
       <Footer />
 
       {isModalOpen && (
-        <Modal onClose={closeModal}>
+        <Modal onClose={closeModal} title={selectedProduct?.name_product}>
           <div>
             <Image
               src={selectedProduct?.image || "https://placehold.co/100x100"}
@@ -185,6 +265,7 @@ export default function Home() {
             />
             <p className="text-xl font-bold">{selectedProduct?.name_product}</p>
             <p>{selectedProduct?.deskripsi}</p>
+            <p className="hidden">{selectedProduct?.product_code}</p>
 
             <p className="font-semibold mt-4 mb-2">Extras</p>
             <div className="flex flex-wrap space-x-2">
@@ -256,14 +337,28 @@ export default function Home() {
                   // Jika produk dengan extras dan size yang sama sudah ada, tambahkan jumlahnya
                   cartItems[existingIndex].quantity += quantity;
                 } else {
+                  const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD untuk membandingkan tanggal
+
+                  const campaign = itemCampaignList.find(
+                    (icl) =>
+                      icl._id === selectedProduct.id_item_campaign &&
+                      icl.start_date <= today &&
+                      icl.end_date >= today
+                  );
+
+                  const discountValue = campaign ? campaign.value : 0;
                   // Jika belum ada, tambahkan sebagai item baru
                   const newItem = {
                     product: {
                       // ...prevProduct  ini bikin ngebug sialannnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
                       id: selectedProduct._id,
+                      product_code: selectedProduct.product_code,
                       name: selectedProduct.name_product,
                       image: selectedProduct.image,
                       price: selectedProduct.sell_price,
+                      diskon: discountValue, // Diskon hanya jika campaign masih berlaku
+                      priceAfterDiscount:
+                        selectedProduct.sell_price * (1 - discountValue),
                     },
                     quantity,
                     selectedExtra: selectedExtra

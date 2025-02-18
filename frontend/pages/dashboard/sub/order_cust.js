@@ -11,7 +11,7 @@ import { Modal } from "@/components/Modal";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import Cookies from "js-cookie";
 import ContentRenderer from "@/components/nav/renderContents"; // Import the new component
-const Order = ({ setSelectedLink }) => {
+const OrderCust = ({ setSelectedLink }) => {
   const [listOrder, setListOrder] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -21,6 +21,7 @@ const Order = ({ setSelectedLink }) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [productList, setProductList] = useState([]);
   const [tableList, setTableList] = useState([]);
+  const [itemCampaignList, setItemCampaignList] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -44,6 +45,32 @@ const Order = ({ setSelectedLink }) => {
       }
     };
     fetchProduct();
+  }, []);
+  useEffect(() => {
+    const fetchItemCampaign = async () => {
+      try {
+        const response = await client.post(
+          "/itemcampaign/listitemcampaigns",
+          {}
+        );
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /itemcampaign/listitemcampaign:",
+            data
+          );
+          setItemCampaignList([]);
+        } else {
+          setItemCampaignList(data);
+        }
+      } catch (error) {
+        console.error("Error fetching item campaign:", error);
+        setItemCampaignList([]);
+      }
+    };
+    fetchItemCampaign();
   }, []);
   useEffect(() => {
     const fetchTable = async () => {
@@ -102,9 +129,9 @@ const Order = ({ setSelectedLink }) => {
           }
         );
 
-        // const filter = response.data.filter(num => num.status == "2")
+        const filter = response.data.filter((num) => num.status == "2");
         // Set the fetched order into state
-        setListOrder(response.data);
+        setListOrder(filter);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching order:", error);
@@ -123,7 +150,6 @@ const Order = ({ setSelectedLink }) => {
   // function
   const handleNavigateToKasir = () => {
     // Update the selectedLink to "kasir"
-    console.log("SET ED TO KASIR!!!");
     setSelectedLink("kasir");
   };
 
@@ -140,8 +166,8 @@ const Order = ({ setSelectedLink }) => {
       <div className="justify-between w-full bg-white shadow-lg p-4">
         <div className="flex flex-row justify-between">
           <div className="flex flex-col">
-            <p className="text-2xl font-bold">Daftar Orderan</p>
-            <p>Detail daftar orderan</p>
+            <p className="text-2xl font-bold">Pesanan Masuk</p>
+            <p>Detail Pesanan Masuk</p>
           </div>
         </div>
       </div>
@@ -150,7 +176,7 @@ const Order = ({ setSelectedLink }) => {
         <div className="bg-white rounded-lg">
           <div className="overflow-x-auto">
             {listOrder.length === 0 ? (
-              <h1>Data Orderan tidak ditemukan!</h1>
+              <h1>Pesanan tidak ditemukan!</h1>
             ) : (
               <table className="table w-full border border-gray-300">
                 <thead>
@@ -179,8 +205,7 @@ const Order = ({ setSelectedLink }) => {
                           .reduce((acc, curr) => acc + curr, 0)}
                       </td>
                       <td>
-                        {order.status == "2" ? "pending" : "selesai"}
-                        {/* <button
+                        <button
                           onClick={() => {
                             console.log("order", order);
                             const {
@@ -198,6 +223,18 @@ const Order = ({ setSelectedLink }) => {
                                   (pl) => pl._id === od.id_product
                                 );
 
+                                const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD untuk membandingkan tanggal
+
+                                const campaign = itemCampaignList.find(
+                                  (icl) =>
+                                    icl._id === selectedProduct.id_item_campaign &&
+                                    icl.start_date <= today &&
+                                    icl.end_date >= today
+                                );
+
+                                const discountValue = campaign ? campaign.value : 0;
+
+
                                 return {
                                   informasi: {
                                     id_order: order._id,
@@ -207,13 +244,38 @@ const Order = ({ setSelectedLink }) => {
                                   },
                                   product: {
                                     id: selectedProduct?._id || null,
+                                    id_company: selectedProduct?.id_company || null,
+                                    id_store: selectedProduct?.id_store || null,
+                                    id_item_campaign: selectedProduct?.id_item_campaign || null,
                                     name:
                                       selectedProduct?.name_product ||
                                       "Unknown",
                                     image: selectedProduct?.image || "",
-                                    price: od?.total_price || 0,
+                                    // price: od?.total_price || 0,
+                                    price: selectedProduct?.sell_price || 0,
                                     product_code:
                                       selectedProduct?.product_code || "",
+
+                                    diskon: discountValue,
+                                      // selectedProduct.id_item_campaign != null
+                                      //   ? itemCampaignList.find(
+                                      //       (icl) =>
+                                      //         icl._id ==
+                                      //         selectedProduct.id_item_campaign
+                                      //     )?.value
+                                      //   : 0,
+                                    priceAfterDiscount: selectedProduct.sell_price * (1 - discountValue),
+                                  //   priceAfterDiscount:
+                                  //     selectedProduct.sell_price *
+                                  //     (1 -
+                                  //       (selectedProduct.id_item_campaign !=
+                                  //       null
+                                  //         ? itemCampaignList.find(
+                                  //             (icl) =>
+                                  //               icl._id ==
+                                  //               selectedProduct.id_item_campaign
+                                  //           )?.value || 0
+                                  //         : 0)),
                                   },
                                   quantity: od.quantity || 1,
                                   selectedExtra: od.id_extrasDetails
@@ -252,7 +314,7 @@ const Order = ({ setSelectedLink }) => {
                           }}
                         >
                           Process
-                        </button> */}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -266,4 +328,4 @@ const Order = ({ setSelectedLink }) => {
   );
 };
 
-export default Order;
+export default OrderCust;

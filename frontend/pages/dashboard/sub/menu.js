@@ -23,6 +23,7 @@ const Menu = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [extrasList, setExtrasList] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
+  const [itemCampaignList, setItemCampaignList] = useState([]);
   const [sizeList, setSizeList] = useState([]);
 
   useEffect(() => {
@@ -72,6 +73,32 @@ const Menu = () => {
     fetchCategory();
   }, []);
   useEffect(() => {
+    const fetchItemCampaign = async () => {
+      try {
+        const response = await client.post(
+          "/itemcampaign/listitemcampaigns",
+          {}
+        );
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /itemcampaign/listitemcampaigns:",
+            data
+          );
+          setItemCampaignList([]);
+        } else {
+          setItemCampaignList(data);
+        }
+      } catch (error) {
+        console.error("Error fetching item Campaign:", error);
+        setItemCampaignList([]);
+      }
+    };
+    fetchItemCampaign();
+  }, []);
+  useEffect(() => {
     const fetchSize = async () => {
       try {
         const response = await client.get("/size/listsize");
@@ -96,6 +123,7 @@ const Menu = () => {
     image: null,
     name_product: "",
     id_category_product: "",
+    id_item_campaign: "",
     stock: "",
     barcode: "",
     deskripsi: "",
@@ -110,6 +138,7 @@ const Menu = () => {
     image: null,
     name_product: "",
     id_category_product: "",
+    id_item_campaign: "",
     stock: "",
     barcode: "",
     deskripsi: "",
@@ -261,10 +290,13 @@ const Menu = () => {
         alert("Please fill all required fields.");
         return;
       }
-
+      if (productDataAdd.sell_price <= 0) {
+        Swal.fire("Gagal", "Harga tidak boleh lebih rendah dari 1!");
+        return;
+      }
       const id_company = localStorage.getItem("id_company");
       const id_store = localStorage.getItem("id_store");
-
+      const buy_price = productDataAdd.sell_price / (1 + 0.15);
       // Send product data to the backend
       const response = await client.post(
         "/product/addproduct",
@@ -272,16 +304,17 @@ const Menu = () => {
           name_product: productDataAdd.name_product,
           stock: productDataAdd.stock,
           sell_price: productDataAdd.sell_price,
-          buy_price: "500", // Hardcoded value
+          buy_price: buy_price,
           product_code: productDataAdd.product_code,
           barcode: productDataAdd.barcode,
           deskripsi: productDataAdd.deskripsi,
-          status: "1", // Hardcoded value
+          status: "1",
           id_store: id_store,
           id_company: id_company,
-          id_extras: null, // Hardcoded value
-          id_size: null, // Hardcoded value
-          id_category_product: productDataAdd.id_category_product, // Hardcoded value
+          id_extras: null,
+          id_size: null,
+          id_category_product: productDataAdd.id_category_product,
+          id_item_campaign: productDataAdd.id_item_campaign,
           image: productDataAdd.image,
         },
         {
@@ -333,7 +366,8 @@ const Menu = () => {
         id: productToUpdate._id || "",
         image: productToUpdate.image || null, // Menyimpan URL gambar lama
         name_product: productToUpdate.name_product || "",
-        name_product: productToUpdate.id_category_product || "",
+        id_category_product: productToUpdate.id_category_product || "",
+        id_item_campaign: productToUpdate.id_item_campaign || "",
         stock: productToUpdate.stok || "",
         barcode: productToUpdate.barcode || "",
         deskripsi: productToUpdate.deskripsi || "",
@@ -404,6 +438,7 @@ const Menu = () => {
         {
           name_product: productDataUpdate.name_product,
           id_category_product: productDataUpdate.id_category_product,
+          id_item_campaign: productDataUpdate.id_item_campaign,
           image: gambarbaru,
           stock: productDataUpdate.stock,
           sell_price: productDataUpdate.sell_price,
@@ -693,6 +728,33 @@ const Menu = () => {
                 ))
               )}
             </select>
+            <p className="font-semibold mt-4 mb-2">Diskon</p>
+            <select
+              id="itemCampaign"
+              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={productDataAdd.id_item_campaign}
+              onChange={(e) =>
+                setProductDataAdd((prevState) => ({
+                  ...prevState,
+                  id_item_campaign: e.target.value,
+                }))
+              }
+              required
+            >
+              <option value="">Tidak ada diskon</option>
+
+              {itemCampaignList.length === 0 ? (
+                <option value="default" disabled>
+                  No diskon available
+                </option>
+              ) : (
+                itemCampaignList.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.item_campaign_name}
+                  </option>
+                ))
+              )}
+            </select>
 
             <div className="flex justify-end mt-5">
               <button
@@ -833,6 +895,35 @@ const Menu = () => {
                 categoryList.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name_category}
+                  </option>
+                ))
+              )}
+            </select>
+            <p className="font-semibold mt-4 mb-2">Diskon</p>
+            <select
+              id="company"
+              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={productDataUpdate.id_item_campaign}
+              onChange={(e) =>
+                setProductDataUpdate((prevState) => ({
+                  ...prevState,
+                  id_item_campaign: e.target.value,
+                }))
+              }
+              required
+            >
+              <option value="0" >
+                Tidak Ada Diskon
+              </option>
+
+              {itemCampaignList.length === 0 ? (
+                <option value="default" disabled>
+                  No diskon available
+                </option>
+              ) : (
+                itemCampaignList.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.item_campaign_name}
                   </option>
                 ))
               )}

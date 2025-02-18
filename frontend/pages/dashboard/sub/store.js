@@ -8,6 +8,7 @@ import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
+import { LiaCloudUploadAltSolid } from "react-icons/lia";
 
 const StoreData = () => {
   const [stores, setStores] = useState([]);
@@ -82,8 +83,6 @@ const StoreData = () => {
         status: newStatus === 0 ? 0 : 1,
       });
 
-      console.log("Response from API:", response.data);
-
       setStores((prevStores) =>
         prevStores.map((store) =>
           store._id === storeId ? { ...store, status: newStatus } : store
@@ -127,6 +126,35 @@ const StoreData = () => {
     fetchStores();
   }, []);
 
+  // UPLOADS
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await client.post("/store/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        // Store the image URL in the productData state
+        const uploadedImageUrl = response.data.image;
+        setStoreDataAdd((prevState) => ({
+          ...prevState,
+          image: uploadedImageUrl,
+        }));
+
+        console.log("Image uploaded successfully:", uploadedImageUrl);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+      }
+    }
+  };
+  // HANDLE
   const handleUpdateStore = (store) => {
     setStoreToUpdate(store); // Menyimpan Toko yang dipilih
     setIsUpdateModalOpen(true);
@@ -387,6 +415,35 @@ const StoreData = () => {
       {isModalOpen && (
         <Modal onClose={closeModalAdd} title={"Tambah Toko"}>
           <form onSubmit={handleSubmitAdd}>
+            <p className="font-semibold mt-4">Ikon Toko</p>
+            <div className="upload-container">
+              <label className="upload-label">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{ display: "none" }}
+                />
+                <div className="upload-content">
+                  {storeDataAdd.image ? (
+                    <Image
+                      src={storeDataAdd.image}
+                      alt="Uploaded"
+                      className="uploaded-image"
+                      width={80}
+                      height={80}
+                    />
+                  ) : (
+                    <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                      <div className="icon-container flex flex-col items-center">
+                        <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
+                        <p className="text-sm text-[#FDDC05]">New Image</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
             <p className="font-semibold mt-4">Nama Toko</p>
             <p className="mb-2 text-sm text-slate-500">
               Include min. 40 characters to make it more interesting

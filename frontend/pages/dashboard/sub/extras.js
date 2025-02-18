@@ -133,7 +133,6 @@ const Extras = () => {
       },
     }));
   };
-
   const handleExtrasDetailsChange = (index, field, value) => {
     setExtrasData((prev) => {
       const updatedDetails = [

@@ -23,7 +23,9 @@ router.post("/listproduct", async (c) => {
     // Check if the body is empty
     if (!body || Object.keys(body).length === 0) {
       // If the body is empty, fetch all products
-      const products = await ProductModels.find().populate("id_extras").populate("id_size");
+      const products = await ProductModels.find()
+        .populate("id_extras")
+        .populate("id_size");
       return c.json(products, 200);
     }
 
@@ -42,7 +44,9 @@ router.post("/listproduct", async (c) => {
     }
 
     // If id_store does not exist, fetch all products
-    const products = await ProductModels.find().populate("id_extras").populate("id_size");
+    const products = await ProductModels.find()
+      .populate("id_extras")
+      .populate("id_size");
     return c.json(products, 200);
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -61,7 +65,9 @@ router.post("/getproduct", async (c) => {
       return c.json({ message: "ID perusahaan diperlukan." }, 400);
     }
 
-    const product = await ProductModels.findById(id).populate("id_extras").populate("id_size");
+    const product = await ProductModels.findById(id)
+      .populate("id_extras")
+      .populate("id_size");
 
     if (!product) {
       return c.json({ message: "Perusahaan tidak ditemukan." }, 404);
@@ -97,7 +103,7 @@ router.post("/upload", async (c) => {
     const filePath = path.join(uploadsDir, fileName);
     const fileBuffer = await file.arrayBuffer();
 
-    const imageUrl = `http://localhost:8080/uploads/${fileName}`;
+    const imageUrl = `http://localhost:8080/uploads/users/${fileName}`;
 
     await fs.writeFile(filePath, Buffer.from(fileBuffer));
     return c.json({ success: true, image: imageUrl }, 201);

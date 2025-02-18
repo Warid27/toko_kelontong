@@ -6,12 +6,15 @@ import { ExtrasModels } from "@models/extras-models";
 import { UserModels } from "@models/user-models";
 import { SizeModels } from "@models/size-models";
 import { PaymentModels } from "@models/payment-models";
+import { OrderModels } from "@models/order-models";
 import { SalesModels } from "@models/sales-models";
 import { salesCampaignModels } from "@models/salesCampaign-models";
 import { CategoryProductModels } from "@models/categoryProduct-models";
+import { itemCampaignModels } from "@models/itemCampaign";
 import mongoose from "mongoose";
 import fs from "fs/promises"; // For deleting files
 import path from "path"; // For constructing file paths
+// import bcrypt from "bcrypt";
 
 const router = new Hono();
 
@@ -22,6 +25,12 @@ const validateIdFormat = (id) => {
   }
   return null;
 };
+
+// Hash password
+// const hashPassword = async (password) => {
+//   const saltRounds = 10;
+//   return await bcrypt.hash(password, saltRounds);
+// };
 
 // Helper function to handle update operations
 const handleUpdate = async (Model, id, body, modelName) => {
@@ -385,18 +394,36 @@ router.delete("/category/:id", async (c) => {
 });
 // === USER ===
 router.put("/user/:id", async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+  try {
+    const id = c.req.param("id");
+    const body = await c.req.json();
 
-  const { error, data, status } = await handleUpdate(
-    UserModels,
-    id,
-    body,
-    "user"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
+    // Validate ID format
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+
+    // Validate request body
+    if (!body || !body.username || !body.password) {
+      return c.json(
+        { error: "Missing required fields: username or password" },
+        400
+      );
+    }
+
+    // Call handleUpdate with validated inputs
+    const { error, data, status } = await handleUpdate(
+      UserModels,
+      id,
+      body,
+      "user"
+    );
+
+    // Return response
+    return error ? c.json({ error }, status) : c.json(data, status);
+  } catch (err) {
+    console.error("Error in /user/:id PUT route:", err.message);
+    return c.json({ error: "Internal Server Error" }, 500);
+  }
 });
 
 router.delete("/user/:id", async (c) => {
@@ -482,20 +509,20 @@ router.delete("/payment/:id", async (c) => {
   return error ? c.json({ error }, status) : c.json({ message }, status);
 });
 // === ORDER ===
-// router.put("/order/:id", async (c) => {
-//   const id = c.req.param("id");
-//   const body = await c.req.json();
-//   const validationError = validateIdFormat(id);
-//   if (validationError) return c.json(validationError, 400);
+router.put("/order/:id", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const validationError = validateIdFormat(id);
+  if (validationError) return c.json(validationError, 400);
 
-//   const { error, data, status } = await handleUpdate(
-//     PaymentModels,
-//     id,
-//     body,
-//     "payment"
-//   );
-//   return error ? c.json({ error }, status) : c.json(data, status);
-// });
+  const { error, data, status } = await handleUpdate(
+    OrderModels,
+    id,
+    body,
+    "order"
+  );
+  return error ? c.json({ error }, status) : c.json(data, status);
+});
 
 // router.delete("/payment/:id", async (c) => {
 //   const id = c.req.param("id");
@@ -564,6 +591,36 @@ router.delete("/salescampaign/:id", async (c) => {
     salesCampaignModels,
     id,
     "salesCampaign"
+  );
+  return error ? c.json({ error }, status) : c.json({ message }, status);
+});
+
+// === ITEM CAMPAIGN ===
+router.put("/itemcampaign/:id", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+
+  const validationError = validateIdFormat(id);
+  if (validationError) return c.json(validationError, 400);
+
+  const { error, data, status } = await handleUpdate(
+    itemCampaignModels,
+    id,
+    body,
+    "item_campaign"
+  );
+  return error ? c.json({ error }, status) : c.json(data, status);
+});
+
+router.delete("/itemcampaign/:id", async (c) => {
+  const id = c.req.param("id");
+  const validationError = validateIdFormat(id);
+  if (validationError) return c.json(validationError, 400);
+
+  const { error, message, status } = await handleDelete(
+    itemCampaignModels,
+    id,
+    "item_campaign"
   );
   return error ? c.json({ error }, status) : c.json({ message }, status);
 });

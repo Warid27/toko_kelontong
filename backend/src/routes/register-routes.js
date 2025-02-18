@@ -1,7 +1,13 @@
 import { Hono } from "hono";
 import { UserModels } from "@models/user-models";
+import argon2 from "argon2";
 
 const router = new Hono();
+
+// Hash a password
+async function hashPassword(password) {
+  return await argon2.hash(password);
+}
 
 // Parse request body to extract username and password
 const parseRequestBody = async (c) => {
@@ -38,10 +44,9 @@ const parseRequestBody = async (c) => {
   }
 };
 
-// Register User
+// REGISTER USER
 router.post("/", async (c) => {
   try {
-    // Parse request body
     const { username, password, error } = await parseRequestBody(c);
     if (error) {
       return c.json({ message: error }, 400); // Bad Request
@@ -56,34 +61,29 @@ router.post("/", async (c) => {
       ); // Conflict
     }
 
-    // Hardcoded values
-    const rule = null;
-    const status = 1; // Inactive
-    const id_company = null; // Example company ID
-    const id_store = null; // Example store ID
+    // Hash the password
+    const hashedPassword = await hashPassword(password);
 
     // Create the user in the database
     const userData = await UserModels.create({
       username,
-      password,
-      rule,
-      status,
-      id_company,
-      id_store,
+      password: hashedPassword, // Store the hashed password
+      rule: null,
+      status: 1, // Inactive
+      id_company: null,
+      id_store: null,
     });
 
-    // Return response based on request type
-    if (c.req.header("Content-Type") === "application/json") {
-      return c.json({
-        message: "User registered successfully",
-        user: userData,
-      });
-    } else {
-      return c.redirect("/login"); // Redirect for non-JSON requests
-    }
+    return c.json({
+      message: "User registered successfully",
+      user: {
+        id: userData.id,
+        username: userData.username,
+      },
+    });
   } catch (error) {
     console.error("Error registering user:", error.message);
-    return c.json({ message: "An error occurred", error: error.message }, 500); // Internal Server Error
+    return c.json({ message: "An error occurred", error: error.message }, 500);
   }
 });
 

@@ -243,9 +243,11 @@ const User = () => {
     if (userToUpdate) {
       setUserDataUpdate({
         id: userToUpdate._id || "",
-        name: userToUpdate.username || "",
-        address: userToUpdate.address || "",
+        username: userToUpdate.username || "",
+        password: userToUpdate.password || "",
+        rule: userToUpdate.rule || "",
         id_company: userToUpdate.id_company || "",
+        id_store: userToUpdate.id_store || "",
       });
     }
   }, [userToUpdate]);
@@ -547,10 +549,7 @@ const User = () => {
       {isUpdateModalOpen && (
         <Modal onClose={closeModalUpdate} title={"Edit Pengguna"}>
           <form onSubmit={handleSubmitUpdate}>
-            <p className="font-semibold mt-4">Nama Pengguna</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 40 characters to make it more interesting
-            </p>
+            <p className="font-semibold mt-4">Username</p>
             <input
               type="text"
               name="username"
@@ -559,41 +558,108 @@ const User = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4">Alamat Pengguna</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 260 characters to make it easier for buyers to
-              understand and find your user
-            </p>
-            <textarea
-              name="address"
-              value={userDataUpdate.address}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Perusahaan</p>
+            <div className="mt-4">
+              <label className="font-semibold" htmlFor="password">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  className="border rounded-md p-2 w-full bg-white"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={userDataUpdate.password}
+                  onChange={handleChangeUpdate}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+                >
+                  {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                </button>
+              </div>
+            </div>
+            <p className="font-semibold mt-4 mb-2">Rule</p>
             <select
-              id="company"
+              id="rule"
               className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={userDataUpdate.id_company}
+              value={userDataUpdate.rule}
               onChange={(e) =>
-                setUserDataUpdate((prevState) => ({
+                setUserDataAdd((prevState) => ({
                   ...prevState,
-                  id_company: e.target.value,
+                  rule: e.target.value,
                 }))
               }
               required
             >
               <option value="" disabled>
-                === Pilih User ===
+                === Pilih Rule ===
+              </option>
+              <option key={1} value={"1"}>
+                Superadmin
+              </option>
+              <option key={2} value={"2"}>
+                Admin
+              </option>
+              <option key={3} value={"3"}>
+                Manajer
+              </option>
+              <option key={4} value={"4"}>
+                Kasir
+              </option>
+            </select>
+            <div className="mt-4">
+              <p className="font-semibold mb-2">Perusahaan</p>
+              <select
+                id="company"
+                className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                value={userDataUpdate.id_store}
+                onChange={(e) =>
+                  setUserDataAdd((prevState) => ({
+                    ...prevState,
+                    id_company: e.target.value,
+                  }))
+                }
+                required
+              >
+                <option value="" disabled>
+                  === Pilih Perusahaan ===
+                </option>
+
+                {companyList.length === 0 ? (
+                  <option value="default">No companies available</option>
+                ) : (
+                  companyList.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+            <p className="font-semibold mt-4 mb-2">Toko</p>
+            <select
+              id="store"
+              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={userDataUpdate.id_store}
+              onChange={(e) =>
+                setUserDataAdd((prevState) => ({
+                  ...prevState,
+                  id_store: e.target.value,
+                }))
+              }
+              required
+            >
+              <option value="" disabled>
+                === Pilih Toko ===
               </option>
 
-              {companyList.length === 0 ? (
+              {storeList.length === 0 ? (
                 <option value="default">No companies available</option>
               ) : (
-                companyList.map((c) => (
+                storeList.map((c) => (
                   <option key={c._id} value={c._id}>
-                    {c.username}
+                    {c.name}
                   </option>
                 ))
               )}

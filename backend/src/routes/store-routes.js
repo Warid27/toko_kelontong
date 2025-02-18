@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { PORT, renderEJS } from "@config/config";
 import { StoreModels } from "@models/store-models";
 import { mongoose } from "mongoose";
+import fs from "fs/promises";
+import path from "path";
 
 const router = new Hono();
 
@@ -179,43 +181,26 @@ router.delete("/delete/:id", async (c) => {
   }
 });
 
-// Get Store by ID
-/*
-
-try {
-    const body = await c.req.json();
-    const id = body.id;
-
-    const store = await StoreModels.findById(id);
-    if (!store) {
-      return c.json({ error: "Store not found" }, 404);
-    }
-
-    return c.json(store, 200);
-  } catch (error) {
-    return c.json({ message: error.message }, 500);
-  }
-
-*/
 router.post("/getstore", async (c) => {
   try {
     const { id } = await c.req.json();
 
+    console.log("ID:", id);
     if (!id) {
-      return c.json({ message: "ID perusahaan diperlukan." }, 400);
+      return c.json({ message: "ID Store diperlukan." }, 400);
     }
 
     const store = await StoreModels.findById(id);
 
     if (!store) {
-      return c.json({ message: "Perusahaan tidak ditemukan." }, 404);
+      return c.json({ message: "Store tidak ditemukan." }, 404);
     }
 
     return c.json(store, 200);
   } catch (error) {
     return c.json(
       {
-        message: "Terjadi kesalahan saat mengambil perusahaan.",
+        message: "Terjadi kesalahan saat mengambil Store.",
         error: error.message,
       },
       500
@@ -223,4 +208,35 @@ router.post("/getstore", async (c) => {
   }
 });
 
+// Upload
+
+router.post("/upload", async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: "Image is required" }, 400);
+    }
+
+    // Save the file to the server
+    const uploadsDir = path.join(process.cwd(), "uploads/store/icon");
+    await fs.mkdir(uploadsDir, { recursive: true });
+    const ext = path.extname(file.name);
+    const fileName = `${crypto.randomUUID()}${ext}`;
+    const filePath = path.join(uploadsDir, fileName);
+    const fileBuffer = await file.arrayBuffer();
+
+    const imageUrl = `http://localhost:8080/uploads/store/icon/${fileName}`;
+
+    await fs.writeFile(filePath, Buffer.from(fileBuffer));
+    return c.json({ success: true, image: imageUrl }, 201);
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    return c.json(
+      { error: "Failed to upload image", details: error.message },
+      500
+    );
+  }
+});
 export default router;
