@@ -4,10 +4,11 @@ const stockSchema = new Schema({
   amount: {
     type: Number,
     required: true,
+    default: 0,
   },
   id_product: {
     type: Schema.Types.ObjectId,
-    ref: "Product",
+    ref: "product",
     required: true,
   },
   createdAt: {

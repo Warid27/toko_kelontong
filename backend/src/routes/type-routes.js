@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { PORT } from "@config/config";
 import { TypeModels } from "@models/type-models";
-
+import { authenticate } from "@middleware/authMiddleware";
 const router = new Hono();
 
 // Add Type
-router.post("/addtype", async (c) => {
+router.post("/addtype", authenticate, async (c) => {
   try {
     const body = await c.req.json();
     const tipe = new TypeModels(body);
@@ -17,7 +17,7 @@ router.post("/addtype", async (c) => {
 });
 
 // Get All Type
-router.get("/listtype", async (c) => {
+router.post("/listtype", authenticate, async (c) => {
   try {
     const type = await TypeModels.find();
     return c.json(type, 200);
@@ -27,7 +27,7 @@ router.get("/listtype", async (c) => {
 });
 
 // Get Type by ID
-router.post("/gettype", async (c) => {
+router.post("/gettype", authenticate, async (c) => {
   try {
     const body = await c.req.json();
     const id = body.id;
@@ -40,30 +40,6 @@ router.post("/gettype", async (c) => {
     return c.json(type, 200);
   } catch (error) {
     return c.json({ message: error.message }, 500);
-  }
-});
-
-// Delete type
-router.delete("/delete/:id", async (c) => {
-  try {
-    const id = c.req.param("id"); // Get the ID from the URL parameter
-
-    // Check if the ID is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return c.json({ error: "Invalid Type ID format" }, 400);
-    }
-
-    // Delete the type based on ID
-    const type = await TypeModels.deleteOne({ _id: id });
-
-    if (!type.deletedCount) {
-      // No type found to delete
-      return c.json({ error: "type not found" }, 404);
-    }
-
-    return c.json({ message: "type deleted successfully" }, 200);
-  } catch (error) {
-    return c.json({ error: error.message }, 500);
   }
 });
 

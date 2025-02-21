@@ -22,11 +22,11 @@ const userSchema = new Schema({
   },
   id_company: {
     type: Schema.Types.ObjectId,
-    ref: "Company",
+    ref: "company",
   },
   id_store: {
     type: Schema.Types.ObjectId,
-    ref: "Store",
+    ref: "store",
   },
   created_at: {
     type: Date,

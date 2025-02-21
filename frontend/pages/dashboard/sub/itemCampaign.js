@@ -9,6 +9,7 @@ import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import DateTimePicker from "@/components/DateTimePicker";
+import Select from "react-select";
 
 const ItemCampaign = () => {
   const [itemCampaign, setItemCampaign] = useState([]);
@@ -35,6 +36,7 @@ const ItemCampaign = () => {
   });
 
   const [itemCampaignDataUpdate, setItemCampaignDataUpdate] = useState({
+    id: "",
     item_campaign_name: "",
     rules: "",
     value: "",
@@ -46,24 +48,16 @@ const ItemCampaign = () => {
     status: "",
   });
 
-  const openModalAdd = () => {
-    setIsModalOpen(true);
+  // --- Function
+  const modalOpen = (param, bool) => {
+    const setters = {
+      add: setIsModalOpen,
+      update: setIsUpdateModalOpen,
+    };
+    if (setters[param]) {
+      setters[param](bool);
+    }
   };
-
-  const closeModalAdd = () => {
-    setIsModalOpen(false);
-  };
-  const openModalUpdate = () => {
-    setIsUpdateModalOpen(true);
-  };
-
-  const closeModalUpdate = () => {
-    setIsUpdateModalOpen(false);
-  };
-
-  // const addNewItemCampaign = (newItemCampaign) => {
-  //   setItemCampaign((prevItemCampaigns) => [...prevItemCampaigns, newItemCampaign]);
-  // };
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -157,15 +151,9 @@ const ItemCampaign = () => {
     fetchItemCampaign();
   }, []);
 
-  // const handleAddItemCampaign = () => {
-  //   setIsModalOpen(true);
-  // };
-
-  const handleUpdateItemCampaign = (itemCampaign) => {
+  const handleUpdateItemCampaign = (itemCampaign, params) => {
     setItemCampaignToUpdate(itemCampaign); // Menyimpan produk yang dipilih
-    setIsUpdateModalOpen(true);
-
-    console.log(itemCampaign);
+    modalOpen(params, true);
   };
 
   const deleteItemCampaignById = async (id) => {
@@ -221,13 +209,18 @@ const ItemCampaign = () => {
         !itemCampaignDataAdd.value ||
         !itemCampaignDataAdd.start_date ||
         !itemCampaignDataAdd.end_date
-        // !itemCampaignDataAdd.id_store ||
-        // !itemCampaignDataAdd.id_company ||
-        // !itemCampaignDataAdd.id_user
       ) {
         alert("Please fill all required fields.");
         return;
       }
+
+      let value = itemCampaignDataAdd.value;
+      if (value.includes(",")) {
+        alert("Discount can't have comma.");
+        return;
+      }
+
+      value = itemCampaignDataAdd.value / 100;
 
       // Send product data to the backend
       const response = await client.post(
@@ -235,7 +228,7 @@ const ItemCampaign = () => {
         {
           item_campaign_name: itemCampaignDataAdd.item_campaign_name,
           rules: itemCampaignDataAdd.rules,
-          value: itemCampaignDataAdd.value,
+          value: value,
           start_date: itemCampaignDataAdd.start_date,
           end_date: itemCampaignDataAdd.end_date,
           id_store: itemCampaignDataAdd.id_store,
@@ -247,12 +240,13 @@ const ItemCampaign = () => {
         }
       );
 
-      console.log("ItemCampaign added:", response.data);
-      Swal.fire("Berhasil", "ItemCampaign berhasil ditambahkan!", "success");
-
-      // Reload the page or update state
-      // onClose();
-      window.location.reload();
+      // Auto Reload
+      modalOpen("add", false);
+      Swal.fire("Berhasil", "Kategori Produk berhasil ditambahkan!", "success");
+      setItemCampaign((prevItemCampaigns) => [
+        ...prevItemCampaigns,
+        response.data,
+      ]);
     } catch (error) {
       console.error("Error adding ItemCampaign:", error);
     }
@@ -264,7 +258,7 @@ const ItemCampaign = () => {
         id: itemCampaignToUpdate._id || "",
         item_campaign_name: itemCampaignToUpdate.item_campaign_name || "", // Menyimpan URL gambar lama
         rules: itemCampaignToUpdate.rules || "",
-        value: itemCampaignToUpdate.value || "",
+        value: itemCampaignToUpdate.value * 100 || "",
         start_date: itemCampaignToUpdate.start_date || "",
         end_date: itemCampaignToUpdate.end_date || "",
         id_store: itemCampaignToUpdate.id_store || "",
@@ -290,14 +284,22 @@ const ItemCampaign = () => {
     }
 
     try {
-      // const productId = "67a9615bf59ec80d10014871";
       const token = localStorage.getItem("token");
+
+      let value = itemCampaignDataUpdate.value;
+      if (value.includes(",")) {
+        alert("Discount can't have comma.");
+        return;
+      }
+
+      value = itemCampaignDataUpdate.value / 100;
+
       const response = await client.put(
         `/api/itemcampaign/${itemCampaignDataUpdate.id}`,
         {
           item_campaign_name: itemCampaignDataUpdate.item_campaign_name || "", // Menyimpan URL gambar lama
           rules: itemCampaignDataUpdate.rules || "",
-          value: itemCampaignDataUpdate.value || "",
+          value: value || "",
           start_date: itemCampaignDataUpdate.start_date || "",
           end_date: itemCampaignDataUpdate.end_date || "",
           id_store: itemCampaignDataUpdate.id_store || "",
@@ -311,9 +313,17 @@ const ItemCampaign = () => {
           },
         }
       );
-      console.log("ItemCampaign updated successfully:", response.data);
-      // onClose();
-      window.location.reload();
+
+      // Auto Reload
+      modalOpen("update", false);
+      Swal.fire("Berhasil", "Produk berhasil diupdate!", "success");
+      setItemCampaign((prevItemCampaigns) =>
+        prevItemCampaigns.map((itemCampaign) =>
+          itemCampaign._id === itemCampaignDataUpdate.id
+            ? response.data
+            : itemCampaign
+        )
+      );
     } catch (error) {
       console.error("Error updating ItemCampaign:", error);
     }
@@ -370,10 +380,7 @@ const ItemCampaign = () => {
             </select>
           </div>
           <div>
-            <button
-              className="button bg-[#FDDC05] text-white p-2 rounded-lg font-bold"
-              onClick={openModalAdd}
-            >
+            <button className="addBtn" onClick={() => modalOpen("add", true)}>
               + Tambah ItemCampaign
             </button>
           </div>
@@ -383,7 +390,6 @@ const ItemCampaign = () => {
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div className="overflow-x-auto">
-            {console.log("ITEM CAMPAIGN:", itemCampaign)}
             {itemCampaign.length === 0 ? (
               <h1>Data campaign tidak ditemukan!</h1>
             ) : (
@@ -407,7 +413,7 @@ const ItemCampaign = () => {
                       <td>{itemCampaign.rules}</td>
                       <td>{itemCampaign.start_date}</td>
                       <td>{itemCampaign.end_date}</td>
-                      <td>{itemCampaign.value}</td>
+                      <td>{itemCampaign.value * 100}%</td>
                       <td className="flex space-x-4">
                         {" "}
                         {/* Beri jarak antar tombol */}
@@ -421,7 +427,9 @@ const ItemCampaign = () => {
                         </button>
                         <button
                           className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateItemCampaign(itemCampaign)}
+                          onClick={() =>
+                            handleUpdateItemCampaign(itemCampaign, "update")
+                          }
                         >
                           <FaRegEdit />
                         </button>
@@ -436,7 +444,10 @@ const ItemCampaign = () => {
       </div>
 
       {isModalOpen && (
-        <Modal onClose={closeModalAdd} title={"Tambah Item Campaign"}>
+        <Modal
+          onClose={() => modalOpen("add", false)}
+          title={"Tambah Item Campaign"}
+        >
           <form onSubmit={handleSubmitAdd}>
             <p className="font-semibold mt-4">Nama Item Campaign</p>
             <input
@@ -483,112 +494,108 @@ const ItemCampaign = () => {
               name="end_date"
             />
             <p className="font-semibold mt-4 mb-2">Store</p>
-            <select
+            <Select
               id="store"
-              name="id_store"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={itemCampaignDataAdd.id_store}
-              onChange={(e) =>
+              className="basic-single"
+              options={storeList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                storeList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find((opt) => opt.value === itemCampaignDataAdd.id_store) ||
+                null
+              }
+              onChange={(selectedOption) =>
                 setItemCampaignDataAdd((prevState) => ({
                   ...prevState,
-                  id_store: e.target.value,
+                  id_store: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Store ===
-              </option>
-
-              {storeList.length === 0 ? (
-                <option value="default">No store available</option>
-              ) : (
-                storeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
-            <p className="font-semibold mt-4 mb-2">Company</p>
-            <select
-              id="company"
-              name="id_company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={itemCampaignDataAdd.id_company}
-              onChange={(e) =>
-                setItemCampaignDataAdd((prevState) => ({
-                  ...prevState,
-                  id_company: e.target.value,
-                }))
-              }
-              required
-            >
-              <option value="" disabled>
-                === Pilih Company ===
-              </option>
-
-              {companyList.length === 0 ? (
-                <option value="default">No company available</option>
-              ) : (
-                companyList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
-            <p className="font-semibold mt-4 mb-2">User</p>
-            <select
-              id="user"
-              name="user"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={itemCampaignDataAdd.id_user}
-              onChange={(e) =>
-                setItemCampaignDataAdd((prevState) => ({
-                  ...prevState,
-                  id_user: e.target.value,
-                }))
-              }
-              required
-            >
-              <option value="" disabled>
-                === Pilih User ===
-              </option>
-
-              {userList.length === 0 ? (
-                <option value="default">No user available</option>
-              ) : (
-                userList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.username}
-                  </option>
-                ))
-              )}
-            </select>
-            <p className="font-semibold mt-4 mb-2">Value</p>
-            <input
-              type="text"
-              name="value"
-              value={itemCampaignDataAdd.value}
-              onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
-              className="border rounded-md p-2 w-full bg-white"
-              required
+              placeholder="Pilih Store..."
+              noOptionsMessage={() => "No Store available"}
             />
+            <p className="font-semibold mt-4 mb-2">Company</p>
+            <Select
+              id="company"
+              className="basic-single"
+              options={companyList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                companyList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find(
+                    (opt) => opt.value === itemCampaignDataAdd.id_company
+                  ) || null
+              }
+              onChange={(selectedOption) =>
+                setItemCampaignDataAdd((prevState) => ({
+                  ...prevState,
+                  id_company: selectedOption ? selectedOption.value : "",
+                }))
+              }
+              isSearchable
+              required
+              placeholder="Pilih Company..."
+              noOptionsMessage={() => "No Company available"}
+            />
+            <p className="font-semibold mt-4 mb-2">User</p>
+            <Select
+              id="user"
+              className="basic-single"
+              options={userList.map((c) => ({
+                value: c._id,
+                label: c.username,
+              }))}
+              value={
+                userList
+                  .map((c) => ({ value: c._id, label: c.username }))
+                  .find((opt) => opt.value === itemCampaignDataAdd.id_user) ||
+                null
+              }
+              onChange={(selectedOption) =>
+                setItemCampaignDataAdd((prevState) => ({
+                  ...prevState,
+                  id_user: selectedOption ? selectedOption.value : "",
+                }))
+              }
+              isSearchable
+              required
+              placeholder="Pilih User..."
+              noOptionsMessage={() => "No User available"}
+            />
+            <p className="font-semibold mt-4 mb-2">Value</p>
+            <div className="relative mt-4">
+              <input
+                type="number"
+                name="value"
+                value={itemCampaignDataAdd.value}
+                onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
+                className="border rounded-md p-2 pr-8 w-full bg-white"
+                required
+                max={99}
+                min={1}
+                step={1}
+              />
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none">
+                %
+              </span>
+            </div>
 
             <div className="flex justify-end mt-5">
               <button
                 type="button"
-                className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={closeModalAdd}
+                className="closeBtn"
+                onClick={() => modalOpen("add", false)}
               >
                 Batal
               </button>
-              <button
-                type="submit"
-                // onClick={itemCampaignDataAdd}
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
+              <button type="submit" className="submitBtn">
                 Tambah
               </button>
             </div>
@@ -596,7 +603,10 @@ const ItemCampaign = () => {
         </Modal>
       )}
       {isUpdateModalOpen && (
-        <Modal onClose={closeModalUpdate} title={"Edit Item Campaign"}>
+        <Modal
+          onClose={() => modalOpen("update", false)}
+          title={"Edit Item Campaign"}
+        >
           <form onSubmit={handleSubmitUpdate}>
             <p className="font-semibold mt-4">Nama Item Campaign</p>
             <input
@@ -646,108 +656,111 @@ const ItemCampaign = () => {
               name="end_date"
             />
             <p className="font-semibold mt-4 mb-2">Store</p>
-            <select
+            <Select
               id="store"
-              name="id_store"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={itemCampaignDataUpdate.id_store}
-              onChange={(e) =>
+              className="basic-single"
+              options={storeList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                storeList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find(
+                    (opt) => opt.value === itemCampaignDataUpdate.id_store
+                  ) || null
+              }
+              onChange={(selectedOption) =>
                 setItemCampaignDataUpdate((prevState) => ({
                   ...prevState,
-                  id_store: e.target.value,
+                  id_store: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Store ===
-              </option>
-
-              {storeList.length === 0 ? (
-                <option value="default">No store available</option>
-              ) : (
-                storeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
-            <p className="font-semibold mt-4 mb-2">Company</p>
-            <select
-              id="company"
-              name="id_company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={itemCampaignDataUpdate.id_company}
-              onChange={(e) =>
-                setItemCampaignDataUpdate((prevState) => ({
-                  ...prevState,
-                  id_company: e.target.value,
-                }))
-              }
-              required
-            >
-              <option value="" disabled>
-                === Pilih Company ===
-              </option>
-
-              {companyList.length === 0 ? (
-                <option value="default">No company available</option>
-              ) : (
-                companyList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
-            <p className="font-semibold mt-4 mb-2">User</p>
-            <select
-              id="user"
-              name="id_user"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={itemCampaignDataUpdate.id_user}
-              onChange={(e) =>
-                setItemCampaignDataUpdate((prevState) => ({
-                  ...prevState,
-                  id_user: e.target.value,
-                }))
-              }
-              required
-            >
-              <option value="" disabled>
-                === Pilih User ===
-              </option>
-
-              {userList.length === 0 ? (
-                <option value="default">No user available</option>
-              ) : (
-                userList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.username}
-                  </option>
-                ))
-              )}
-            </select>
-            <p className="font-semibold mt-4 mb-2">Value</p>
-            <input
-              type="text"
-              name="value"
-              min={0}
-              max={1}
-              value={itemCampaignDataUpdate.value}
-              onChange={(e) =>
-                handleChangeUpdate(e.target.value, e.target.name)
-              }
-              className="border rounded-md p-2 w-full bg-white"
-              required
+              placeholder="Pilih Store..."
+              noOptionsMessage={() => "No Store available"}
             />
+            <p className="font-semibold mt-4 mb-2">Company</p>
+            <Select
+              id="company"
+              className="basic-single"
+              options={companyList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                companyList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find(
+                    (opt) => opt.value === itemCampaignDataUpdate.id_company
+                  ) || null
+              }
+              onChange={(selectedOption) =>
+                setItemCampaignDataUpdate((prevState) => ({
+                  ...prevState,
+                  id_company: selectedOption ? selectedOption.value : "",
+                }))
+              }
+              isSearchable
+              required
+              placeholder="Pilih Company..."
+              noOptionsMessage={() => "No Company available"}
+            />
+            <p className="font-semibold mt-4 mb-2">User</p>
+            <Select
+              id="user"
+              className="basic-single"
+              options={userList.map((c) => ({
+                value: c._id,
+                label: c.username,
+              }))}
+              value={
+                userList
+                  .map((c) => ({ value: c._id, label: c.username }))
+                  .find(
+                    (opt) => opt.value === itemCampaignDataUpdate.id_user
+                  ) || null
+              }
+              onChange={(selectedOption) =>
+                setItemCampaignDataUpdate((prevState) => ({
+                  ...prevState,
+                  id_user: selectedOption ? selectedOption.value : "",
+                }))
+              }
+              isSearchable
+              required
+              placeholder="Pilih User..."
+              noOptionsMessage={() => "No User available"}
+            />
+            <p className="font-semibold mt-4 mb-2">Value</p>
+            <div className="relative mt-4">
+              <input
+                type="number"
+                name="value"
+                value={itemCampaignDataUpdate.value}
+                onChange={(e) =>
+                  handleChangeUpdate(e.target.value, e.target.name)
+                }
+                className="border rounded-md p-2 pr-8 w-full bg-white"
+                required
+                max={99}
+                min={1}
+                step={1}
+              />
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none">
+                %
+              </span>
+            </div>
             <div className="flex justify-end mt-5">
               <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
+                onClick={() => modalOpen("update", false)}
+                className="closeBtn"
               >
-                Simpan Perubahan
+                Batal{" "}
+              </button>
+              <button type="submit" className="submitBtn">
+                Simpan
               </button>
             </div>
           </form>

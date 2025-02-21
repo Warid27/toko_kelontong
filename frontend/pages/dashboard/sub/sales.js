@@ -62,15 +62,25 @@ const SalesMain = () => {
     setIsUpdateModalOpen(false);
   };
 
+  const token = localStorage.getItem("token");
+
   const handleStatus = async (salesId, currentStatus) => {
     try {
       setLoading(true);
 
       const newStatus = currentStatus === 1 ? 2 : 1;
 
-      const response = await client.put(`/api/sales/${salesId}`, {
-        status: newStatus === 1 ? 1 : 2,
-      });
+      const response = await client.put(
+        `/api/sales/${salesId}`,
+        {
+          status: newStatus === 1 ? 1 : 2,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       console.log("Response from API:", response.data);
 
@@ -88,7 +98,15 @@ const SalesMain = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await client.post("/user/listuser", {});
+        const response = await client.post(
+          "/user/listuser",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data;
 
         // Validate that the response is an array
@@ -109,7 +127,15 @@ const SalesMain = () => {
   useEffect(() => {
     const fetchCompany = async () => {
       try {
-        const response = await client.post("/company/listcompany", {});
+        const response = await client.post(
+          "/company/listcompany",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data;
 
         // Validate that the response is an array
@@ -133,7 +159,15 @@ const SalesMain = () => {
   useEffect(() => {
     const fetchStore = async () => {
       try {
-        const response = await client.post("/store/liststore", {});
+        const response = await client.post(
+          "/store/liststore",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data;
 
         // Validate that the response is an array
@@ -154,7 +188,15 @@ const SalesMain = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await client.post("/order/listorder", {});
+        const response = await client.post(
+          "/order/listorder",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data;
 
         // Validate that the response is an array
@@ -177,7 +219,12 @@ const SalesMain = () => {
       try {
         const response = await client.post(
           "/salescampaign/listsalescampaign",
-          {}
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         const data = response.data;
 
@@ -202,7 +249,6 @@ const SalesMain = () => {
   useEffect(() => {
     const fetchSaleses = async () => {
       try {
-        const token = localStorage.getItem("token");
         const id_store = localStorage.getItem("id_store");
 
         if (!id_store) {
@@ -236,7 +282,15 @@ const SalesMain = () => {
   useEffect(() => {
     const fetchPayment = async () => {
       try {
-        const response = await client.post("/payment/listpayment", {});
+        const response = await client.post(
+          "/payment/listpayment",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data;
 
         // Validate that the response is an array

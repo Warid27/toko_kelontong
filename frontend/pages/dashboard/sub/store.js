@@ -6,11 +6,13 @@ import client from "@/libs/axios";
 import { HiDotsHorizontal } from "react-icons/hi";
 import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
-import { FaRegEdit } from "react-icons/fa";
+import { FaRegEdit, FaImage, FaInfoCircle } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
+import Select from "react-select";
 
 const StoreData = () => {
+  // --- useState
   const [stores, setStores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [companyList, setCompanyList] = useState([]); // State for list of companies
@@ -20,11 +22,14 @@ const StoreData = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
 
   const [storeDataAdd, setStoreDataAdd] = useState({
     name: "",
     address: "",
     id_company: "",
+    icon: null,
+    banner: null,
   });
 
   const [storeDataUpdate, setStoreDataUpdate] = useState({
@@ -32,8 +37,11 @@ const StoreData = () => {
     name: "",
     address: "",
     id_company: "",
+    icon: null,
+    banner: null,
   });
 
+  // --- useEffect
   useEffect(() => {
     const fetchCompany = async () => {
       try {
@@ -58,40 +66,6 @@ const StoreData = () => {
     fetchCompany();
   }, []);
 
-  const openModalAdd = () => {
-    setIsModalOpen(true);
-  };
-
-  const closeModalAdd = () => {
-    setIsModalOpen(false);
-  };
-  const openModalUpdate = () => {
-    setIsUpdateModalOpen(true);
-  };
-
-  const closeModalUpdate = () => {
-    setIsUpdateModalOpen(false);
-  };
-
-  const handleStatus = async (storeId, currentStatus) => {
-    try {
-      setLoading(true);
-
-      const newStatus = currentStatus === 0 ? 1 : 0;
-
-      const response = await client.put(`/api/store/${storeId}`, {
-        status: newStatus === 0 ? 0 : 1,
-      });
-
-      setStores((prevStores) =>
-        prevStores.map((store) =>
-          store._id === storeId ? { ...store, status: newStatus } : store
-        )
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
   useEffect(() => {
     const fetchStores = async () => {
       try {
@@ -126,43 +100,110 @@ const StoreData = () => {
     fetchStores();
   }, []);
 
-  // UPLOADS
+  useEffect(() => {
+    if (storeToUpdate) {
+      setStoreDataUpdate({
+        id: storeToUpdate._id || "",
+        name: storeToUpdate.name || "",
+        address: storeToUpdate.address || "",
+        id_company: storeToUpdate.id_company || "",
+        icon: storeToUpdate.icon || "",
+        banner: storeToUpdate.banner || "",
+      });
+    }
+  }, [storeToUpdate]);
 
-  const handleImageChange = async (e) => {
+  // --- Function
+  const modalOpen = (param, bool) => {
+    const setters = {
+      add: setIsModalOpen,
+      update: setIsUpdateModalOpen,
+      banner: setIsBannerModalOpen,
+    };
+    if (setters[param]) {
+      setters[param](bool);
+    }
+  };
+
+  // UPLOADS
+  const handleImageChange = async (e, params) => {
     const file = e.target.files[0];
     if (file) {
+      const id_user = localStorage.getItem("id_user");
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("id_user", id_user);
+
+      let pathPrefix = "";
+      if (params == "add" || params == "update") {
+        pathPrefix = "store/icon";
+      } else if (params == "banner") {
+        pathPrefix = "store/banner";
+      } else {
+        console.error("Error uploading image:", error);
+      }
+      formData.append("pathPrefix", pathPrefix); // Append the pathPrefix
 
       try {
-        const response = await client.post("/store/upload", formData, {
+        const response = await client.post("/api/upload", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         });
-
-        // Store the image URL in the productData state
-        const uploadedImageUrl = response.data.image;
-        setStoreDataAdd((prevState) => ({
-          ...prevState,
-          image: uploadedImageUrl,
-        }));
-
-        console.log("Image uploaded successfully:", uploadedImageUrl);
+        const uploadedImageUrl = response.data.metadata.shortenedUrl;
+        if (params == "add") {
+          setStoreDataAdd((prevState) => ({
+            ...prevState,
+            icon: uploadedImageUrl,
+          }));
+        } else if (params == "update") {
+          setStoreDataUpdate((prevState) => ({
+            ...prevState,
+            icon: uploadedImageUrl,
+          }));
+        } else if (params == "banner") {
+          setStoreDataUpdate((prevState) => ({
+            ...prevState,
+            banner: uploadedImageUrl,
+          }));
+        } else {
+          console.error("Error uploading image:", error);
+        }
       } catch (error) {
         console.error("Error uploading image:", error);
       }
     }
   };
-  // HANDLE
-  const handleUpdateStore = (store) => {
-    setStoreToUpdate(store); // Menyimpan Toko yang dipilih
-    setIsUpdateModalOpen(true);
 
-    console.log(store);
+  // HANDLE
+
+  const handleStatusSelect = async (storeId, selectedStatus) => {
+    try {
+      setLoading(true);
+
+      const response = await client.put(`/api/store/${storeId}`, {
+        status: selectedStatus,
+      });
+
+      setStores((prevStores) =>
+        prevStores.map((store) =>
+          store._id === storeId ? { ...store, status: selectedStatus } : store
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleUpdateStore = (store, params) => {
+    setStoreToUpdate(store); // Menyimpan Toko yang dipilih
+    if (params) {
+      modalOpen(params, true);
+    } else {
+      console.error("PARAMS HANDLE UPDATE NOT DEFINED");
+    }
   };
 
-  const deleteStoreById = async (id) => {
+  const handleDeleteStore = async (id) => {
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -215,7 +256,6 @@ const StoreData = () => {
         alert("Please fill all required fields.");
         return;
       }
-
       const response = await client.post(
         "/store/addstore",
         {
@@ -223,33 +263,21 @@ const StoreData = () => {
           address: storeDataAdd.address,
           status: 1,
           id_company: storeDataAdd.id_company,
+          icon: storeDataAdd.icon,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      console.log("Store added:", response.data);
       Swal.fire("Berhasil", "Toko berhasil ditambahkan!", "success");
 
-      // Reload the page or update state
-      closeModalAdd();
-      window.location.reload();
+      modalOpen("add", false);
+      setStores((prevStores) => [...prevStores, response.data]);
     } catch (error) {
       console.error("Error adding store:", error);
     }
   };
-
-  useEffect(() => {
-    if (storeToUpdate) {
-      setStoreDataUpdate({
-        id: storeToUpdate._id || "",
-        name: storeToUpdate.name || "",
-        address: storeToUpdate.address || "",
-        id_company: storeToUpdate.id_company || "",
-      });
-    }
-  }, [storeToUpdate]);
 
   const handleChangeUpdate = (e) => {
     const { name, value } = e.target;
@@ -259,42 +287,56 @@ const StoreData = () => {
     }));
   };
 
-  const handleSubmitUpdate = async (e) => {
+  const handleSubmitUpdate = async (e, params) => {
     e.preventDefault();
 
-    const formData = new FormData();
-    for (const key in storeDataUpdate) {
-      formData.append(key, storeDataUpdate[key]);
-    }
-
     try {
-      // const storeId = "67a9615bf59ec80d10014871";
       const token = localStorage.getItem("token");
+
+      // Ensure all required fields are filled
+      if (
+        !storeDataUpdate.name ||
+        !storeDataUpdate.address ||
+        !storeDataUpdate.id_company
+      ) {
+        alert("Please fill all required fields.");
+        return;
+      }
+
+      // Make the API call to update the store
       const response = await client.put(
         `/api/store/${storeDataUpdate.id}`,
         {
           name: storeDataUpdate.name,
           address: storeDataUpdate.address,
           id_company: storeDataUpdate.id_company,
+          icon: storeDataUpdate.icon,
+          banner: storeDataUpdate.banner,
         },
-
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      console.log("Store updated successfully:", response.data);
-      window.location.reload();
+
+      // Show success message
+      Swal.fire("Berhasil", "Toko berhasil diperbarui!", "success");
+
+      modalOpen(params, false);
+      // Update the stores state with the updated store
+      setStores((prevStores) =>
+        prevStores.map((store) =>
+          store._id === storeDataUpdate.id ? response.data : store
+        )
+      );
     } catch (error) {
       console.error("Error updating store:", error);
+
+      // Show error message to the user
+      Swal.fire("Error", "Failed to update store. Please try again.", "error");
     }
   };
-
-  // const closeModal = () => {
-  //   setIsModalOpen(false);
-  // };
-
   if (isLoading) {
     return (
       <div className="w-full h-screen pt-16 flex justify-center items-center">
@@ -345,10 +387,7 @@ const StoreData = () => {
             </select>
           </div>
           <div>
-            <button
-              className="button bg-[#FDDC05] text-white p-2 rounded-lg font-bold"
-              onClick={openModalAdd}
-            >
+            <button className="addBtn" onClick={() => modalOpen("add", true)}>
               + Tambah Toko
             </button>
           </div>
@@ -380,27 +419,40 @@ const StoreData = () => {
                       </td>
                       <td>{store.address}</td>
                       <td>
-                        <input
-                          type="checkbox"
-                          className="toggle"
-                          checked={store.status === 0}
-                          onChange={() => handleStatus(store._id, store.status)}
-                        />
+                        <select
+                          className="select bg-white"
+                          value={store.status}
+                          onChange={(e) =>
+                            handleStatusSelect(
+                              store._id,
+                              Number(e.target.value)
+                            )
+                          }
+                        >
+                          <option value={0}>Active</option>
+                          <option value={1}>Inactive</option>
+                          <option value={2}>Bankrupt</option>
+                          {/* Tambahkan opsi lain jika diperlukan di masa depan */}
+                        </select>
                       </td>
-                      <td className="flex space-x-4">
-                        {" "}
-                        {/* Beri jarak antar tombol */}
+                      <td>
                         <button
                           className=" p-3 rounded-lg text-2xl "
-                          onClick={() => deleteStoreById(store._id)}
+                          onClick={() => handleDeleteStore(store._id)}
                         >
                           <MdDelete />
                         </button>
                         <button
                           className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateStore(store)}
+                          onClick={() => handleUpdateStore(store, "update")}
                         >
-                          <FaRegEdit />
+                          <FaInfoCircle />
+                        </button>
+                        <button
+                          className=" p-3 rounded-lg text-2xl "
+                          onClick={() => handleUpdateStore(store, "banner")}
+                        >
+                          <FaImage />
                         </button>
                       </td>
                     </tr>
@@ -413,7 +465,7 @@ const StoreData = () => {
       </div>
 
       {isModalOpen && (
-        <Modal onClose={closeModalAdd} title={"Tambah Toko"}>
+        <Modal onClose={() => modalOpen("add", false)} title={"Tambah Toko"}>
           <form onSubmit={handleSubmitAdd}>
             <p className="font-semibold mt-4">Ikon Toko</p>
             <div className="upload-container">
@@ -421,13 +473,13 @@ const StoreData = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChange}
+                  onChange={(e) => handleImageChange(e, "add")}
                   style={{ display: "none" }}
                 />
                 <div className="upload-content">
-                  {storeDataAdd.image ? (
+                  {storeDataAdd.icon ? (
                     <Image
-                      src={storeDataAdd.image}
+                      src={storeDataAdd.icon}
                       alt="Uploaded"
                       className="uploaded-image"
                       width={80}
@@ -468,38 +520,35 @@ const StoreData = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Perusahaan</p>
-            <select
+            <p className="font-semibold mt-4 mb-2">Company</p>
+            <Select
               id="company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={storeDataAdd.id_company}
-              onChange={(e) =>
+              className="basic-single"
+              options={companyList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                companyList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find((opt) => opt.value === storeDataAdd.id_company) || null
+              }
+              onChange={(selectedOption) =>
                 setStoreDataAdd((prevState) => ({
                   ...prevState,
-                  id_company: e.target.value,
+                  id_company: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Store ===
-              </option>
-
-              {companyList.length === 0 ? (
-                <option value="default">No companies available</option>
-              ) : (
-                companyList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Company..."
+              noOptionsMessage={() => "No Company available"}
+            />
             <div className="flex justify-end mt-5">
               <button
                 type="button"
-                className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={closeModalAdd}
+                className="closeBtn"
+                onClick={() => modalOpen("add", false)}
               >
                 Batal
               </button>
@@ -515,8 +564,43 @@ const StoreData = () => {
       )}
 
       {isUpdateModalOpen && (
-        <Modal onClose={closeModalUpdate} title={"Edit Toko"}>
-          <form onSubmit={handleSubmitUpdate}>
+        <Modal onClose={() => modalOpen("update", false)} title={"Edit Toko"}>
+          <form onSubmit={(e) => handleSubmitUpdate(e, "update")}>
+            <p className="font-semibold mt-4">Icon Toko</p>
+            <div className="upload-container">
+              <label className="upload-label">
+                <input
+                  type="hidden"
+                  name="_id"
+                  value={storeDataUpdate._id}
+                  onChange={handleChangeUpdate}
+                  className="border rounded-md p-2 w-full bg-white"
+                  required
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageChange(e, "update")}
+                  style={{ display: "none" }}
+                />
+                <div className="upload-content">
+                  {storeDataUpdate.icon ? (
+                    <Image
+                      src={storeDataUpdate.icon}
+                      alt="Uploaded Image"
+                      width={80}
+                      height={80}
+                      className="uploaded-image"
+                    />
+                  ) : (
+                    <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                      <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
+                      <p className="text-sm text-[#FDDC05]">New Image</p>
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
             <p className="font-semibold mt-4">Nama Toko</p>
             <p className="mb-2 text-sm text-slate-500">
               Include min. 40 characters to make it more interesting
@@ -541,45 +625,93 @@ const StoreData = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Perusahaan</p>
-            <select
+            <p className="font-semibold mt-4 mb-2">Company</p>
+            <Select
               id="company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={storeDataUpdate.id_company}
-              onChange={(e) =>
+              className="basic-single"
+              options={companyList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))} // HE LE
+              value={
+                companyList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find((opt) => opt.value === storeDataUpdate.id_company) ||
+                null
+              }
+              onChange={(selectedOption) =>
                 setStoreDataUpdate((prevState) => ({
                   ...prevState,
-                  id_company: e.target.value,
+                  id_company: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Store ===
-              </option>
-
-              {companyList.length === 0 ? (
-                <option value="default">No companies available</option>
-              ) : (
-                companyList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Company..."
+              noOptionsMessage={() => "No Company available"}
+            />
             <div className="flex justify-end mt-5">
               <button
                 type="button"
-                className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={closeModalUpdate}
+                className="closeBtn"
+                onClick={() => modalOpen("update", false)}
               >
                 Batal
               </button>
+              <button type="submit" className="submitBtn">
+                Edit
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {isBannerModalOpen && (
+        <Modal onClose={() => modalOpen("banner", false)} title={"Banner Toko"}>
+          <form onSubmit={(e) => handleSubmitUpdate(e, "banner")}>
+            <div className="upload-container">
+              <label className="upload-label">
+                <input
+                  type="hidden"
+                  name="_id"
+                  value={storeDataUpdate._id}
+                  onChange={handleChangeUpdate}
+                  className="border rounded-md p-2 w-full bg-white"
+                  required
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageChange(e, "banner")}
+                  style={{ display: "none" }}
+                />
+                <div className="upload-content">
+                  {storeDataUpdate.banner ? (
+                    <Image
+                      src={storeDataUpdate.banner}
+                      alt="Uploaded Image"
+                      width={500}
+                      height={10}
+                      className="uploaded-image"
+                    />
+                  ) : (
+                    <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                      <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
+                      <p className="text-sm text-[#FDDC05]">New Image</p>
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
+            <div className="flex justify-end mt-5">
               <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
+                type="button"
+                className="closeBtn"
+                onClick={() => modalOpen("banner", false)}
               >
+                Batal
+              </button>
+              <button type="submit" className="submitBtn">
                 Edit
               </button>
             </div>

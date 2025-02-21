@@ -19,12 +19,12 @@ const orderDetailSchema = new Schema({
   id_extrasDetails: {
     type: Schema.Types.ObjectId,
     ref: "extras",
-    required: true,
+    default: null,
   },
   id_sizeDetails: {
     type: Schema.Types.ObjectId,
     ref: "size",
-    required: true,
+    default: null,
   },
   name_product: { type: String, required: true },
   quantity: { type: Number, required: true },

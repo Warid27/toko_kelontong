@@ -15,7 +15,11 @@ export default function Home() {
     const fetchStores = async () => {
       try {
         const response = await client.post("/store/liststore", {});
-        setStores(response.data);
+        const filteredStores = response.data.filter(
+          (store) => store.status === 0 // Active
+        );
+
+        setStores(filteredStores);
       } catch (error) {
         console.error("Error fetching stores:", error);
       } finally {
@@ -48,7 +52,7 @@ export default function Home() {
             layout="responsive"
             width={200}
             height={200}
-            className="w-full"
+            className="w-full"//kotnototosskmdlasdlkasmadjsandsnjacjxbaasuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
           />
         </div>
         <div className="mt-10 space-y-6">

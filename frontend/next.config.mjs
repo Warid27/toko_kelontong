@@ -8,8 +8,11 @@ const nextConfig = {
       "pbs.twimg.com",
       "placehold.co",
       "png.pngtree.com",
+      "api-storage.cli.pics",
     ],
+    dangerouslyAllowSVG: true, // Allow SVG files
   },
+
   async rewrites() {
     return [
       {

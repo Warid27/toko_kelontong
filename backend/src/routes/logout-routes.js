@@ -1,34 +1,21 @@
 import { Hono } from "hono";
 import { setCookie, getCookie } from "hono/cookie";
-import { PORT, SECRET_KEY } from "@config/config";
+import { PORT, JWT_SECRET } from "@config/config";
 import { UserModels } from "@models/user-models";
 import jwt from "jsonwebtoken";
 import accessValidation from "@validation/user-validation";
 import { renderEJS } from "@config/config";
+import { authenticate } from "@middleware/authMiddleware";
 
 const router = new Hono();
 
 // Logout User
-router.patch("/", async (c) => {
+router.patch("/", authenticate async (c) => {
   try {
-    let token = getCookie(c, "token");
-
-    if (!token) {
-      const authHeader = c.req.header("Authorization");
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
-      }
-    }
-
-    console.log("Token from request:", token);
-
-    if (!token) {
-      return c.text("No token found", 401);
-    }
 
     let userId;
     try {
-      const decoded = jwt.verify(token, SECRET_KEY);
+      const decoded = jwt.verify(token, JWT_SECRET);
       userId = decoded.id;
     } catch (err) {
       console.error("Invalid token:", err.message);

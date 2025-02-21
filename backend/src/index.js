@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { PORT } from "@config/config";
-// import { cors } from "hono/cors";
 import loginRoutes from "@routes/login-routes";
 import registerRoutes from "@routes/register-routes";
 import productRoutes from "@routes/product-routes";
@@ -14,7 +13,9 @@ import userRoutes from "@routes/user-routes";
 import orderRoutes from "@routes/order-routes";
 import tableRoutes from "@routes/table-routes";
 import paymentRoutes from "@routes/payment-routes";
+import stockRoutes from "@routes/stock-routes";
 import salesRoutes from "@routes/sales-routes";
+import pembelianRoutes from "@routes/pembelian-routes";
 import salesCampaignRoutes from "@routes/salesCampaign-routes";
 import itemCampaignRoutes from "@routes/itemCampaign-routes";
 
@@ -28,6 +29,7 @@ app.use("*", async (c, next) => {
 });
 
 // Routes
+app.route("/stock", stockRoutes);
 app.route("/payment", paymentRoutes);
 app.route("/table", tableRoutes);
 app.route("/order", orderRoutes);
@@ -44,6 +46,7 @@ app.route("/sales", salesRoutes);
 app.route("/salescampaign", salesCampaignRoutes);
 app.route("/itemcampaign", itemCampaignRoutes);
 app.route("/category", categoryRoutes);
+app.route("/pembelian", pembelianRoutes);
 app.route("/api", apiRoutes);
 
 // Static File Serving

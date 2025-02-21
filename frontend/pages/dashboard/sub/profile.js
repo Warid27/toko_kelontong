@@ -98,7 +98,7 @@ const Profile = () => {
       setUserDataUpdate({
         id: userToUpdate._id,
         username: userToUpdate.username,
-        password: userToUpdate.password,
+        password: "",
         rule: userToUpdate.rule,
         status: userToUpdate.status !== undefined ? userToUpdate.status : 1, // Default to 1
         id_company: userToUpdate.id_company,
@@ -109,12 +109,15 @@ const Profile = () => {
 
   const handleChangeUpdate = (e) => {
     const { name, value } = e.target;
-    setUserDataUpdate((prevState) => ({ ...prevState, [name]: value }));
+    setUserDataUpdate((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
   };
 
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
-    if (!userDataUpdate.username || !userDataUpdate.password) {
+    if (!userDataUpdate.username) {
       Swal.fire("Error", "Please fill in all required fields!", "error");
       return;
     }
@@ -220,7 +223,7 @@ const Profile = () => {
           </div>
           <button
             onClick={() => setIsEditMode(true)}
-            className={`bg-yellow-400 text-white px-4 py-2 rounded-md flex items-center space-x-2 ${
+            className={`addBtn flex items-center space-x-2 ${
               isEditMode ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={isEditMode}
@@ -264,17 +267,19 @@ const Profile = () => {
                 placeholder="password"
                 type={showPassword ? "text" : "password"}
                 name="password"
-                value={userDataUpdate.password || "-"}
+                value={userDataUpdate.password}
                 disabled={!isEditMode}
                 onChange={handleChangeUpdate}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
-              >
-                {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
-              </button>
+              {isEditMode == true ? (
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+                >
+                  {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                </button>
+              ) : null}
             </div>
           </div>
           <div>
@@ -374,20 +379,17 @@ const Profile = () => {
           {/* Repeat similar blocks for other fields */}
           {/* Edit and Update Buttons */}
           <div></div>
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-2">
             {isEditMode ? (
               <>
                 <button
                   type="button"
-                  className="bg-gray-500 text-white p-2 rounded-lg"
+                  className="closeBtn"
                   onClick={() => setIsEditMode(false)}
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="bg-blue-500 text-white p-2 rounded-lg"
-                >
+                <button type="submit" className="submitBtn">
                   Update
                 </button>
               </>

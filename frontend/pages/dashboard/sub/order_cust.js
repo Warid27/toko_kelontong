@@ -206,6 +206,7 @@ const OrderCust = ({ setSelectedLink }) => {
                       </td>
                       <td>
                         <button
+                          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300"
                           onClick={() => {
                             console.log("order", order);
                             const {
@@ -223,17 +224,21 @@ const OrderCust = ({ setSelectedLink }) => {
                                   (pl) => pl._id === od.id_product
                                 );
 
-                                const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD untuk membandingkan tanggal
+                                const today = new Date()
+                                  .toISOString()
+                                  .split("T")[0]; // Format YYYY-MM-DD untuk membandingkan tanggal
 
                                 const campaign = itemCampaignList.find(
                                   (icl) =>
-                                    icl._id === selectedProduct.id_item_campaign &&
+                                    icl._id ===
+                                      selectedProduct.id_item_campaign &&
                                     icl.start_date <= today &&
                                     icl.end_date >= today
                                 );
 
-                                const discountValue = campaign ? campaign.value : 0;
-
+                                const discountValue = campaign
+                                  ? campaign.value
+                                  : 0;
 
                                 return {
                                   informasi: {
@@ -241,12 +246,15 @@ const OrderCust = ({ setSelectedLink }) => {
                                     code: order.code,
                                     id_table_cust: order.id_table_cust,
                                     person_name: order.person_name,
+                                    keterangan: order.keterangan,
                                   },
                                   product: {
                                     id: selectedProduct?._id || null,
-                                    id_company: selectedProduct?.id_company || null,
+                                    id_company:
+                                      selectedProduct?.id_company || null,
                                     id_store: selectedProduct?.id_store || null,
-                                    id_item_campaign: selectedProduct?.id_item_campaign || null,
+                                    id_item_campaign:
+                                      selectedProduct?.id_item_campaign || null,
                                     name:
                                       selectedProduct?.name_product ||
                                       "Unknown",
@@ -257,25 +265,27 @@ const OrderCust = ({ setSelectedLink }) => {
                                       selectedProduct?.product_code || "",
 
                                     diskon: discountValue,
-                                      // selectedProduct.id_item_campaign != null
-                                      //   ? itemCampaignList.find(
-                                      //       (icl) =>
-                                      //         icl._id ==
-                                      //         selectedProduct.id_item_campaign
-                                      //     )?.value
-                                      //   : 0,
-                                    priceAfterDiscount: selectedProduct.sell_price * (1 - discountValue),
-                                  //   priceAfterDiscount:
-                                  //     selectedProduct.sell_price *
-                                  //     (1 -
-                                  //       (selectedProduct.id_item_campaign !=
-                                  //       null
-                                  //         ? itemCampaignList.find(
-                                  //             (icl) =>
-                                  //               icl._id ==
-                                  //               selectedProduct.id_item_campaign
-                                  //           )?.value || 0
-                                  //         : 0)),
+                                    // selectedProduct.id_item_campaign != null
+                                    //   ? itemCampaignList.find(
+                                    //       (icl) =>
+                                    //         icl._id ==
+                                    //         selectedProduct.id_item_campaign
+                                    //     )?.value
+                                    //   : 0,
+                                    priceAfterDiscount:
+                                      selectedProduct.sell_price *
+                                      (1 - discountValue),
+                                    //   priceAfterDiscount:
+                                    //     selectedProduct.sell_price *
+                                    //     (1 -
+                                    //       (selectedProduct.id_item_campaign !=
+                                    //       null
+                                    //         ? itemCampaignList.find(
+                                    //             (icl) =>
+                                    //               icl._id ==
+                                    //               selectedProduct.id_item_campaign
+                                    //           )?.value || 0
+                                    //         : 0)),
                                   },
                                   quantity: od.quantity || 1,
                                   selectedExtra: od.id_extrasDetails

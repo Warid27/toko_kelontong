@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { itemCampaignModels } from "@models/itemCampaign";
 import { mongoose } from "mongoose";
 
+import { authenticate } from "@middleware/authMiddleware";
 const router = new Hono();
 
 // Get all item campaigns
@@ -15,7 +16,7 @@ router.post("/listitemcampaigns", async (c) => {
 });
 
 // Get item campaign by ID
-router.post("/getitemcampaign", async (c) => {
+router.post("/getitemcampaign", authenticate, async (c) => {
   try {
     const { id } = await c.req.json();
 
@@ -42,7 +43,7 @@ router.post("/getitemcampaign", async (c) => {
 });
 
 // Add item campaign
-router.post("/additemcampaign", async (c) => {
+router.post("/additemcampaign", authenticate, async (c) => {
   try {
     const body = await c.req.json();
     const itemCampaign = new itemCampaignModels(body);
@@ -50,58 +51,6 @@ router.post("/additemcampaign", async (c) => {
     return c.json(itemCampaign, 201);
   } catch (error) {
     return c.text("Terjadi kesalahan saat menambahkan item campaign.", 400);
-  }
-});
-
-// Edit item campaign
-router.patch("/edititemcampaign", async (c) => {
-  try {
-    const body = await c.req.json();
-    const id = body.id;
-
-    if (!id) {
-      return c.json({ message: "ID item campaign diperlukan." }, 400);
-    }
-
-    const itemCampaign = await itemCampaignModels.findByIdAndUpdate(id, body, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!itemCampaign) {
-      return c.json({ message: "Item campaign tidak ditemukan." }, 404);
-    }
-
-    return c.json(itemCampaign, 200);
-  } catch (error) {
-    return c.json(
-      {
-        message: "Terjadi kesalahan saat mengedit item campaign.",
-        error: error.message,
-      },
-      400
-    );
-  }
-});
-
-// Delete item campaign
-router.delete("/deleteitemcampaign/:id", async (c) => {
-  try {
-    const id = c.req.param("id");
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return c.json({ error: "Invalid item campaign ID format" }, 400);
-    }
-
-    const itemCampaign = await itemCampaignModels.deleteOne({ _id: id });
-
-    if (!itemCampaign.deletedCount) {
-      return c.json({ error: "Item campaign not found" }, 404);
-    }
-
-    return c.json({ message: "Item campaign deleted successfully" }, 200);
-  } catch (error) {
-    return c.json({ error: error.message }, 500);
   }
 });
 

@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
+import moment from "moment";
 import Cookies from "js-cookie";
 import Image from "next/image";
 import Topbar from "@/components/Topbar";
 import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
 import { IoMdArrowRoundBack, IoIosArrowDropdown } from "react-icons/io";
+import { CgNotes } from "react-icons/cg";
 import { VscTrash } from "react-icons/vsc";
 // import axios from "axios";
 import client from "@/libs/axios";
@@ -17,6 +19,7 @@ const Cart = () => {
   const [orderList, setOrderList] = useState([]);
   const orderListRef = useRef(orderList); // Create a ref to track the latest state
   const [cartItems, setCartItems] = useState([]);
+  const [isnoteModalOpen, setIsnoteModalOpen] = useState(false);
 
   // Function
   const [expandedPayments, setexpandedPayments] = useState({});
@@ -154,7 +157,7 @@ const Cart = () => {
 
     try {
       // Validate input data
-      if (!customerName || !customerName.nama) {
+      if (!infoBuyyer || !infoBuyyer.nama) {
         console.error("Customer name is missing.");
         alert("Error: Please provide a valid customer name.");
         return;
@@ -175,41 +178,37 @@ const Cart = () => {
           id_extrasDetails: element.selectedExtra,
           id_sizeDetails: element.selectedSize,
           quantity: element.quantity,
-          price_item: element.product.price,
-          total_price: element.product.price * element.quantity,
+          price_item: element.product.priceAfterDiscount,
+          total_price: element.product.priceAfterDiscount * element.quantity,
           discount: 0,
         };
       });
-
+      console.log("DETAIL ORDER:", orderDetails);
       // Generate order code
-      const orderCode = "ORD/" + Date.now() + "/" + crypto.randomUUID();
-      const orderCodeReal = orderCode;
+      const formattedDate = moment().format("DDMMYYHHmmss");
 
-      const Tanggal_Lengkap = new Date().toISOString().split("T")[0]; // Full date in "YYYY-MM-DD" format
-      const Tahun_lengkap = Tanggal_Lengkap.split("-")[0]; // Full year, e.g., "2023"
-      const Tahun = Tahun_lengkap.slice(-2); // Last two digits of the year, e.g., "23"
-      const Bulan = Tanggal_Lengkap.split("-")[1]; // Month, e.g., "10" for October
-      const Tanggal = Tanggal_Lengkap.slice(-2); // Day, e.g., "05"
+      const orderCode = "ORD/" + formattedDate;
+      const orderCodeReal = orderCode;
 
       // Count of items in cartItems
       const ordersToday = cartItems.length;
 
       // Generate the unique identifier
-      const no = `${Tanggal}${Bulan}${Tahun}${ordersToday + 1}`;
-
+      const no = `${formattedDate}${ordersToday + 1}`;
+      console.log("NOMOR:", no);
       // Send POST request to create the order
       const response = await client.post(
         "order/addorder",
         {
           no: no,
           code: orderCodeReal,
-          person_name: customerName.nama,
+          person_name: infoBuyyer.nama,
           status: 2,
           id_table_cust: tableNumber.nomor,
-          keterangan: 1,
-          // id_store: "67a30e78cb191b12b2a6c2ba", // Replace with dynamic value if available
-          // id_company: "679dcb0cc076b05c739a596e", // Replace with dynamic value if available
-          // id_user: "67a034f9962111a02fcc5ad2", // Replace with dynamic value if available
+          keterangan:
+            infoBuyyer.keterangan == ""
+              ? "user belum menuliskan Keterangan"
+              : infoBuyyer.keterangan,
           orderDetails: orderDetails,
         },
         {
@@ -339,15 +338,16 @@ const Cart = () => {
   //   }
   // };
 
-  // nama pelanggan
-  const [customerName, setCustomerName] = useState({
+  const [infoBuyyer, setInfoBuyyer] = useState({
     nama: "",
+    keterangan: "",
   });
 
-  const customerhandleChange = (e) => {
-    setCustomerName({
-      ...customerName,
-      nama: e.target.value,
+  const infoBuyyerHandleChange = (e) => {
+    const { name, value } = e.target;
+    setInfoBuyyer({
+      ...infoBuyyer,
+      [name]: value,
     });
   };
 
@@ -381,7 +381,7 @@ const Cart = () => {
     const updatedItems = [...cartItems];
     updatedItems[index].quantity = newQuantity;
     updatedItems[index].totalPrice =
-      updatedItems[index].product.price * newQuantity;
+      updatedItems[index].product.priceAfterDiscount * newQuantity;
     setCartItems(updatedItems);
     Cookies.set("cartItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
   };
@@ -418,6 +418,12 @@ const Cart = () => {
     }
   };
 
+  const openModalnote = () => {
+    setIsnoteModalOpen(true);
+  };
+  const closeModalnote = () => {
+    setIsnoteModalOpen(false);
+  };
   // Fungsi untuk membuka modal
   const openModal = () => {
     setIsModalOpen(true);
@@ -477,16 +483,17 @@ const Cart = () => {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="relative w-full">
             <label
-              htmlFor="customerName"
+              htmlFor="infoBuyyer"
               className="absolute top-2 left-4 text-sm text-black-500 bg-white px-1 font-semibold"
             >
               Nama Pelanggan
             </label>
             <input
-              id="customerName"
+              id="infoBuyyerNama"
               type="text"
-              value={customerName.nama}
-              onChange={customerhandleChange}
+              name="nama"
+              value={infoBuyyer.nama}
+              onChange={infoBuyyerHandleChange}
               className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
             />
           </div>
@@ -564,7 +571,7 @@ const Cart = () => {
                     <p className="font-semibold mr-4">
                       Rp.
                       {new Intl.NumberFormat("id-ID").format(
-                        item.product.price
+                        item.product.priceAfterDiscount
                       )}
                     </p>{" "}
                     {/* Harga satuan */}
@@ -608,32 +615,34 @@ const Cart = () => {
             </ul>
           )}
         </div>
+        <div>
+          <button
+            className={`${
+              infoBuyyer.keterangan ? "bg-[#FDDC05]" : "bg-[#D3D3D3]"
+            } text-black font-semibold rounded-full px-4 py-2 flex items-center space-x-2 hover:bg-[#FDDC05] transition-all duration-200 shadow-lg`}
+            onClick={openModalnote}
+          >
+            <CgNotes className="w-5 h-5" /> <span>+ Tambah Catatan</span>
+          </button>
+
+          {/* Menampilkan tulisan kecil jika textarea terisi */}
+          {infoBuyyer.keterangan.trim() !== "" && (
+            <p className="text-gray-500 text-sm mt-2">Catatan terisi</p>
+          )}
+        </div>
 
         <div className="mt-6 text-right">
           <p className="text-lg font-bold mb-4">
             Total: Rp.
             {new Intl.NumberFormat("id-ID").format(
               cartItems.reduce(
-                (total, item) => total + item.quantity * item.product.price,
+                (total, item) =>
+                  total + item.quantity * item.product.priceAfterDiscount,
                 0
               )
             )}
           </p>
           <div className="flex justify-between">
-            {/* <button
-              onClick={openModal}
-              className="py-2 px-4 rounded-lg w-1/2 mr-2 font-bold"
-              style={{ backgroundColor: "#FFA461", color: "black" }}
-            >
-              Take Home
-            </button>
-            <button
-              onClick={openModal}
-              className="py-2 px-4 rounded-lg w-1/2 font-bold"
-              style={{ backgroundColor: "#FDDC05", color: "black" }}
-            >
-              Open Bill
-            </button> */}
             <button
               onClick={handleAddOrder}
               className="py-2 px-4 rounded-lg w-full font-bold"
@@ -644,6 +653,24 @@ const Cart = () => {
           </div>
         </div>
 
+        {isnoteModalOpen && (
+          <Modal onClose={closeModalnote}>
+            <div>
+              <div className="relative w-full">
+                <p className="font-bold text-2xl mb-5">Catatan Pemesanan </p>
+                <textarea
+                  id="infoBuyyerKeterangan"
+                  name="keterangan"
+                  style={{ height: "100px" }}
+                  value={infoBuyyer.keterangan}
+                  onChange={infoBuyyerHandleChange}
+                  className="bg-white shadow-md border p-4 h-20 pt-2 rounded-lg w-full text-black placeholder-black"
+                  placeholder="belum menuliskan keterangan"
+                />
+              </div>
+            </div>
+          </Modal>
+        )}
         {/* DISINI DULU ADA MODAL UNTUK MENAMBAHKAN DATA SECARA ONLINE (ORDER DAN SALES) */}
         {/* ADA DI paymentModal.js */}
       </div>

@@ -1,14 +1,20 @@
 import React, { useEffect, useState, useRef } from "react";
 import Cookies from "js-cookie";
+import moment from "moment";
 import Image from "next/image";
+import Swal from "sweetalert2"; // Import sweetalert2
+
+// Icon
 import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
 import { IoMdArrowRoundBack, IoIosArrowDropdown } from "react-icons/io";
 import { VscTrash } from "react-icons/vsc";
 import { FaMinus, FaPlus } from "react-icons/fa6";
-// import axios from "axios";
-import client from "@/libs/axios";
-import Swal from "sweetalert2"; // Import sweetalert2
+import { CgNotes } from "react-icons/cg";
 import { IoClose } from "react-icons/io5";
+
+// import axios from "axios";
+
+import client from "@/libs/axios";
 import Card from "@/components/Card";
 import { Modal } from "@/components/Modal";
 
@@ -18,7 +24,9 @@ const Kasir = () => {
   const [table_custList, setTable_custList] = useState([]);
   const [orderList, setOrderList] = useState([]);
   const [itemCampaignList, setItemCampaignList] = useState([]);
+  const [salesCampaignList, setSalesCampaignList] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+
   //   const [orderList, setOrderList] = useState([]);
   //   const orderListRef = useRef(orderList); // Create a ref to track the latest state
   const [kasirItems, setKasirItems] = useState([]);
@@ -26,24 +34,45 @@ const Kasir = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedExtra, setSelectedExtra] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
-  // Function
-  const [expandedPayments, setexpandedPayments] = useState({});
-  const [selectedMethod, setSelectedMethod] = useState(null);
   // State untuk modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isModalOpenInfo, setIsModalOpenInfo] = useState(false);
+  const [isModalOpenPromo, setIsModalOpenPromo] = useState(false);
+  const [isModalOpenProductInfo, setIsModalOpenProductInfo] = useState(false);
+  const [isnoteModalOpen, setIsnoteModalOpen] = useState(false);
+  const [salesDiskon, setSalesDiskon] = useState(null); // Gunakan useState
+  const [idSalesDiskon, setIdSalesDiskon] = useState(null); // Gunakan useState
+  const [infoBuyyer, setInfoBuyyer] = useState({
+    nama: "",
+    keterangan: "",
+    status: 1,
+  });
+  const [promo, setPromo] = useState({
+    nama: "",
+  });
+  const token = localStorage.getItem("token");
   const tax = 12 / 100;
-
-  // Update the ref whenever the state changes
-  //   useEffect(() => {
-  //     orderListRef.current = orderList;
-  //   }, [orderList]);
+  // --- Function
+  const modalOpen = (param, bool) => {
+    const setters = {
+      add: setIsModalOpen,
+      product: setIsModalOpenProductInfo,
+      note: setIsnoteModalOpen,
+      promo: setIsModalOpenPromo,
+    };
+    if (setters[param]) {
+      setters[param](bool);
+    }
+  };
 
   // FETCH
   useEffect(() => {
     const fetchTable_cust = async () => {
       try {
-        const response = await client.get("/table/listtable");
+        const response = await client.get("/table/listtable", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = response.data;
 
         // Validate that the response is an array
@@ -65,7 +94,12 @@ const Kasir = () => {
       try {
         const response = await client.post(
           "/itemcampaign/listitemcampaigns",
-          {}
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         const data = response.data;
 
@@ -87,9 +121,48 @@ const Kasir = () => {
     fetchItemCampaign();
   }, []);
   useEffect(() => {
+    const fetchSalesCampaign = async () => {
+      try {
+        const response = await client.post(
+          "/salescampaign/listsalescampaign",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /salescampaign/listsalescampaign:",
+            data
+          );
+          setSalesCampaignList([]);
+        } else {
+          setSalesCampaignList(data);
+        }
+      } catch (error) {
+        console.error("Error fetching sales campaign:", error);
+        setSalesCampaignList([]);
+      }
+    };
+    fetchSalesCampaign();
+  }, []);
+  useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await client.post("/order/listorder", {});
+        const response = await client.post(
+          "/order/listorder",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data;
 
         // Validate that the response is an array
@@ -154,12 +227,20 @@ const Kasir = () => {
 
   const handleCardClick = async (product) => {
     try {
-      const response = await client.post("product/getproduct", {
-        id: product._id,
-      });
+      const response = await client.post(
+        "product/getproduct",
+        {
+          id: product._id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setSelectedProduct(response.data); // Set the selected product with fetched data
-      setIsModalOpen(false);
-      setIsModalOpenInfo(true); // Open the modal
+      modalOpen("add", false);
+      modalOpen("product", true);
     } catch (error) {
       console.error("Error fetching product details:", error);
     }
@@ -169,24 +250,26 @@ const Kasir = () => {
 
   const handleSales = async (e) => {
     e.preventDefault();
-    console.log(kasirItems);
+    console.log("KASIR ITEMS:", kasirItems);
     try {
-      // Validate orderList
-      // Prepare data for the API request
       const prepareSalesData = () => {
         const totalNumberItem = kasirItems.length;
         const salesDetail = kasirItems.map((item) => ({
           id_product: item.product.id,
+          id_extras: item.selectedExtra ? item.selectedExtra._id : null,
+          id_size: item.selectedSize ? item.selectedSize._id : null,
           id_company: item.product.id_company,
           id_store: item.product.id_store,
           id_item_campaign: item.product.id_item_campaign,
           name: item.product.name,
-          product_code: item.product.product_code,
+          product_code: item.product.code,
           item_price: Number(item.product.priceAfterDiscount),
           item_quantity: item.quantity,
           item_discount: 0,
         }));
-        const salesCode = `INV/${Date.now()}/${crypto.randomUUID()}`;
+        const formattedDate = moment().format("DD-MM-YY HH:mm:ss");
+
+        const salesCode = `INV/${formattedDate}`;
         const tax = 0.12;
         const totalQty = kasirItems.reduce(
           (total, item) => total + item.quantity,
@@ -197,30 +280,33 @@ const Kasir = () => {
             total + item.product.priceAfterDiscount * item.quantity,
           0
         );
-        const totalPriceWithTax =
+        const totalPriceWithTax = Math.max(
           kasirItems.reduce(
             (total, item) =>
-              total + item.product.priceAfterDiscount * item.quantity,
+              total + item.quantity * item.product.priceAfterDiscount,
             0
           ) *
-          (1 + tax);
+            (1 - (salesDiskon || 0)) *
+            (1 + tax),
+          0
+        );
 
         const id_user = localStorage.getItem("id_user");
-        // const id_store = localStorage.getItem("id_store");
-        // const id_company = localStorage.getItem("id_company");
         return {
           no: salesCode,
           id_user: id_user || "TIDAK TERDETEKSI LE", // Consider making this dynamic
           id_order: kasirItems[0]?.informasi
             ? kasirItems[0].informasi.id_order || null
             : null,
-          id_sales_campaign: "67adf9ffcf892c7756288622", // Consider making this dynamic
+          id_sales_campaign: idSalesDiskon, // Consider making this dynamic
           id_payment_type: "67ae07107f2282a509936fb7",
           tax: tax,
-          status: 1, // 1 = active, 2 = pending
+          name: infoBuyyer.nama,
+          status: infoBuyyer.status,
+          keterangan: infoBuyyer.keterangan,
           total_price: totalPriceWithTax,
           total_quantity: totalQty,
-          total_discount: 0,
+          total_discount: salesDiskon,
           total_number_item: totalNumberItem,
           salesDetails: salesDetail,
         };
@@ -236,7 +322,7 @@ const Kasir = () => {
       if (response.status === 201) {
         const orderId = kasirItems[0]?.informasi?.id_order || null;
 
-        if (orderId != null) {
+        if (orderId != null || orderId != undefined) {
           const responseOrder = await client.put(
             `api/order/${orderId}`,
             {
@@ -246,18 +332,12 @@ const Kasir = () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
-
           if (responseOrder.status === 200) {
             await clearKasir();
-            Swal.fire("Sukses!", "Berhasil Order.", "success");
-            window.location.reload();
-            return;
           }
           Swal.fire("Error!", "ERROR LE.", "error");
         } else {
           await clearKasir();
-          Swal.fire("Sukses!", "Berhasil Order.", "success");
-          window.location.reload();
         }
       }
     } catch (error) {
@@ -271,16 +351,43 @@ const Kasir = () => {
       Swal.fire("Error!", errorMessage, "error");
     }
   };
-  // nama pelanggan
-  const [customerName, setCustomerName] = useState({
-    nama: "",
-  });
-
-  const customerhandleChange = (e) => {
-    setCustomerName({
-      ...customerName,
-      nama: e.target.value,
+  const infoBuyyerHandleChange = (e) => {
+    const { name, value } = e.target;
+    setInfoBuyyer({
+      ...infoBuyyer,
+      [name]: value,
     });
+  };
+
+  useEffect(() => {
+    if (kasirItems[0]?.informasi) {
+      setInfoBuyyer((prevInfo) => ({
+        ...prevInfo,
+        keterangan: kasirItems[0].informasi.keterangan || "",
+      }));
+    }
+  }, [kasirItems]);
+  const promohandleChange = (e) => {
+    setPromo({ ...promo, nama: e.target.value });
+  };
+
+  const handleSubmitPromo = async (e) => {
+    e.preventDefault();
+
+    const cekPromo = salesCampaignList.find(
+      (scl) => scl.campaign_name === promo.nama
+    );
+
+    if (cekPromo) {
+      console.log("Ada promo:", cekPromo);
+      setIdSalesDiskon(cekPromo._id);
+      setSalesDiskon(cekPromo.value); // Gunakan setState agar reaktif
+      Swal.fire("Berhasil", "Promo Berhasil Diaktifkan!", "success");
+      modalOpen("promo", false);
+    } else {
+      Swal.fire("Gagal", "Promo Tidak Ditemukan!", "error"); // "error" bukan "gagal"
+      console.log("Tidak ada promo:", cekPromo);
+    }
   };
 
   const [tableNumber, setTableNumber] = useState({
@@ -310,7 +417,7 @@ const Kasir = () => {
     const updatedItems = kasirItems.filter((_, i) => i !== index);
     setKasirItems(updatedItems);
     Cookies.set("kasirItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
-    console.log("LATEST COOKIES:", Cookies.get("kasirItems"));
+    // console.log("LATEST COOKIES:", Cookies.get("kasirItems"));
   };
   const handleDelete = async (index) => {
     const result = await Swal.fire({
@@ -335,34 +442,20 @@ const Kasir = () => {
     }
   };
 
-  // Fungsi untuk membuka modal
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
-
-  // Fungsi untuk menutup modal
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
-  const openModaInfo = () => {
-    setIsModalOpenInfo(true);
-  };
-
-  // Fungsi untuk menutup modal
-  const closeModalInfo = () => {
-    setIsModalOpenInfo(false);
-  };
-
-  const handleBack = () => {
-    window.history.back();
-  };
-
   // Clear Cookies kasirItems
   const clearKasir = () => {
     try {
+      // Reset all relevant states
+      setSalesDiskon(null);
+      setIdSalesDiskon(null);
+      setPromo({ nama: "" });
+      setTableNumber({ nomor: "" });
+      setInfoBuyyer({ nama: "", keterangan: "", status: 1 });
       setKasirItems([]); // Reset the kasir state
       Cookies.set("kasirItems", JSON.stringify([]), { expires: 7 }); // Update cookies
-      console.log("Kasir items cleared and cookies updated.");
+
+      // Show success message
+      Swal.fire("Success!", "Berhasil order!", "success");
     } catch (error) {
       console.error("Error clearing kasir items:", error.message);
       Swal.fire("Error!", "Failed to clear kasir items.", "error");
@@ -370,7 +463,7 @@ const Kasir = () => {
   };
 
   const addNewItems = (newItem) => {
-    setKasirItems((prevOrder) => [...prevOrder, newItem]);
+    setKasirItems((prevItem) => [...prevItem, newItem]);
   };
 
   return (
@@ -384,26 +477,27 @@ const Kasir = () => {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="relative w-full">
             <label
-              htmlFor="customerName"
+              htmlFor="infoBuyyer"
               className="absolute top-2 left-4 text-sm text-black-500 bg-white px-1 font-semibold"
             >
               Masukkan Nama
             </label>
-
             {kasirItems[0]?.informasi ? (
               <input
-                id="customerName"
+                id="infoBuyyerName"
                 type="text"
+                name="nama"
                 value={kasirItems[0].informasi.person_name || "error"}
                 disabled={true}
                 className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
               />
             ) : (
               <input
-                id="customerName"
+                id="infoBuyyerName"
                 type="text"
-                value={customerName?.nama || ""}
-                onChange={customerhandleChange}
+                name="nama"
+                value={infoBuyyer?.nama || ""}
+                onChange={infoBuyyerHandleChange}
                 className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
               />
             )}
@@ -440,13 +534,9 @@ const Kasir = () => {
         </div>
 
         <div className="mb-6">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-3">
             <h2 className="font-semibold mb-1">Pesanan</h2>
-            <button
-              onClick={openModal}
-              className="py-2 px-4 rounded-lg font-bold"
-              style={{ backgroundColor: "#FDDC05", color: "black" }}
-            >
+            <button onClick={() => modalOpen("add", true)} className="addBtn">
               + Tambah Pesanan
             </button>
           </div>
@@ -492,9 +582,9 @@ const Kasir = () => {
                   {/* <p>{item.product.diskon ? item.product.diskon : "manok"}</p> */}
 
                   <div className="flex items-center">
-                    <p className="font-semibold mr-4">
+                    <p className="font-semibold mr-4 relative">
                       {item.product.price != item.product.priceAfterDiscount ? (
-                        <s className="font-bold mr-4 text-red-500 italic">
+                        <s className="font-bold text-sm mr-4 text-red-500 italic absolute -top-5 -left-5">
                           Rp.
                           {new Intl.NumberFormat("id-ID").format(
                             item.product.price
@@ -547,7 +637,35 @@ const Kasir = () => {
             </ul>
           )}
         </div>
-
+        <div className="flex justify-between">
+          <div>
+            <button
+              className={`${
+                kasirItems[0]?.informasi || infoBuyyer.keterangan
+                  ? "addBtn"
+                  : "closeBtn"
+              } flex items-center space-x-3`}
+              onClick={() => modalOpen("note", true)}
+            >
+              <CgNotes className="w-5 h-5" /> <span>+ Tambah Catatan</span>
+            </button>
+            {/* Menampilkan tulisan kecil jika textarea terisi */}
+            {(kasirItems[0]?.informasi ||
+              infoBuyyer.keterangan.trim() !== "") && (
+              <p className="text-gray-500 text-sm mt-2">Catatan terisi</p>
+            )}
+          </div>
+          <select
+            className="select bg-white"
+            value={infoBuyyer.status}
+            name={"status"}
+            onChange={(e) => infoBuyyerHandleChange(e)}
+          >
+            <option value={1}>Active</option>
+            <option value={2}>Pending</option>
+            {/* Tambahkan opsi lain jika diperlukan di masa depan */}
+          </select>
+        </div>
         <div className="mt-6 text-right">
           <p className="text-lg font-bold mb-4">
             Sub Total: Rp.
@@ -559,26 +677,36 @@ const Kasir = () => {
               )
             )}
           </p>
-          <p className="text-lg font-bold mb-4">Diskon: -</p>
+          <p className="text-lg font-bold mb-4">
+            Diskon: {salesDiskon != null ? salesDiskon * 100 : "-"}%
+          </p>
           <p className="text-lg font-bold mb-4">Pajak: {tax * 100}%</p>
           <p className="text-lg font-bold mb-4">
             Total: Rp.
             {new Intl.NumberFormat("id-ID").format(
-              kasirItems.reduce(
-                (total, item) =>
-                  total + item.quantity * item.product.priceAfterDiscount,
+              Math.max(
+                kasirItems.reduce(
+                  (total, item) =>
+                    total + item.quantity * item.product.priceAfterDiscount,
+                  0
+                ) *
+                  (1 - (salesDiskon || 0)) *
+                  (1 + tax), // Kurangi diskon dulu, lalu tambahkan pajak
                 0
-              ) *
-                (1 + tax) // Tambahkan pajak ke total
+              )
             )}
           </p>
-
-          <div className="flex justify-end">
+          <div className="flex justify-start">
             <button
-              onClick={handleButtonClick}
-              className="py-2 px-4 rounded-lg w-1/2 font-bold"
-              style={{ backgroundColor: "#FDDC05", color: "black" }}
+              onClick={() => modalOpen("promo", true)}
+              className={`addBtn ${salesDiskon != null ? "opacity-50" : ""}`}
+              disabled={salesDiskon != null ? true : false}
             >
+              Masukkan Kode Promo
+            </button>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={handleButtonClick} className="submitBtn">
               Bayar
             </button>
           </div>
@@ -586,7 +714,7 @@ const Kasir = () => {
       </div>
 
       {isModalOpen && (
-        <Modal onClose={closeModal} title={"Tambah Pesanan"}>
+        <Modal onClose={() => modalOpen("add", false)} title={"Tambah Pesanan"}>
           <br />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((product) => (
@@ -605,13 +733,16 @@ const Kasir = () => {
                       product.sell_price *
                         (1 -
                           (product.id_item_campaign
-                            ? itemCampaignList.find(
-                                (icl) => {
-                                  const today = new Date().toISOString().split("T")[0];
-                                  return icl._id === product.id_item_campaign &&
+                            ? itemCampaignList.find((icl) => {
+                                const today = new Date()
+                                  .toISOString()
+                                  .split("T")[0];
+                                return (
+                                  icl._id === product.id_item_campaign &&
                                   icl.start_date <= today &&
-                                  icl.end_date >= today}
-                              )?.value || 0
+                                  icl.end_date >= today
+                                );
+                              })?.value || 0
                             : 0)),
                       0 // Pastikan harga tidak negatif
                     )
@@ -622,9 +753,46 @@ const Kasir = () => {
           </div>
         </Modal>
       )}
+      {isModalOpenPromo && (
+        <Modal
+          onClose={() => modalOpen("promo", false)}
+          title="Masukkan Kode Promo"
+        >
+          <form onSubmit={handleSubmitPromo}>
+            <input
+              type="text"
+              value={promo?.nama || ""}
+              onChange={promohandleChange}
+              placeholder="Masukkan Kode Promo..."
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition duration-300 bg-white"
+            />
+            <button>Submit</button>
+          </form>
+        </Modal>
+      )}
 
-      {isModalOpenInfo && (
-        <Modal onClose={closeModalInfo}>
+      {isnoteModalOpen && (
+        <Modal onClose={() => modalOpen("note", false)}>
+          <div className="relative w-full">
+            <p className="font-bold text-2xl mb-5">Catatan Pemesanan </p>
+
+            <textarea
+              id="infoBuyyerKeterangan"
+              name="keterangan"
+              style={{ height: "100px" }}
+              value={infoBuyyer.keterangan}
+              onChange={infoBuyyerHandleChange}
+              className="bg-white shadow-md border p-4 h-20 pt-2 rounded-lg w-full text-black placeholder-black"
+              placeholder="belum menuliskan keterangan"
+            />
+          </div>
+        </Modal>
+      )}
+      {isModalOpenProductInfo && (
+        <Modal
+          onClose={() => modalOpen("product", false)}
+          title={selectedProduct?.name_product}
+        >
           <div>
             <Image
               src={selectedProduct?.image || "https://placehold.co/100x100"}
@@ -678,7 +846,17 @@ const Kasir = () => {
               >
                 <FaMinus />
               </button>
-              <span className="mx-4">{quantity}</span>{" "}
+
+              {/* Styled input with no spinners */}
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                className="mx-4 w-16 text-center appearance-none bg-transparent border-none focus:outline-none focus:border-b focus:border-black spinner-none"
+              />
+
               <button
                 onClick={() => setQuantity(quantity + 1)}
                 className="py-2 px-3 border border-black rounded-md"
@@ -687,11 +865,25 @@ const Kasir = () => {
               </button>
             </div>
 
+            <style jsx>{`
+              /* Remove spinners for WebKit browsers (Chrome, Safari, etc.) */
+              .spinner-none::-webkit-inner-spin-button,
+              .spinner-none::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+              }
+
+              /* Remove spinners for Firefox */
+              .spinner-none {
+                -moz-appearance: textfield;
+              }
+            `}</style>
+
             <button
               onClick={() => {
-                const kasirItems = JSON.parse(
-                  Cookies.get("kasirItems") || "[]"
-                );
+                // const kasirItems = JSON.parse(
+                //   Cookies.get("kasirItems") || "[]"
+                // );
 
                 // console.log("COOKIES BEFORE:", cartItems);
 
@@ -705,10 +897,9 @@ const Kasir = () => {
                 );
 
                 if (existingIndex !== -1) {
-                  // Jika produk dengan extras dan size yang sama sudah ada, tambahkan jumlahnya
                   kasirItems[existingIndex].quantity += quantity;
                 } else {
-                  const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD untuk membandingkan tanggal
+                  const today = new Date().toISOString().split("T")[0];
 
                   const campaign = itemCampaignList.find(
                     (icl) =>
@@ -718,105 +909,99 @@ const Kasir = () => {
                   );
 
                   const discountValue = campaign ? campaign.value : 0;
+                  const informasi = kasirItems.find(
+                    (ki) => ki.informasi != null
+                  );
 
-                  const newItem = {
-                    product: {
-                      id: selectedProduct._id,
-                      id_company: selectedProduct.id_company,
-                      id_store: selectedProduct.id_store,
-                      id_item_campaign:
-                        selectedProduct.id_item_campaign || null,
-                      name: selectedProduct.name_product,
-                      image: selectedProduct.image,
-                      price: selectedProduct.sell_price,
-                      diskon: discountValue, // Diskon hanya jika campaign masih berlaku
-                      priceAfterDiscount:
-                        selectedProduct.sell_price * (1 - discountValue), // Harga setelah diskon
-                    },
-                    quantity,
-                    selectedExtra: selectedExtra
-                      ? {
-                          _id: selectedExtra,
-                          name: selectedProduct?.id_extras?.extrasDetails.find(
-                            (extra) => extra._id === selectedExtra
-                          )?.name,
-                        }
-                      : null,
-                    selectedSize: selectedSize
-                      ? {
-                          _id: selectedSize,
-                          name: selectedProduct?.id_size?.sizeDetails.find(
-                            (size) => size._id === selectedSize
-                          )?.name,
-                        }
-                      : null,
-                  };
+                  if (!informasi) {
+                    const newItem = {
+                      product: {
+                        id: selectedProduct._id,
+                        code: selectedProduct.product_code,
+                        id_company: selectedProduct.id_company,
+                        id_store: selectedProduct.id_store,
+                        id_item_campaign:
+                          selectedProduct.id_item_campaign || null,
+                        name: selectedProduct.name_product,
+                        image: selectedProduct.image,
+                        price: selectedProduct.sell_price,
+                        diskon: discountValue, // Diskon hanya jika campaign masih berlaku
+                        priceAfterDiscount:
+                          selectedProduct.sell_price * (1 - discountValue), // Harga setelah diskon
+                      },
+                      quantity,
+                      selectedExtra: selectedExtra
+                        ? {
+                            _id: selectedExtra,
+                            name: selectedProduct?.id_extras?.extrasDetails.find(
+                              (extra) => extra._id === selectedExtra
+                            )?.name,
+                          }
+                        : null,
+                      selectedSize: selectedSize
+                        ? {
+                            _id: selectedSize,
+                            name: selectedProduct?.id_size?.sizeDetails.find(
+                              (size) => size._id === selectedSize
+                            )?.name,
+                          }
+                        : null,
+                    };
 
-                  console.log("item barunya", newItem);
-                  addNewItems(newItem);
+                    console.log("item barunya le", newItem);
+                    addNewItems(newItem);
+                  } else {
+                    const newItem = {
+                      informasi: {
+                        id_order: informasi.informasi.id_order,
+                        code: informasi.informasi.code,
+                        id_table_cust: informasi.informasi.id_table_cust,
+                        person_name: informasi.informasi.person_name,
+                      },
+                      product: {
+                        id: selectedProduct._id,
+                        id_company: selectedProduct.id_company,
+                        id_store: selectedProduct.id_store,
+                        code: selectedProduct.product_code,
+                        id_item_campaign:
+                          selectedProduct.id_item_campaign || null,
+                        name: selectedProduct.name_product,
+                        image: selectedProduct.image,
+                        price: selectedProduct.sell_price,
+                        diskon: discountValue, // Diskon hanya jika campaign masih berlaku
+                        priceAfterDiscount:
+                          selectedProduct.sell_price * (1 - discountValue), // Harga setelah diskon
+                      },
+                      quantity,
+                      selectedExtra: selectedExtra
+                        ? {
+                            _id: selectedExtra,
+                            name: selectedProduct?.id_extras?.extrasDetails.find(
+                              (extra) => extra._id === selectedExtra
+                            )?.name,
+                          }
+                        : null,
+                      selectedSize: selectedSize
+                        ? {
+                            _id: selectedSize,
+                            name: selectedProduct?.id_size?.sizeDetails.find(
+                              (size) => size._id === selectedSize
+                            )?.name,
+                          }
+                        : null,
+                    };
 
-                  // Jika belum ada, tambahkan sebagai item baru
-                  // const newItem = {
-                  //   product: {
-                  //     // ...prevProduct  // ini bikin ngebug
-                  //     id: selectedProduct._id,
-                  //     id_company : selectedProduct.id_company,
-                  //     id_store : selectedProduct.id_store,
-                  //     id_item_campaign : selectedProduct.id_item_campaign || null,
-                  //     name: selectedProduct.name_product,
-                  //     image: selectedProduct.image,
-                  //     price: selectedProduct.sell_price,
-                  //     diskon:
-                  //       selectedProduct.id_item_campaign != null
-                  //         ? itemCampaignList.find(
-                  //             (icl) =>
-                  //               icl._id == selectedProduct.id_item_campaign
-                  //           )?.value
-                  //         : 0,
-                  //     priceAfterDiscount:
-                  //       selectedProduct.sell_price *
-                  //       (1 -
-                  //         (selectedProduct.id_item_campaign != null
-                  //           ? itemCampaignList.find(
-                  //               (icl) =>
-                  //                 icl._id == selectedProduct.id_item_campaign
-                  //             )?.value || 0
-                  //           : 0)),
-                  //   },
-                  //   quantity,
-                  //   selectedExtra: selectedExtra
-                  //     ? {
-                  //         _id: selectedExtra,
-                  //         name: selectedProduct?.id_extras?.extrasDetails.find(
-                  //           (extra) => extra._id === selectedExtra
-                  //         )?.name,
-                  //       }
-                  //     : null,
-                  //   selectedSize: selectedSize
-                  //     ? {
-                  //         _id: selectedSize,
-                  //         name: selectedProduct?.id_size?.sizeDetails.find(
-                  //           (size) => size._id === selectedSize
-                  //         )?.name,
-                  //       }
-                  //     : null,
-                  // };
-                  // console.log("YUDAAA", newItem.selectedExtra);
-                  // kasirItems.push(newItem);
-                  // console.log("item barunya", newItem);
-                  // addNewItems(newItem);
+                    console.log("item barunya", newItem);
+                    addNewItems(newItem);
+                  }
                 }
-                // Cookies.set("kasirItems", JSON.stringify(kasirItems), {
-                //   expires: 7,
-                // });
-                // console.log("Menambahkan ke keranjang:", cartItems);
-                closeModalInfo();
+                modalOpen("product", false);
                 handleCartUpdate();
               }}
               className={`mt-4 w-full p-2 rounded-md ${
-                quantity === 0 ? "bg-gray-400" : "bg-green-500 text-white"
+                quantity === 0 ? "closeBtn" : "addBtn"
               }`}
-              disabled={quantity === 0}
+              disabled={quantity === 0 ? true : false}
             >
               Tambah ke Keranjang
             </button>

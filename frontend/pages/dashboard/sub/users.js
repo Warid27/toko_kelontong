@@ -9,6 +9,7 @@ import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
+import Select from "react-select";
 
 const User = () => {
   const [showPassword, setShowPassword] = useState(false); // State for showing password
@@ -37,6 +38,7 @@ const User = () => {
     username: "",
     password: "",
     rule: "",
+    status: "",
     id_company: "",
     id_store: "",
   });
@@ -101,21 +103,17 @@ const User = () => {
     setIsUpdateModalOpen(false);
   };
 
-  const handleStatus = async (userId, currentStatus) => {
+  const handleStatusSelect = async (userId, selectedStatus) => {
     try {
       setLoading(true);
 
-      const newStatus = currentStatus === 0 ? 1 : 0;
-
       const response = await client.put(`/api/user/${userId}`, {
-        status: newStatus === 0 ? 0 : 1,
+        status: selectedStatus,
       });
-
-      console.log("Response from API:", response.data);
 
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
-          user._id === userId ? { ...user, status: newStatus } : user
+          user._id === userId ? { ...user, status: selectedStatus } : user
         )
       );
     } finally {
@@ -159,8 +157,6 @@ const User = () => {
   const handleUpdateUser = (user) => {
     setUserToUpdate(user); // Menyimpan Pengguna yang dipilih
     setIsUpdateModalOpen(true);
-
-    console.log(user);
   };
 
   const deleteUserById = async (id) => {
@@ -242,12 +238,13 @@ const User = () => {
   useEffect(() => {
     if (userToUpdate) {
       setUserDataUpdate({
-        id: userToUpdate._id || "",
-        username: userToUpdate.username || "",
-        password: userToUpdate.password || "",
-        rule: userToUpdate.rule || "",
-        id_company: userToUpdate.id_company || "",
-        id_store: userToUpdate.id_store || "",
+        id: userToUpdate._id,
+        username: userToUpdate.username,
+        password: "",
+        rule: userToUpdate.rule,
+        status: userToUpdate.status !== undefined ? userToUpdate.status : 1, // Default to 1
+        id_company: userToUpdate.id_company,
+        id_store: userToUpdate.id_store,
       });
     }
   }, [userToUpdate]);
@@ -273,17 +270,8 @@ const User = () => {
       const token = localStorage.getItem("token");
       const response = await client.put(
         `/api/user/${userDataUpdate.id}`,
-        {
-          name: userDataUpdate.username,
-          address: userDataUpdate.address,
-          id_company: userDataUpdate.id_company,
-        },
-
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        userDataUpdate,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log("User updated successfully:", response.data);
       window.location.reload();
@@ -379,12 +367,17 @@ const User = () => {
                         <b>{user.username}</b>
                       </td>
                       <td>
-                        <input
-                          type="checkbox"
-                          className="toggle"
-                          checked={user.status === 0}
-                          onChange={() => handleStatus(user._id, user.status)}
-                        />
+                        <select
+                          className="select bg-white"
+                          value={user.status}
+                          onChange={(e) =>
+                            handleStatusSelect(user._id, Number(e.target.value))
+                          }
+                        >
+                          <option value={0}>Active</option>
+                          <option value={1}>Inactive</option>
+                          {/* Tambahkan opsi lain jika diperlukan di masa depan */}
+                        </select>
                       </td>
                       <td>
                         <button
@@ -471,62 +464,55 @@ const User = () => {
                 Kasir
               </option>
             </select>
-            <div className="mt-4">
-              <p className="font-semibold mb-2">Perusahaan</p>
-              <select
-                id="company"
-                className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                value={userDataAdd.id_company}
-                onChange={(e) =>
-                  setUserDataAdd((prevState) => ({
-                    ...prevState,
-                    id_company: e.target.value,
-                  }))
-                }
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Perusahaan ===
-                </option>
-
-                {companyList.length === 0 ? (
-                  <option value="default">No companies available</option>
-                ) : (
-                  companyList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-            <p className="font-semibold mt-4 mb-2">Toko</p>
-            <select
-              id="store"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={userDataAdd.id_store}
-              onChange={(e) =>
+            <p className="font-semibold mt-4 mb-2">Company</p>
+            <Select
+              id="company"
+              className="basic-single"
+              options={companyList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                companyList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find((opt) => opt.value === userDataAdd.id_company) || null
+              }
+              onChange={(selectedOption) =>
                 setUserDataAdd((prevState) => ({
                   ...prevState,
-                  id_store: e.target.value,
+                  id_company: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Toko ===
-              </option>
+              placeholder="Pilih Company..."
+              noOptionsMessage={() => "No Company available"}
+            />
 
-              {storeList.length === 0 ? (
-                <option value="default">No companies available</option>
-              ) : (
-                storeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
+            <p className="font-semibold mt-4 mb-2">Store</p>
+            <Select
+              id="store"
+              className="basic-single"
+              options={storeList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                storeList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find((opt) => opt.value === userDataAdd.id_store) || null
+              }
+              onChange={(selectedOption) =>
+                setUserDataAdd((prevState) => ({
+                  ...prevState,
+                  id_store: selectedOption ? selectedOption.value : "",
+                }))
+              }
+              isSearchable
+              required
+              placeholder="Pilih Store..."
+              noOptionsMessage={() => "No Store available"}
+            />
             <div className="flex justify-end mt-5">
               <button
                 type="button"
@@ -567,7 +553,7 @@ const User = () => {
                   className="border rounded-md p-2 w-full bg-white"
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  value={userDataUpdate.password}
+                  value={userDataUpdate.password} // he le
                   onChange={handleChangeUpdate}
                 />
                 <button
@@ -582,6 +568,7 @@ const User = () => {
             <p className="font-semibold mt-4 mb-2">Rule</p>
             <select
               id="rule"
+              name="rule"
               className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={userDataUpdate.rule}
               onChange={(e) =>
@@ -608,62 +595,58 @@ const User = () => {
                 Kasir
               </option>
             </select>
-            <div className="mt-4">
-              <p className="font-semibold mb-2">Perusahaan</p>
-              <select
-                id="company"
-                className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                value={userDataUpdate.id_store}
-                onChange={(e) =>
-                  setUserDataAdd((prevState) => ({
-                    ...prevState,
-                    id_company: e.target.value,
-                  }))
-                }
-                required
-              >
-                <option value="" disabled>
-                  === Pilih Perusahaan ===
-                </option>
-
-                {companyList.length === 0 ? (
-                  <option value="default">No companies available</option>
-                ) : (
-                  companyList.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-            <p className="font-semibold mt-4 mb-2">Toko</p>
-            <select
-              id="store"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={userDataUpdate.id_store}
-              onChange={(e) =>
-                setUserDataAdd((prevState) => ({
+            <p className="font-semibold mt-4 mb-2">Company</p>
+            <Select
+              id="company"
+              name="id_company"
+              className="basic-single"
+              options={companyList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                companyList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find((opt) => opt.value === userDataUpdate.id_company) ||
+                null
+              }
+              onChange={(selectedOption) =>
+                setUserDataUpdate((prevState) => ({
                   ...prevState,
-                  id_store: e.target.value,
+                  id_company: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Toko ===
-              </option>
+              placeholder="Pilih Company..."
+              noOptionsMessage={() => "No Company available"}
+            />
 
-              {storeList.length === 0 ? (
-                <option value="default">No companies available</option>
-              ) : (
-                storeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
+            <p className="font-semibold mt-4 mb-2">Store</p>
+            <Select
+              id="store"
+              name="id_password"
+              className="basic-single"
+              options={storeList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={
+                storeList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find((opt) => opt.value === userDataUpdate.id_store) || null
+              }
+              onChange={(selectedOption) =>
+                setUserDataUpdate((prevState) => ({
+                  ...prevState,
+                  id_store: selectedOption ? selectedOption.value : "",
+                }))
+              }
+              isSearchable
+              required
+              placeholder="Pilih Store..."
+              noOptionsMessage={() => "No Store available"}
+            />
             <div className="flex justify-end mt-5">
               <button
                 type="button"

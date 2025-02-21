@@ -4,6 +4,8 @@ import fs from "fs/promises";
 import path from "path";
 const router = new Hono();
 
+import { authenticate } from "@middleware/authMiddleware";
+
 // Get all payment
 
 router.post("/listpayment", async (c) => {
@@ -55,7 +57,7 @@ router.post("/getpayment", async (c) => {
 
 // Add payment
 // Route to add a new payment
-router.post("/addpayment", async (c) => {
+router.post("/addpayment", authenticate, async (c) => {
   try {
     // Parse the request body
     const body = await c.req.json();

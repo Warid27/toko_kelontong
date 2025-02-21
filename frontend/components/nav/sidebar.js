@@ -20,6 +20,7 @@ import {
   TbCash,
   TbMoneybag,
   TbChevronDown,
+  TbBuildingWarehouse,
 } from "react-icons/tb";
 
 const Sidebar = () => {
@@ -46,7 +47,6 @@ const Sidebar = () => {
   useEffect(() => {
     // Retrieve the numeric role from localStorage
     const numericRole = localStorage.getItem("rule");
-    console.log("User Role (numeric):", numericRole);
 
     // Map the numeric role to the corresponding role name
     const mappedRole = roleMapping[numericRole] || "kasir";
@@ -55,10 +55,21 @@ const Sidebar = () => {
 
   const menuConfig = [
     { label: "Profile", icon: <TbUser />, key: "profile" },
+    ,
     { label: "Analisis", icon: <TbReportAnalytics />, key: "analytics" },
     { label: "Pembayaran", icon: <TbCash />, key: "payment" },
+    { label: "Tipe", icon: <TbBuilding />, key: "type" },
     { label: "Perusahaan", icon: <TbBuilding />, key: "company" },
     { label: "Toko", icon: <TbBuilding />, key: "store" },
+    {
+      label: "Gudang",
+      icon: TbChevronDown,
+      key: "gudang",
+      submenu: [
+        { label: "Persediaan", icon: <TbBuildingWarehouse />, key: "stock" },
+        { label: "Pembelian", icon: <TbBuildingWarehouse />, key: "pembelian" },
+      ],
+    },
     {
       label: "Sales",
       icon: TbChevronDown,
@@ -68,12 +79,14 @@ const Sidebar = () => {
         { label: "Sales Promo", icon: <TbMoneybag />, key: "sales_campaign" },
       ],
     },
+
     {
       label: "Product",
       icon: TbChevronDown,
       key: "product",
       submenu: [
         { label: "Product", icon: <TbBox />, key: "product" },
+        { label: "Category Product", icon: <TbBox />, key: "category_product" },
         { label: "Product Promo", icon: <TbMoneybag />, key: "item_campaign" },
         { label: "Varian", icon: <TbShoppingBagPlus />, key: "extras" },
         { label: "Ukuran", icon: <TbPercentage />, key: "size" },

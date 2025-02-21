@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model } from "mongoose";
 
 const CompanySchema = new Schema({
   name: {
@@ -13,13 +13,15 @@ const CompanySchema = new Schema({
     type: String,
     required: true,
   },
-  id_type: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Type', required: true 
+  id_type: {
+    type: Schema.Types.ObjectId,
+    ref: "type",
+    required: true,
   },
   status: {
     type: Number,
-    required: true,
+    enum: [0, 1, 2], // (Active, Inactive, Bankrupt)
+    default: 1,
   },
   phone: {
     type: String,
@@ -34,6 +36,5 @@ const CompanySchema = new Schema({
     default: Date.now,
   },
 });
-
 
 export const CompanyModels = model("company", CompanySchema, "company");

@@ -2,21 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-primary: #24d164;
+  --bg-secondary: #3b82f6;
+  --bg-tertiary: #6b7280;
+  --bg-danger: #ef4444;
+  --tw-text-opacity: 1;
+  --color-white: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
 body {
   color: black;
   @apply bg-[#F7F7F7];
 }
 
-.hasatu{
+.hasatu {
   text-align: center;
   font-size: xx-large;
 }
 
 .toggle:checked {
-  border-color: #24D164;
-  background-color: #24D164; /* Kuning */
+  border-color: #24d164;
+  background-color: #24d164; /* Kuning */
 }
 
-table *{
+table * {
   text-align: center;
 }
+
+/* NAVBAR */
+.navbar {
+  background: var(--bg-primary);
+}
+/* === BUTTON === */
+.addBtn {
+  background: var(--bg-primary);
+  color: var(--color-white);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+.submitBtn {
+  background: var(--bg-secondary);
+  color: var(--color-white);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+.closeBtn {
+  background: var(--bg-tertiary);
+  color: var(--color-white);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  margin-right: 0.5rem;
+}
+.dangerBtn {
+  background: var(--bg-danger);
+  color: var(--color-white);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  margin-right: 0.5rem;
+}
+/* === BUTTON === */

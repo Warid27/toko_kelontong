@@ -17,6 +17,7 @@ router.post("/addstore", async (c) => {
     let address;
     let status;
     let id_company;
+    let icon;
 
     // Check if the request is for JSON data
     if (
@@ -29,6 +30,7 @@ router.post("/addstore", async (c) => {
       address = body.address;
       id_company = body.id_company; // Fixed typo (was id_type before)
       status = body.status;
+      icon = body.icon;
     } else {
       // If the body is URL-encoded, use URLSearchParams to parse it
       const rawBody = await c.req.text();
@@ -37,6 +39,7 @@ router.post("/addstore", async (c) => {
       address = body.get("address");
       id_company = body.get("id_company");
       status = body.get("status");
+      icon = body.get("icon");
     }
 
     // Construct a new object with the required fields
@@ -45,6 +48,7 @@ router.post("/addstore", async (c) => {
       address,
       id_company,
       status,
+      icon,
     };
 
     // Validate all required fields
@@ -209,28 +213,99 @@ router.post("/getstore", async (c) => {
 });
 
 // Upload
-
 router.post("/upload", async (c) => {
   try {
+    // Parse the form data
     const formData = await c.req.formData();
     const file = formData.get("file");
 
+    // Validate the file
     if (!file || !(file instanceof File)) {
       return c.json({ error: "Image is required" }, 400);
     }
 
-    // Save the file to the server
-    const uploadsDir = path.join(process.cwd(), "uploads/store/icon");
-    await fs.mkdir(uploadsDir, { recursive: true });
-    const ext = path.extname(file.name);
-    const fileName = `${crypto.randomUUID()}${ext}`;
-    const filePath = path.join(uploadsDir, fileName);
-    const fileBuffer = await file.arrayBuffer();
+    // Define the upload directory
+    const uploadsDir = path.join(process.cwd(), "uploads", "store", "icon");
 
+    // Ensure the upload directory exists
+    try {
+      await fs.mkdir(uploadsDir, { recursive: true });
+    } catch (mkdirError) {
+      console.error("Failed to create upload directory:", mkdirError);
+      return c.json(
+        {
+          error: "Failed to create upload directory",
+          details: mkdirError.message,
+        },
+        500
+      );
+    }
+
+    // Generate a unique file name
+    const ext = path.extname(file.name); // Get the file extension
+    const fileName = `${crypto.randomUUID()}${ext}`; // Create a unique file name
+    const filePath = path.join(uploadsDir, fileName); // Full path to save the file
+
+    // Read the file buffer and save it to the server
+    const fileBuffer = await file.arrayBuffer();
+    await fs.writeFile(filePath, Buffer.from(fileBuffer));
+
+    // Construct the image URL
     const imageUrl = `http://localhost:8080/uploads/store/icon/${fileName}`;
 
-    await fs.writeFile(filePath, Buffer.from(fileBuffer));
+    // Return success response
     return c.json({ success: true, image: imageUrl }, 201);
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    return c.json(
+      { error: "Failed to upload image", details: error.message },
+      500
+    );
+  }
+});
+
+// Banner
+router.post("/banner", async (c) => {
+  try {
+    // Parse the form data
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+
+    // Validate the file
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: "Image is required" }, 400);
+    }
+
+    // Define the upload directory
+    const uploadsDir = path.join(process.cwd(), "uploads", "store", "banner");
+
+    // Ensure the upload directory exists
+    try {
+      await fs.mkdir(uploadsDir, { recursive: true });
+    } catch (mkdirError) {
+      console.error("Failed to create upload directory:", mkdirError);
+      return c.json(
+        {
+          error: "Failed to create upload directory",
+          details: mkdirError.message,
+        },
+        500
+      );
+    }
+    // Generate a unique file name
+    const ext = path.extname(file.name); // Get the file extension
+    const fileName = `${crypto.randomUUID()}${ext}`; // Create a unique file name
+    const filePath = path.join(uploadsDir, fileName); // Full path to save the file
+
+    // Read the file buffer and save it to the server
+    const fileBuffer = await file.arrayBuffer();
+    await fs.writeFile(filePath, Buffer.from(fileBuffer));
+
+    // Construct the image URL
+    const imageUrl = `http://localhost:8080/uploads/store/banner/${fileName}`;
+
+    // Return success response
+    return c.json({ success: true, banner: imageUrl }, 201);
   } catch (error) {
     console.error("Error uploading image:", error);
     return c.json(

@@ -2,6 +2,9 @@ import { Hono } from "hono";
 import { ExtrasModels } from "@models/extras-models";
 import { mongoose } from "mongoose";
 
+// Middleware
+import { authenticate } from "@middleware/authMiddleware"; // Import the middleware
+
 const router = new Hono();
 
 // Get all extras
@@ -50,7 +53,7 @@ router.post("/listextras", async (c) => {
 });
 
 // Get extras by ID
-router.post("/getextras", async (c) => {
+router.post("/getextras", authenticate, async (c) => {
   try {
     const { id } = await c.req.json();
 
@@ -77,7 +80,7 @@ router.post("/getextras", async (c) => {
 });
 
 // Add extras
-router.post("/addextras", async (c) => {
+router.post("/addextras", authenticate, async (c) => {
   try {
     const body = await c.req.json();
     const extras = new ExtrasModels(body);

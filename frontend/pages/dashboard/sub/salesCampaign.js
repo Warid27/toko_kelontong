@@ -9,6 +9,7 @@ import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import DateTimePicker from "@/components/DateTimePicker";
+import Select from "react-select"
 
 const SalesCampaign = () => {
   const [salesCampaign, setSalesCampaign] = useState([]);
@@ -484,89 +485,71 @@ const SalesCampaign = () => {
               name="end_date"
             />
             <p className="font-semibold mt-4 mb-2">Store</p>
-            <select
+            <Select
               id="store"
-              name="id_store"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={salesCampaignDataAdd.id_store}
-              onChange={(e) =>
+              className="basic-single"
+              options={storeList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={storeList
+                .map((c) => ({ value: c._id, label: c.name }))
+                .find((opt) => opt.value === salesCampaignDataAdd.id_store) || null}
+              onChange={(selectedOption) =>
                 setSalesCampaignDataAdd((prevState) => ({
                   ...prevState,
-                  id_store: e.target.value,
+                  id_store: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Store ===
-              </option>
-
-              {storeList.length === 0 ? (
-                <option value="default">No store available</option>
-              ) : (
-                storeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Store..."
+              noOptionsMessage={() => "No Store available"}
+            />
             <p className="font-semibold mt-4 mb-2">Company</p>
-            <select
+            <Select
               id="company"
-              name="id_company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={salesCampaignDataAdd.id_company}
-              onChange={(e) =>
+              className="basic-single"
+              options={companyList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={companyList
+                .map((c) => ({ value: c._id, label: c.name }))
+                .find((opt) => opt.value === salesCampaignDataAdd.id_company) || null}
+              onChange={(selectedOption) =>
                 setSalesCampaignDataAdd((prevState) => ({
                   ...prevState,
-                  id_company: e.target.value,
+                  id_company: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Company ===
-              </option>
-
-              {companyList.length === 0 ? (
-                <option value="default">No company available</option>
-              ) : (
-                companyList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Company..."
+              noOptionsMessage={() => "No Company available"}
+            />
             <p className="font-semibold mt-4 mb-2">User</p>
-            <select
+            <Select
               id="user"
-              name="user"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={salesCampaignDataAdd.id_user}
-              onChange={(e) =>
+              className="basic-single"
+              options={userList.map((c) => ({
+                value: c._id,
+                label: c.username,
+              }))}
+              value={userList
+                .map((c) => ({ value: c._id, label: c.username }))
+                .find((opt) => opt.value === salesCampaignDataAdd.id_user) || null}
+              onChange={(selectedOption) =>
                 setSalesCampaignDataAdd((prevState) => ({
                   ...prevState,
-                  id_user: e.target.value,
+                  id_user: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih User ===
-              </option>
-
-              {userList.length === 0 ? (
-                <option value="default">No user available</option>
-              ) : (
-                userList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.username}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih User..."
+              noOptionsMessage={() => "No User available"}
+            />
             <p className="font-semibold mt-4 mb-2">Value</p>
             <input
               type="text"
@@ -647,89 +630,71 @@ const SalesCampaign = () => {
               name="end_date"
             />
             <p className="font-semibold mt-4 mb-2">Store</p>
-            <select
+            <Select
               id="store"
-              name="id_store"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={salesCampaignDataUpdate.id_store}
-              onChange={(e) =>
+              className="basic-single"
+              options={storeList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={storeList
+                .map((c) => ({ value: c._id, label: c.name }))
+                .find((opt) => opt.value === salesCampaignDataUpdate.id_store) || null}
+              onChange={(selectedOption) =>
                 setSalesCampaignDataUpdate((prevState) => ({
                   ...prevState,
-                  id_store: e.target.value,
+                  id_store: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Store ===
-              </option>
-
-              {storeList.length === 0 ? (
-                <option value="default">No store available</option>
-              ) : (
-                storeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Store..."
+              noOptionsMessage={() => "No Store available"}
+            />
             <p className="font-semibold mt-4 mb-2">Company</p>
-            <select
+            <Select
               id="company"
-              name="id_company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={salesCampaignDataUpdate.id_company}
-              onChange={(e) =>
+              className="basic-single"
+              options={companyList.map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={companyList
+                .map((c) => ({ value: c._id, label: c.name }))
+                .find((opt) => opt.value === salesCampaignDataUpdate.id_company) || null}
+              onChange={(selectedOption) =>
                 setSalesCampaignDataUpdate((prevState) => ({
                   ...prevState,
-                  id_company: e.target.value,
+                  id_company: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Company ===
-              </option>
-
-              {companyList.length === 0 ? (
-                <option value="default">No company available</option>
-              ) : (
-                companyList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Company..."
+              noOptionsMessage={() => "No Company available"}
+            />
             <p className="font-semibold mt-4 mb-2">User</p>
-            <select
+            <Select
               id="user"
-              name="id_user"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={salesCampaignDataUpdate.id_user}
-              onChange={(e) =>
+              className="basic-single"
+              options={userList.map((c) => ({
+                value: c._id,
+                label: c.username,
+              }))}
+              value={userList
+                .map((c) => ({ value: c._id, label: c.username }))
+                .find((opt) => opt.value === salesCampaignDataUpdate.id_user) || null}
+              onChange={(selectedOption) =>
                 setSalesCampaignDataUpdate((prevState) => ({
                   ...prevState,
-                  id_user: e.target.value,
+                  id_user: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih User ===
-              </option>
-
-              {userList.length === 0 ? (
-                <option value="default">No user available</option>
-              ) : (
-                userList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.username}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih User..."
+              noOptionsMessage={() => "No User available"}
+            />
             <p className="font-semibold mt-4 mb-2">Value</p>
             <input
               type="text"

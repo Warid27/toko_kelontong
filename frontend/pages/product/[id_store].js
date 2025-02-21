@@ -21,6 +21,7 @@ export default function Home() {
   const [quantity, setQuantity] = useState(1);
   const [cartUpdate, setCartUpdated] = useState(false);
   const [itemCampaignList, setItemCampaignList] = useState([]);
+  const [categoryProductList, setCategoryProductList] = useState([]);
   const router = useRouter();
   const [stores, setStores] = useState([]);
 
@@ -92,6 +93,29 @@ export default function Home() {
       }
     };
     fetchItemCampaign();
+  }, []);
+  useEffect(() => {
+    const fetchCategoryProduct = async () => {
+      try {
+        const response = await client.post("/category/listcategories", {});
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /category/listcategories:",
+            data
+          );
+          setCategoryProductList([]);
+        } else {
+          setCategoryProductList(data);
+        }
+      } catch (error) {
+        console.error("Error fetching item campaign:", error);
+        setCategoryProductList([]);
+      }
+    };
+    fetchCategoryProduct();
   }, []);
 
   useEffect(() => {
@@ -166,84 +190,102 @@ export default function Home() {
     <div className="bg-[#F7F7F7] min-h-screen">
       <Topbar onCartUpdate={handleCartUpdate} />
       <div className="p-10">
-        <div className="flex justify-center">
+        <div className="flex justify-center max-h-[55vh] overflow-hidden relative">
           <Image
             src={stores.banner}
             alt="header"
             layout="responsive"
             width={100}
             height={100}
-            className="w-full"
+            className="w-full  object-fill"
           />
         </div>
         <div className="justify-items-start mt-10 space-x-4 flex">
-          <button className="bg-[#FFA461] hover:bg-[#e68e4f] p-3 rounded-md font-semibold flex-1">
-            Promo
-          </button>
-          <Link
-            href="/product/1?id_company=1&id_category_product=2"
-            className="bg-[#FEE66B] hover:bg-[#ebd35c] p-3 rounded-md flex-1 font-semibold"
-          >
-            <button className="flex items-center justify-center w-full h-full">
-              Minuman
-            </button>
-          </Link>
-          <Link
-            href="/product/1?id_company=1&id_category_product=1"
-            className="bg-[#F7E7C3] hover:bg-[#e4d4b0] p-3 rounded-md flex-1 font-semibold"
-          >
-            <button className="flex items-center justify-center w-full h-full">
-              Makanan
-            </button>
-          </Link>
-          <Link
-            href="/product/1?id_company=1&id_category_product=3"
-            className="bg-[#DC9A78] hover:bg-[#d39272] p-3 rounded-md flex-1 font-semibold"
-          >
-            <button className="flex items-center justify-center w-full h-full">
-              Snack
-            </button>
-          </Link>
+          {categoryProductList.map((cpl) => {
+            const { id_store, id_company } = router.query;
+
+            return (
+              <Link
+                key={cpl._id}
+                href={`/product/${id_store}?id_company=${id_company}&id_category_product=${cpl._id}`}
+                className="bg-[#FEE66B] hover:bg-[#ebd35c] p-3 rounded-md flex-1 font-semibold"
+              >
+                <button className="flex items-center justify-center w-full h-full">
+                  {cpl.name_category}
+                </button>
+              </Link>
+            );
+          })}
         </div>
+        {/* <button className="bg-[#FFA461] hover:bg-[#e68e4f] p-3 rounded-md font-semibold flex-1">
+            Promo
+          </button> */}
+
         <div className="mt-10 space-y-6">
           <h2 className="font-bold text-4xl mb-4">Products</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((product) => (
-              <div key={product._id} onClick={() => handleCardClick(product)}>
+              <div
+                className="flex justify-center max-h-[55vh] relative"
+                key={product._id}
+                onClick={() => handleCardClick(product)}
+              >
                 <Card
+                  className="w-full object-cover"
                   image={product.image || "https://placehold.co/100x100"}
                   nama={product.name_product}
+                  diskon={
+                    product.id_item_campaign
+                      ? itemCampaignList.find((icl) => {
+                          const today = new Date().toISOString().split("T")[0];
+                          return (
+                            icl._id === product.id_item_campaign &&
+                            icl.start_date <= today &&
+                            icl.end_date >= today
+                          );
+                        })?.value || 0
+                      : 0
+                  }
                   harga={`Rp ${new Intl.NumberFormat("id-ID").format(
                     Math.max(
                       product.sell_price *
                         (1 -
                           (product.id_item_campaign
-                            ? itemCampaignList.find(
-                                (icl) => {
-                                  const today = new Date().toISOString().split("T")[0];
-                                  return icl._id === product.id_item_campaign &&
+                            ? itemCampaignList.find((icl) => {
+                                const today = new Date()
+                                  .toISOString()
+                                  .split("T")[0];
+                                return (
+                                  icl._id === product.id_item_campaign &&
                                   icl.start_date <= today &&
-                                  icl.end_date >= today}
-                              )?.value || 0
+                                  icl.end_date >= today
+                                );
+                              })?.value || 0
                             : 0)),
                       0 // Pastikan harga tidak negatif
                     )
-                  )}`
-                  // harga={
-                  //   `Rp ${new Intl.NumberFormat("id-ID").format(
-                  //     product.sell_price
-                  //   )
-                  // }`
-                    // product.price_before !== product.price_after ? (
-                    //   <div>
-                    //     <span className="line-through text-red-500">
-                    //       Rp {product.price_before}
-                    //     </span>
-                    //     <span className="ml-2">Rp {product.price_after}</span>
-                    //   </div>
-                    // ) : (
-                    //   <span>Rp {product.price_after}</span>
-                    // )
+                  )}`}
+                  hargaDiskon={
+                    //  KONDISI: Apabila ada item_campaignya,
+                    (
+                      product.id_item_campaign
+                        ? itemCampaignList.find((icl) => {
+                            const today = new Date()
+                              .toISOString()
+                              .split("T")[0];
+                            return (
+                              icl._id === product.id_item_campaign &&
+                              icl.start_date <= today &&
+                              icl.end_date >= today
+                            );
+                          })?.value || 0
+                        : 0
+                    )
+                      ? //  KONDISI: maka return yang bawah
+                        `Rp ${new Intl.NumberFormat("id-ID").format(
+                          product.sell_price
+                        )}`
+                      : null
                   }
                 />
               </div>

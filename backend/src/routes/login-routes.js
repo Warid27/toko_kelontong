@@ -1,5 +1,8 @@
 import { Hono } from "hono";
+import { JWT_SECRET } from "@config/config";
 import { UserModels } from "@models/user-models";
+import argon2 from "argon2";
+import jwt from "jsonwebtoken";
 
 const router = new Hono();
 
@@ -7,7 +10,6 @@ const router = new Hono();
 const parseRequestBody = async (c) => {
   try {
     let username, password;
-
     // Check if the request is JSON
     if (
       c.req.header("accept") === "application/json" ||
@@ -23,18 +25,17 @@ const parseRequestBody = async (c) => {
       username = parsedBody.get("username");
       password = parsedBody.get("password");
     }
-
     // Validate required fields
     if (!username || !password) {
       return { error: "Username and password are required" };
     }
-
     return { username, password };
   } catch (error) {
     console.error("Error parsing request body:", error.message);
     return { error: "Invalid request body" };
   }
 };
+
 router.post("/", async (c) => {
   try {
     // Parse request body
@@ -44,14 +45,15 @@ router.post("/", async (c) => {
     }
 
     // Find user in the database, including the 'status' field
-    const user = await UserModels.findOne({ username }).select("+status"); // Ensure 'status' is included
-
+    const user = await UserModels.findOne({ username }).select(
+      "+password +status"
+    ); // Ensure 'password' and 'status' are included
     if (!user) {
       return c.json({ message: "Wrong username or password" }, 401); // Unauthorized
     }
 
-    // Compare password (plain text)
-    const isPasswordMatch = password === user.password;
+    // Verify password using Argon2
+    const isPasswordMatch = await argon2.verify(user.password, password);
     if (!isPasswordMatch) {
       return c.json({ message: "Wrong username or password" }, 401); // Unauthorized
     }
@@ -66,8 +68,16 @@ router.post("/", async (c) => {
       ); // Forbidden
     }
 
-    // Generate a simple token (for demonstration purposes)
-    const token = `simple-token-${Math.random().toString(36).substring(7)}`;
+    // Generate a JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        rule: user.rule,
+      },
+      JWT_SECRET,
+      { expiresIn: "1h" } // Token expires in 1 hour
+    );
 
     // Return success response
     return c.json({

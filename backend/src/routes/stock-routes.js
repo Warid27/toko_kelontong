@@ -1,32 +1,33 @@
 import { Hono } from "hono";
 import { PORT } from "@config/config";
 import { StockModels } from "@models/stock-models";
-
-const router = new Hono();
-
-
+import { authenticate } from "@middleware/authMiddleware";
+export const router = new Hono();
 
 // Add Stock
-router.post("/addstock", async (c) => {
+router.post("/addstock", authenticate, async (c) => {
   try {
     const stok = new StockModels(c.body);
     await stok.save();
     return c.json(stok, { status: 201 });
   } catch (error) {
     console.error("Error saving stock:", error);
-    return c.json({ error: 'Something went wrong' }, { status: 500 });
+    return c.json({ error: "Something went wrong" }, { status: 500 });
   }
 });
 
 // Get all stock
-router.get("/liststock", async (c) => {
+router.post("/liststock", authenticate, async (c) => {
   try {
-    // Fetch all companies from the database
-    const stock = await StockModels.find();
+    // Fetch stock data and populate the 'id_product' field
+    const stock = await StockModels.find().populate("id_product");
     return c.json(stock, 200);
   } catch (error) {
-    return c.text("Internal Server Error", 500);
+    console.error("Error fetching products:", error);
+    return c.json(
+      { error: "Internal Server Error", details: error.message },
+      500
+    );
   }
 });
-
 export default router;

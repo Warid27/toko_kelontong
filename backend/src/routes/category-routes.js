@@ -2,6 +2,9 @@ import { Hono } from "hono";
 import { CategoryProductModels } from "@models/categoryProduct-models"; // Adjust the import path as needed
 import { mongoose } from "mongoose";
 
+// Middleware
+import { authenticate } from "@middleware/authMiddleware"; // Import the middleware
+
 const router = new Hono();
 
 // Get all categories
@@ -47,7 +50,7 @@ router.post("/listcategories", async (c) => {
 });
 
 // Get category by ID
-router.post("/getcategory", async (c) => {
+router.post("/getcategory", authenticate, async (c) => {
   try {
     const { id } = await c.req.json();
     if (!id) {
@@ -70,7 +73,7 @@ router.post("/getcategory", async (c) => {
 });
 
 // Add category
-router.post("/addcategory", async (c) => {
+router.post("/addcategory", authenticate, async (c) => {
   try {
     const body = await c.req.json();
     const category = new CategoryProductModels(body);

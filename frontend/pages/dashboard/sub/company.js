@@ -8,12 +8,12 @@ import { HiDotsHorizontal } from "react-icons/hi";
 import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
+import Select from "react-select";
 
 const CompanyData = () => {
   const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [companyToUpdate, setCompanyToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Untuk mengontrol tampilan modal update
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
@@ -38,37 +38,26 @@ const CompanyData = () => {
     email: "",
   });
 
-  const openModalAdd = () => {
-    setIsModalOpen(true);
+  // --- Function
+  const modalOpen = (param, bool) => {
+    const setters = {
+      add: setIsModalOpen,
+      update: setIsUpdateModalOpen,
+    };
+    if (setters[param]) {
+      setters[param](bool);
+    }
   };
-
-  const closeModalAdd = () => {
-    setIsModalOpen(false);
-  };
-  const openModalUpdate = () => {
-    setIsUpdateModalOpen(true);
-  };
-
-  const closeModalUpdate = () => {
-    setIsUpdateModalOpen(false);
-  };
-
-  // const addNewCompany = (newCompany) => {
-  //   setCompanies((prevCompanys) => [...prevCompanys, newCompany]);
-  // };
 
   useEffect(() => {
     const fetchType = async () => {
       try {
-        const response = await client.get("/type/listtype");
+        const response = await client.post("/type/listtype", {});
         const data = response.data;
 
         // Validate that the response is an array
         if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /type/listtype:",
-            data
-          );
+          console.error("Unexpected data format from /type/listtype:", data);
           setTypeList([]);
         } else {
           setTypeList(data);
@@ -81,22 +70,20 @@ const CompanyData = () => {
     fetchType();
   }, []);
 
-  const handleStatus = async (companyId, currentStatus) => {
+  const handleStatusSelect = async (companyId, selectedStatus) => {
     try {
       setLoading(true);
 
-      const newStatus = currentStatus === 0 ? 1 : 0;
-
       const response = await client.put(`/api/company/${companyId}`, {
-        status: newStatus === 0 ? 0 : 1,
+        status: selectedStatus,
       });
 
       console.log("Response from API:", response.data);
 
-      setCompanies((prevCompanys) =>
-        prevCompanys.map((company) =>
-          company._id === companyId 
-            ? { ...company, status: newStatus }
+      setCompanies((prevCompanies) =>
+        prevCompanies.map((company) =>
+          company._id === companyId
+            ? { ...company, status: selectedStatus }
             : company
         )
       );
@@ -104,6 +91,7 @@ const CompanyData = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     const fetchCompanys = async () => {
       try {
@@ -138,15 +126,9 @@ const CompanyData = () => {
     fetchCompanys();
   }, []);
 
-  // const handleAddCompany = () => {
-  //   setIsModalOpen(true);
-  // };
-
-  const handleUpdateCompany = (company) => {
+  const handleUpdateCompany = (company, params) => {
     setCompanyToUpdate(company); // Menyimpan produk yang dipilih
-    setIsUpdateModalOpen(true);
-
-    console.log(company);
+    modalOpen(params, true);
   };
 
   const deleteCompanyById = async (id) => {
@@ -222,12 +204,11 @@ const CompanyData = () => {
         }
       );
 
-      console.log("Company added:", response.data);
+      modalOpen("add", false);
+
       Swal.fire("Berhasil", "Company berhasil ditambahkan!", "success");
 
-      // Reload the page or update state
-      // onClose();
-      window.location.reload();
+      setCompanies((prevCompanies) => [...prevCompanies, response.data]);
     } catch (error) {
       console.error("Error adding Company:", error);
     }
@@ -237,7 +218,7 @@ const CompanyData = () => {
     if (companyToUpdate) {
       setCompaniesDataUpdate({
         id: companyToUpdate._id || "",
-        name: companyToUpdate.name|| "", // Menyimpan URL gambar lama
+        name: companyToUpdate.name || "", // Menyimpan URL gambar lama
         address: companyToUpdate.address || "",
         id_type: companyToUpdate.id_type || "",
         status: companyToUpdate.status || "",
@@ -283,9 +264,14 @@ const CompanyData = () => {
           },
         }
       );
-      console.log("Company updated successfully:", response.data);
-      // onClose();
-      window.location.reload();
+      modalOpen("update", false);
+      Swal.fire("Berhasil", "Company berhasil diupdate!", "success");
+
+      setCompanies((prevCompanies) =>
+        prevCompanies.map((companies) =>
+          companies._id === companiesDataUpdate.id ? response.data : companies
+        )
+      );
     } catch (error) {
       console.error("Error updating Company:", error);
     }
@@ -342,10 +328,7 @@ const CompanyData = () => {
             </select>
           </div>
           <div>
-            <button
-              className="button bg-[#FDDC05] text-white p-2 rounded-lg font-bold"
-              onClick={openModalAdd}
-            >
+            <button className="addBtn" onClick={() => modalOpen("add", true)}>
               + Tambah Company
             </button>
           </div>
@@ -375,18 +358,23 @@ const CompanyData = () => {
                       <td>{company.name}</td>
                       <td>{company.address}</td>
                       <td>
-                        <input
-                          type="checkbox"
-                          className="toggle"
-                          checked={company.status === 0}
-                          onChange={() =>
-                            handleStatus(company._id, company.status)
+                        <select
+                          className="select bg-white"
+                          value={company.status}
+                          onChange={(e) =>
+                            handleStatusSelect(
+                              company._id,
+                              Number(e.target.value)
+                            )
                           }
-                        />
+                        >
+                          <option value={0}>Active</option>
+                          <option value={1}>Inactive</option>
+                          <option value={2}>Bankrupt</option>
+                          {/* Tambahkan opsi lain jika diperlukan di masa depan */}
+                        </select>
                       </td>
-                      <td className="flex space-x-4">
-                        {" "}
-                        {/* Beri jarak antar tombol */}
+                      <td>
                         <button
                           className=" p-3 rounded-lg text-2xl "
                           onClick={() => deleteCompanyById(company._id)}
@@ -395,7 +383,7 @@ const CompanyData = () => {
                         </button>
                         <button
                           className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateCompany(company)}
+                          onClick={() => handleUpdateCompany(company, "update")}
                         >
                           <FaRegEdit />
                         </button>
@@ -410,7 +398,10 @@ const CompanyData = () => {
       </div>
 
       {isModalOpen && (
-        <Modal onClose={closeModalAdd} title={"Tambah Perusahaan"}>
+        <Modal
+          onClose={() => modalOpen("add", false)}
+          title={"Tambah Perusahaan"}
+        >
           <form onSubmit={handleSubmitAdd}>
             <p className="font-semibold mt-4">Nama Perusahaan</p>
             <p className="mb-2 text-sm text-slate-500">
@@ -436,34 +427,30 @@ const CompanyData = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Type Perusahaan</p>
-            <select
-              id="company"
-              name="id_type"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={companiesDataAdd.id_type}
-              onChange={(e) =>
+            <p className="font-semibold mt-4 mb-2">Type</p>
+            <Select
+              id="type"
+              className="basic-single"
+              options={typeList.map((c) => ({
+                value: c._id,
+                label: c.type,
+              }))}
+              value={
+                typeList
+                  .map((c) => ({ value: c._id, label: c.type }))
+                  .find((opt) => opt.value === companiesDataAdd.id_type) || null
+              }
+              onChange={(selectedOption) =>
                 setCompaniesDataAdd((prevState) => ({
                   ...prevState,
-                  id_type: e.target.value,
+                  id_type: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Type ===
-              </option>
-
-              {typeList.length === 0 ? (
-                <option value="default">No type available</option>
-              ) : (
-                typeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.type}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Type..."
+              noOptionsMessage={() => "No Type available"}
+            />
             <p className="font-semibold mt-4 mb-2">Phone</p>
             <input
               type="text"
@@ -487,7 +474,7 @@ const CompanyData = () => {
               <button
                 type="button"
                 className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={closeModalAdd}
+                onClick={() => modalOpen("add", false)}
               >
                 Batal
               </button>
@@ -502,9 +489,11 @@ const CompanyData = () => {
         </Modal>
       )}
       {isUpdateModalOpen && (
-        <Modal onClose={closeModalUpdate} title={"Edit Perusahaan"}>
+        <Modal
+          onClose={() => modalOpen("update", false)}
+          title={"Edit Perusahaan"}
+        >
           <form onSubmit={handleSubmitUpdate}>
-            
             <p className="font-semibold mt-4">Nama Perusahaan</p>
             <input
               type="text"
@@ -523,33 +512,31 @@ const CompanyData = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Type Perusahaan</p>
-            <select
-              id="company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={companiesDataUpdate.id_type}
-              onChange={(e) =>
-                setCompaniesDataUpdate((prevState) => ({
+            <p className="font-semibold mt-4 mb-2">Type</p>
+            <Select
+              id="type"
+              className="basic-single"
+              options={typeList.map((c) => ({
+                value: c._id,
+                label: c.type,
+              }))}
+              value={
+                typeList
+                  .map((c) => ({ value: c._id, label: c.type }))
+                  .find((opt) => opt.value === companiesDataUpdate.id_type) ||
+                null
+              }
+              onChange={(selectedOption) =>
+                setCompaniesDataAdd((prevState) => ({
                   ...prevState,
-                  id_type: e.target.value,
+                  id_type: selectedOption ? selectedOption.value : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Type ===
-              </option>
-
-              {typeList.length === 0 ? (
-                <option value="default">No companies available</option>
-              ) : (
-                typeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.type}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Type..."
+              noOptionsMessage={() => "No Type available"}
+            />
             <p className="font-semibold mt-4 mb-2">Phone</p>
             <input
               type="text"
@@ -569,18 +556,15 @@ const CompanyData = () => {
               required
             />
             <div className="flex justify-end mt-4">
-              {/* <button
-              type="button"
-              className="mr-2 bg-gray-400 text-white p-2 rounded-lg"
-              onClick={onClose}
-            >
-              Batal
-            </button> */}
               <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
+                type="button"
+                className="closeBtn"
+                onClick={() => modalOpen("update", false)}
               >
-                Simpan Perubahan
+                Batal
+              </button>
+              <button type="submit" className="submitBtn">
+                Simpan
               </button>
             </div>
           </form>

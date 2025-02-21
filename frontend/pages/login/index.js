@@ -33,7 +33,7 @@ const Login = () => {
       localStorage.setItem("id_company", response.data.user.id_company);
       localStorage.setItem("rule", response.data.user.rule);
 
-      router.push("/dashboard");  
+      router.push("/dashboard");
     } catch (error) {
       console.error("Error during login:", error);
 

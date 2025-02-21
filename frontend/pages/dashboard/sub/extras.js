@@ -13,13 +13,23 @@ const Extras = () => {
   const [extrasData, setExtrasData] = useState({}); // Changed to object
   const [isLoading, setIsLoading] = useState(true);
   const [productList, setProductList] = useState([]); // State for list of products
-  const [isExtrasModelOpen, setIsExtrasModelOpen] = useState(false);
+  const [isExtrasModalOpen, setIsExtrasModalOpen] = useState(false);
   const [extraDataUpdate, setExtraDataUpdate] = useState({
     id: "",
     name: "",
     deskripsi: "",
     id_product: "",
   });
+
+  // --- Function
+  const modalOpen = (param, bool) => {
+    const setters = {
+      open: setIsExtrasModalOpen,
+    };
+    if (setters[param]) {
+      setters[param](bool);
+    }
+  };
 
   // Fetch extras data for a given product ID
   const getExtras = async (productId, extrasId) => {
@@ -118,10 +128,6 @@ const Extras = () => {
       });
     }
   }, [productList]);
-
-  const closeModalUpdate = () => {
-    setIsExtrasModelOpen(false);
-  };
 
   const handleChangeExtras = (e) => {
     const { name, value } = e.target;
@@ -278,9 +284,7 @@ const Extras = () => {
   };
   const handleUpdateExtras = (product) => {
     setExtraDataUpdate(product);
-    setIsExtrasModelOpen(true);
-
-    console.log(product);
+    modalOpen("open", true);
   };
 
   // DETAILS
@@ -372,8 +376,8 @@ const Extras = () => {
         </div>
       </div>
 
-      {isExtrasModelOpen && (
-        <Modal onClose={closeModalUpdate} title={"Varian Produk"}>
+      {isExtrasModalOpen && (
+        <Modal onClose={() => modalOpen("open", false)} title={"Varian Produk"}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -420,7 +424,7 @@ const Extras = () => {
               <p className="font-bold mt-4 text-lg">Detail Varian</p>
               {extrasData[extraDataUpdate._id]?.extrasDetails?.map(
                 (detail, index) => (
-                  <div key={index} className="extras-detail">
+                  <div key={index} className="extras-detail mb-12">
                     <div className="form-group">
                       <label>Nama Detail</label>
                       <input
@@ -454,9 +458,10 @@ const Extras = () => {
                         required
                       />
                     </div>
+
                     <button
                       type="button"
-                      className="bg-red-500 text-white p-2 rounded-lg mt-2"
+                      className="dangerBtn float-end"
                       onClick={() => removeExtrasDetail(index)}
                     >
                       Hapus
@@ -469,7 +474,7 @@ const Extras = () => {
             {/* Add Detail Button */}
             <button
               type="button"
-              className="bg-green-500 text-white p-2 rounded-lg mt-3"
+              className="addBtn mt-3"
               onClick={addExtrasDetail}
             >
               Tambah Detail Varian
@@ -479,16 +484,16 @@ const Extras = () => {
             <div className="flex justify-end mt-5">
               <button
                 type="button"
-                className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={closeModalUpdate}
+                className="closeBtn"
+                onClick={() => modalOpen("open", false)}
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className={`p-2 rounded-lg ${
-                  extraDataUpdate.id_extras ? "bg-blue-500" : "bg-green-500"
-                } text-white`}
+                className={` ${
+                  extraDataUpdate.id_extras ? "submitBtn" : "addBtn"
+                }`}
               >
                 {extraDataUpdate.id_extras ? "Update" : "Tambah"}
               </button>

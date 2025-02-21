@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { fileMetadataModels } from "@models/fileMetadata-models"; // Import the fileMetadata model
 
 const productSchema = new Schema({
   name_product: {
@@ -16,7 +17,7 @@ const productSchema = new Schema({
   },
   image: {
     type: String,
-    required: true,
+    default: "https://placehold.co/500x500",
   },
   buy_price: {
     type: String,
@@ -36,7 +37,8 @@ const productSchema = new Schema({
   },
   status: {
     type: Number,
-    required: true,
+    enum: [0, 1], // (Active, Inactive)
+    default: 1,
   },
   id_store: {
     type: Schema.Types.ObjectId,
@@ -45,32 +47,55 @@ const productSchema = new Schema({
   },
   id_item_campaign: {
     type: Schema.Types.ObjectId,
-    ref: "itemCampaign",
+    ref: "item_campaign",
   },
   id_company: {
     type: Schema.Types.ObjectId,
     ref: "company",
     required: true,
   },
-  stok: {
-    type: Number,
-    required: true || 0,
+  id_stock: {
+    type: Schema.Types.ObjectId,
+    ref: "stok",
   },
   id_extras: {
     type: Schema.Types.ObjectId,
     ref: "extras",
-    // required: true,
   },
   id_size: {
     type: Schema.Types.ObjectId,
     ref: "size",
-    // required: true,
   },
-
   created_at: {
     type: Date,
     default: Date.now,
   },
+});
+
+// Virtual field for resolving the image URL dynamically
+productSchema.virtual("resolvedImage").get(async function () {
+  const shortKey = this.image;
+
+  if (!shortKey) {
+    return "https://placehold.co/500x500"; // Fallback image
+  }
+
+  try {
+    // Look up the file metadata using the shortKey
+    const fileMetadata = await fileMetadataModels.findOne({
+      shortkey: shortKey,
+    });
+
+    if (!fileMetadata) {
+      return "https://placehold.co/500x500"; // Fallback image
+    }
+
+    // Return the fileUrl
+    return fileMetadata.fileUrl;
+  } catch (error) {
+    console.error("Error resolving image:", error);
+    return "https://placehold.co/500x500"; // Fallback image
+  }
 });
 
 export const ProductModels = model("product", productSchema, "product");

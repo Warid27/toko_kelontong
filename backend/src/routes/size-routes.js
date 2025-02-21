@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { SizeModels } from "@models/size-models";
 import { mongoose } from "mongoose";
 
+import { authenticate } from "@middleware/authMiddleware";
+
 const router = new Hono();
 
 // Get all sizes
@@ -37,7 +39,7 @@ router.get("/listsize", async (c) => {
   });
   
   // Add size
-  router.post("/addsize", async (c) => {
+  router.post("/addsize", authenticate, async (c) => {
     try {
       const body = await c.req.json();
   
@@ -49,53 +51,6 @@ router.get("/listsize", async (c) => {
       return c.text("Terjadi kesalahan saat menambahkan size.", 400);
     }
   });
-  
-  // Edit size
-  router.patch("/editsize", async (c) => {
-    try {
-      const body = await c.req.json();
-      const id = body.id;
-  
-      if (!id) {
-        return c.json({ message: "ID size diperlukan." }, 400);
-      }
-  
-      const size = await SizeModels.findByIdAndUpdate(id, body, {
-        new: true,
-        runValidators: true,
-      });
-  
-      if (!size) {
-        return c.json({ message: "Size tidak ditemukan." }, 404);
-      }
-  
-      return c.json(size, 200);
-    } catch (error) {
-      return c.json({ message: "Terjadi kesalahan saat mengedit size.", error: error.message }, 400);
-    }
-  });
-  
-  // Delete size
-  router.delete("/delete-size/:id", async (c) => {
-    try {
-      const id = c.req.param("id");
-  
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return c.json({ error: "Invalid size ID format" }, 400);
-      }
-  
-      const size = await SizeModels.deleteOne({ _id: id });
-  
-      if (!size.deletedCount) {
-        return c.json({ error: "Size not found" }, 404);
-      }
-  
-      return c.json({ message: "Size deleted successfully" }, 200);
-    } catch (error) {
-      return c.json({ error: error.message }, 500);
-    }
-  });
-
   
   
   export default router;

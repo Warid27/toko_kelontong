@@ -15,6 +15,10 @@ import Profile from "@/pages/dashboard/sub/profile";
 import Payment from "@/pages/dashboard/sub/payment";
 import SalesMain from "@/pages/dashboard/sub/sales";
 import ItemCampaign from "@/pages/dashboard/sub/itemCampaign";
+import TypeList from "@/pages/dashboard/sub/typeList";
+import CategoryProduct from "@/pages/dashboard/sub/categoryProduct";
+import StockList from "@/pages/dashboard/sub/stock";
+import Pembelian from "@/pages/dashboard/sub/pembelian";
 import { rolePermissions } from "@/utils/permission";
 
 const ContentRenderer = ({
@@ -33,6 +37,14 @@ const ContentRenderer = ({
   switch (selectedLink) {
     case "company":
       return <CompanyData />;
+    case "stock":
+      return <StockList />;
+    case "pembelian":
+      return <Pembelian />;
+    case "type":
+      return <TypeList />;
+    case "category_product":
+      return <CategoryProduct />;
     case "store":
       return <StoreData />;
     case "analytics":

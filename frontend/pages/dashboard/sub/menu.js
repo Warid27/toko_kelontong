@@ -9,6 +9,7 @@ import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
+import Select from "react-select";
 
 const Menu = () => {
   const [products, setProducts] = useState([]);
@@ -124,9 +125,9 @@ const Menu = () => {
     name_product: "",
     id_category_product: "",
     id_item_campaign: "",
-    stock: "",
     barcode: "",
     deskripsi: "",
+    buy_price: "",
     sell_price: "",
     product_code: "",
     id_extras: "",
@@ -139,41 +140,32 @@ const Menu = () => {
     name_product: "",
     id_category_product: "",
     id_item_campaign: "",
-    stock: "",
     barcode: "",
     deskripsi: "",
+    buy_price: "",
     sell_price: "",
     product_code: "",
     id_extras: "",
     id_size: "",
   });
 
-  const openModalAdd = () => {
-    setIsModalOpen(true);
+  // --- Function
+  const modalOpen = (param, bool) => {
+    const setters = {
+      add: setIsModalOpen,
+      update: setIsUpdateModalOpen,
+    };
+    if (setters[param]) {
+      setters[param](bool);
+    }
   };
 
-  const closeModalAdd = () => {
-    setIsModalOpen(false);
-  };
-  const openModalUpdate = () => {
-    setIsUpdateModalOpen(true);
-  };
-
-  const closeModalUpdate = () => {
-    setIsUpdateModalOpen(false);
-  };
-  // const addNewProduct = (newProduct) => {
-  //   setProducts((prevProducts) => [...prevProducts, newProduct]);
-  // };
-
-  const handleStatus = async (productId, currentStatus) => {
+  const handleStatusSelect = async (productId, selectedStatus) => {
     try {
       setLoading(true);
 
-      const newStatus = currentStatus === 0 ? 1 : 0;
-
       const response = await client.put(`/api/product/${productId}`, {
-        status: newStatus === 0 ? 0 : 1,
+        status: selectedStatus,
       });
 
       console.log("Response from API:", response.data);
@@ -181,7 +173,7 @@ const Menu = () => {
       setProducts((prevProducts) =>
         prevProducts.map((product) =>
           product._id === productId
-            ? { ...product, status: newStatus }
+            ? { ...product, status: selectedStatus }
             : product
         )
       );
@@ -189,6 +181,7 @@ const Menu = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -223,15 +216,9 @@ const Menu = () => {
     fetchProducts();
   }, []);
 
-  // const handleAddProduct = () => {
-  //   setIsModalOpen(true);
-  // };
-
-  const handleUpdateProduct = (product) => {
+  const handleUpdateProduct = (product, params) => {
     setProductToUpdate(product); // Menyimpan produk yang dipilih
-    setIsUpdateModalOpen(true);
-
-    console.log(product);
+    modalOpen(params, true);
   };
 
   const deleteProductById = async (id) => {
@@ -246,22 +233,40 @@ const Menu = () => {
 
     if (result.isConfirmed) {
       try {
+        // Retrieve the token from localStorage (or use a hardcoded token for testing)
         const token = localStorage.getItem("token");
+
+        // Make the DELETE request
         const response = await client.delete(`/api/product/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
+        // Check if the response status is successful
         if (response.status === 200) {
           Swal.fire("Berhasil", "Produk berhasil dihapus!", "success");
+
+          // Update the product list by filtering out the deleted product
           setProducts((prevProducts) =>
             prevProducts.filter((p) => p._id !== id)
           );
         }
       } catch (error) {
-        console.error("Gagal menghapus produk:", error.message);
-        Swal.fire("Gagal", "Produk tidak dapat dihapus!", "error");
+        // Handle errors gracefully
+        let errorMessage = "An unexpected error occurred.";
+
+        // Check if the error contains a response from the backend
+        if (error.response) {
+          // Extract the error message from the backend response
+          errorMessage = error.response.data.message || errorMessage;
+        } else if (error.message) {
+          // Use the generic error message if no response is available
+          errorMessage = error.message;
+        }
+
+        // Display the error message using Swal.fire
+        Swal.fire("Gagal", errorMessage, "error");
       }
     }
   };
@@ -283,32 +288,28 @@ const Menu = () => {
       // Ensure all required fields are filled
       if (
         !productDataAdd.name_product ||
-        !productDataAdd.stock ||
         !productDataAdd.sell_price ||
-        !productDataAdd.image
+        !productDataAdd.buy_price
       ) {
         alert("Please fill all required fields.");
         return;
       }
-      if (productDataAdd.sell_price <= 0) {
+      if (productDataAdd.sell_price <= 0 || productDataAdd.buy_price <= 0) {
         Swal.fire("Gagal", "Harga tidak boleh lebih rendah dari 1!");
         return;
       }
       const id_company = localStorage.getItem("id_company");
       const id_store = localStorage.getItem("id_store");
-      const buy_price = productDataAdd.sell_price / (1 + 0.15);
       // Send product data to the backend
       const response = await client.post(
         "/product/addproduct",
         {
           name_product: productDataAdd.name_product,
-          stock: productDataAdd.stock,
           sell_price: productDataAdd.sell_price,
-          buy_price: buy_price,
+          buy_price: productDataAdd.buy_price,
           product_code: productDataAdd.product_code,
           barcode: productDataAdd.barcode,
           deskripsi: productDataAdd.deskripsi,
-          status: "1",
           id_store: id_store,
           id_company: id_company,
           id_extras: null,
@@ -322,37 +323,48 @@ const Menu = () => {
         }
       );
 
-      console.log("Product added:", response.data);
+      // Auto Reload
+      modalOpen("add", false);
       Swal.fire("Berhasil", "Produk berhasil ditambahkan!", "success");
-
-      // Reload the page or update state
-      // onClose();
-      window.location.reload();
+      setProducts((prevProducts) => [...prevProducts, response.data]);
     } catch (error) {
       console.error("Error adding product:", error);
     }
   };
 
-  const handleImageChange = async (e) => {
+  const handleImageChange = async (e, params) => {
     const file = e.target.files[0];
     if (file) {
+      const id_user = localStorage.getItem("id_user");
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("id_user", id_user);
+
+      const pathPrefix = "product";
+      formData.append("pathPrefix", pathPrefix); // Append the pathPrefix
 
       try {
-        const response = await client.post("/product/upload", formData, {
+        const response = await client.post("/api/upload", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         });
+        const uploadedImageUrl = response.data.metadata.shortenedUrl;
+        if (params == "add") {
+          setProductDataAdd((prevState) => ({
+            ...prevState,
+            image: uploadedImageUrl,
+          }));
+        } else if (params == "update") {
+          setProductDataUpdate((prevState) => ({
+            ...prevState,
+            image: uploadedImageUrl,
+          }));
+        } else {
+          console.error("Error uploading image:", error);
+        }
 
-        // Store the image URL in the productData state
-        const uploadedImageUrl = response.data.image;
-        setProductDataAdd((prevState) => ({
-          ...prevState,
-          image: uploadedImageUrl,
-        }));
-
+        console.log("GAMBARNYA LEEEEEEEEEEE", uploadedImageUrl);
         console.log("Image uploaded successfully:", uploadedImageUrl);
       } catch (error) {
         console.error("Error uploading image:", error);
@@ -368,9 +380,9 @@ const Menu = () => {
         name_product: productToUpdate.name_product || "",
         id_category_product: productToUpdate.id_category_product || "",
         id_item_campaign: productToUpdate.id_item_campaign || "",
-        stock: productToUpdate.stok || "",
         barcode: productToUpdate.barcode || "",
         deskripsi: productToUpdate.deskripsi || "",
+        buy_price: productToUpdate.buy_price || "",
         sell_price: productToUpdate.sell_price || "",
         product_code: productToUpdate.product_code || "",
         id_extras: productToUpdate.id_extras || "",
@@ -385,39 +397,6 @@ const Menu = () => {
       ...prevState,
       [name]: value,
     }));
-  };
-
-  const handleImageChangeUpdate = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const formData = new FormData();
-      const companyName = localStorage.getItem("username");
-      const id = localStorage.getItem("id");
-
-      formData.append("username", companyName);
-      formData.append("id_user", id);
-      formData.append("file", file);
-
-      try {
-        const response = await client.post("/upload", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-
-        // Ambil URL dari respons API
-        const uploadedImageUrl = response.data.metadata.fileUrl;
-
-        setProductDataUpdate((prevState) => ({
-          ...prevState,
-          image: uploadedImageUrl, // Simpan URL, bukan File
-        }));
-
-        console.log("Image uploaded successfully:", uploadedImageUrl);
-      } catch (error) {
-        console.error("Error uploading image:", error);
-      }
-    }
   };
 
   const handleSubmitUpdate = async (e) => {
@@ -440,7 +419,7 @@ const Menu = () => {
           id_category_product: productDataUpdate.id_category_product,
           id_item_campaign: productDataUpdate.id_item_campaign,
           image: gambarbaru,
-          stock: productDataUpdate.stock,
+          buy_price: productDataUpdate.buy_price,
           sell_price: productDataUpdate.sell_price,
           product_code: productDataUpdate.product_code,
           barcode: productDataUpdate.barcode,
@@ -455,17 +434,19 @@ const Menu = () => {
           },
         }
       );
-      console.log("Product updated successfully:", response.data);
-      // onClose();
-      window.location.reload();
+
+      // Auto Reload
+      modalOpen("update", false);
+      Swal.fire("Berhasil", "Produk berhasil diupdate!", "success");
+      setProducts((prevProducts) =>
+        prevProducts.map((products) =>
+          products._id === productDataUpdate.id ? response.data : products
+        )
+      );
     } catch (error) {
       console.error("Error updating product:", error);
     }
   };
-
-  // const closeModal = () => {
-  //   setIsModalOpen(false);
-  // };
 
   if (isLoading) {
     return (
@@ -518,10 +499,7 @@ const Menu = () => {
             </select>
           </div>
           <div>
-            <button
-              className="button bg-[#FDDC05] text-white p-2 rounded-lg font-bold"
-              onClick={openModalAdd}
-            >
+            <button className="addBtn" onClick={() => modalOpen("add", true)}>
               + Tambah Product
             </button>
           </div>
@@ -541,7 +519,6 @@ const Menu = () => {
                     <th>Nama Product</th>
                     <th>Foto</th>
                     <th>Deskripsi</th>
-                    <th>Harga</th>
                     <th>Status</th>
                     <th>Aksi</th>
                   </tr>
@@ -567,20 +544,23 @@ const Menu = () => {
                         </div>
                       </td>
                       <td>{product.deskripsi}</td>
-                      <td>Rp {product.sell_price || "-"}</td>
                       <td>
-                        <input
-                          type="checkbox"
-                          className="toggle"
-                          checked={product.status === 0}
-                          onChange={() =>
-                            handleStatus(product._id, product.status)
+                        <select
+                          className="select bg-white"
+                          value={product.status}
+                          onChange={(e) =>
+                            handleStatusSelect(
+                              product._id,
+                              Number(e.target.value)
+                            )
                           }
-                        />
+                        >
+                          <option value={0}>Active</option>
+                          <option value={1}>Inactive</option>
+                          {/* Tambahkan opsi lain jika diperlukan di masa depan */}
+                        </select>
                       </td>
-                      <td className="flex space-x-4">
-                        {" "}
-                        {/* Beri jarak antar tombol */}
+                      <td>
                         <button
                           className=" p-3 rounded-lg text-2xl "
                           onClick={() => deleteProductById(product._id)}
@@ -589,7 +569,7 @@ const Menu = () => {
                         </button>
                         <button
                           className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateProduct(product)}
+                          onClick={() => handleUpdateProduct(product, "update")}
                         >
                           <FaRegEdit />
                         </button>
@@ -604,9 +584,9 @@ const Menu = () => {
       </div>
 
       {isModalOpen && (
-        <Modal onClose={closeModalAdd} title={"Tambah Menu"}>
+        <Modal onClose={() => modalOpen("add", false)} title={"Tambah Produk"}>
           <form onSubmit={handleSubmitAdd}>
-            <p className="font-semibold">Gambar Menu</p>
+            <p className="font-semibold">Gambar Produk</p>
             <p className="mb-2 text-sm text-slate-500">
               Image format .jpg .jpeg .png and minimum size 300 x 300px
             </p>
@@ -615,7 +595,7 @@ const Menu = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChange}
+                  onChange={(e) => handleImageChange(e, "add")}
                   style={{ display: "none" }}
                 />
                 <div className="upload-content">
@@ -662,16 +642,6 @@ const Menu = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Stock</p>
-            <input
-              type="number"
-              name="stock"
-              min={0}
-              value={productDataAdd.stock}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
             <p className="font-semibold mt-4 mb-2">Barcode</p>
             <input
               type="text"
@@ -681,15 +651,30 @@ const Menu = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Harga</p>
-            <input
-              type="number"
-              name="sell_price"
-              value={productDataAdd.sell_price}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
+            <div className="flex gap-2 w-full justify-between">
+              <div className="w-full">
+                <p className="font-semibold mt-4 mb-2">Harga Beli</p>
+                <input
+                  type="number"
+                  name="buy_price"
+                  value={productDataAdd.buy_price}
+                  onChange={handleChangeAdd}
+                  className="border rounded-md p-2 w-full bg-white"
+                  required
+                />
+              </div>
+              <div className="w-full">
+                <p className="font-semibold mt-4 mb-2">Harga Jual</p>
+                <input
+                  type="number"
+                  name="sell_price"
+                  value={productDataAdd.sell_price}
+                  onChange={handleChangeAdd}
+                  className="border rounded-md p-2 w-full bg-white"
+                  required
+                />
+              </div>
+            </div>
             <p className="font-semibold mt-4 mb-2">Product Code</p>
             <input
               type="text"
@@ -699,68 +684,65 @@ const Menu = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Category</p>
-            <select
-              id="company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={productDataAdd.id_category_product}
-              onChange={(e) =>
+            <p className="font-semibold mt-4 mb-2">Category Product</p>
+            <Select
+              id="categoryProduct"
+              className="basic-single"
+              options={categoryList.map((c) => ({
+                value: c._id,
+                label: c.name_category,
+              }))}
+              value={
+                categoryList
+                  .map((c) => ({ value: c._id, label: c.name_category }))
+                  .find(
+                    (opt) => opt.value === productDataAdd.id_category_product
+                  ) || null
+              }
+              onChange={(selectedOption) =>
                 setProductDataAdd((prevState) => ({
                   ...prevState,
-                  id_category_product: e.target.value,
+                  id_category_product: selectedOption
+                    ? selectedOption.value
+                    : "",
                 }))
               }
+              isSearchable
               required
-            >
-              <option value="" disabled>
-                === Pilih Category ===
-              </option>
-
-              {categoryList.length === 0 ? (
-                <option value="default" disabled>
-                  No category available
-                </option>
-              ) : (
-                categoryList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name_category}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Pilih Category..."
+              noOptionsMessage={() => "No Category available"}
+            />
             <p className="font-semibold mt-4 mb-2">Diskon</p>
-            <select
+            <Select
               id="itemCampaign"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={productDataAdd.id_item_campaign}
-              onChange={(e) =>
+              className="basic-single"
+              options={itemCampaignList.map((c) => ({
+                value: c._id,
+                label: c.item_campaign_name,
+              }))}
+              value={
+                itemCampaignList
+                  .map((c) => ({ value: c._id, label: c.item_campaign_name }))
+                  .find(
+                    (opt) => opt.value === productDataAdd.id_item_campaign
+                  ) || null
+              }
+              onChange={(selectedOption) => {
                 setProductDataAdd((prevState) => ({
                   ...prevState,
-                  id_item_campaign: e.target.value,
-                }))
-              }
-              required
-            >
-              <option value="">Tidak ada diskon</option>
-
-              {itemCampaignList.length === 0 ? (
-                <option value="default" disabled>
-                  No diskon available
-                </option>
-              ) : (
-                itemCampaignList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.item_campaign_name}
-                  </option>
-                ))
-              )}
-            </select>
+                  id_item_campaign: selectedOption ? selectedOption.value : "",
+                }));
+              }}
+              isSearchable
+              placeholder="Pilih diskon..."
+              noOptionsMessage={() => "No diskon available"}
+            />
 
             <div className="flex justify-end mt-5">
               <button
                 type="button"
                 className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={closeModalAdd}
+                onClick={() => modalOpen("add", false)}
               >
                 Batal
               </button>
@@ -776,7 +758,7 @@ const Menu = () => {
       )}
 
       {isUpdateModalOpen && (
-        <Modal onClose={closeModalUpdate} title={"Edit Menu"}>
+        <Modal onClose={() => modalOpen("update", false)} title={"Edit Menu"}>
           <form onSubmit={handleSubmitUpdate}>
             <p className="font-semibold">Gambar Produk</p>
             <p className="mb-2 text-sm text-slate-500">
@@ -795,7 +777,7 @@ const Menu = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChangeUpdate}
+                  onChange={(e) => handleImageChange(e, "update")}
                   style={{ display: "none" }}
                 />
                 <div className="upload-content">
@@ -826,15 +808,6 @@ const Menu = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Stock</p>
-            <input
-              type="text"
-              name="stock"
-              value={productDataUpdate.stock}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
             <p className="font-semibold mt-4 mb-2">Barcode</p>
             <input
               type="text"
@@ -844,15 +817,31 @@ const Menu = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Harga</p>
-            <input
-              type="text"
-              name="sell_price"
-              value={productDataUpdate.sell_price}
-              onChange={handleChangeUpdate}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
+
+            <div className="flex gap-2 w-full justify-between">
+              <div className="w-full">
+                <p className="font-semibold mt-4 mb-2">Harga Beli</p>
+                <input
+                  type="number"
+                  name="buy_price"
+                  value={productDataUpdate.buy_price}
+                  onChange={handleChangeAdd}
+                  className="border rounded-md p-2 w-full bg-white"
+                  required
+                />
+              </div>
+              <div className="w-full">
+                <p className="font-semibold mt-4 mb-2">Harga Jual</p>
+                <input
+                  type="number"
+                  name="sell_price"
+                  value={productDataUpdate.sell_price}
+                  onChange={handleChangeAdd}
+                  className="border rounded-md p-2 w-full bg-white"
+                  required
+                />
+              </div>
+            </div>
             <p className="font-semibold mt-4 mb-2">Product Code</p>
             <input
               type="text"
@@ -870,64 +859,58 @@ const Menu = () => {
               className="border rounded-md p-2 w-full bg-white"
               required
             />
-            <p className="font-semibold mt-4 mb-2">Category</p>
-            <select
-              id="company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={productDataUpdate.id_category_product}
-              onChange={(e) =>
+            <p className="font-semibold mt-4 mb-2">Category Product</p>
+            <Select
+              id="categoryProduct"
+              className="basic-single"
+              options={categoryList.map((c) => ({
+                value: c._id,
+                label: c.name_category,
+              }))}
+              value={
+                categoryList
+                  .map((c) => ({ value: c._id, label: c.name_category }))
+                  .find(
+                    (opt) => opt.value === productDataUpdate.id_category_product
+                  ) || null
+              }
+              onChange={(selectedOption) =>
                 setProductDataUpdate((prevState) => ({
                   ...prevState,
-                  id_category_product: e.target.value,
+                  id_category_product: selectedOption
+                    ? selectedOption.value
+                    : "",
                 }))
               }
-              required
-            >
-              <option value="" disabled>
-                === Pilih Category ===
-              </option>
-
-              {categoryList.length === 0 ? (
-                <option value="default" disabled>
-                  No category available
-                </option>
-              ) : (
-                categoryList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name_category}
-                  </option>
-                ))
-              )}
-            </select>
+              isSearchable
+              placeholder="Pilih Category..."
+              noOptionsMessage={() => "No Category available"}
+            />
             <p className="font-semibold mt-4 mb-2">Diskon</p>
-            <select
-              id="company"
-              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={productDataUpdate.id_item_campaign}
-              onChange={(e) =>
+            <Select
+              id="itemCampaign"
+              className="basic-single"
+              options={itemCampaignList.map((c) => ({
+                value: c._id,
+                label: c.item_campaign_name,
+              }))}
+              value={
+                itemCampaignList
+                  .map((c) => ({ value: c._id, label: c.item_campaign_name }))
+                  .find(
+                    (opt) => opt.value === productDataUpdate.id_item_campaign
+                  ) || null
+              }
+              onChange={(selectedOption) =>
                 setProductDataUpdate((prevState) => ({
                   ...prevState,
-                  id_item_campaign: e.target.value,
+                  id_item_campaign: selectedOption ? selectedOption.value : "",
                 }))
               }
-              required
-            >
-              <option value="0" >
-                Tidak Ada Diskon
-              </option>
-
-              {itemCampaignList.length === 0 ? (
-                <option value="default" disabled>
-                  No diskon available
-                </option>
-              ) : (
-                itemCampaignList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.item_campaign_name}
-                  </option>
-                ))
-              )}
-            </select>
+              isSearchable
+              placeholder="Pilih diskon..."
+              noOptionsMessage={() => "No diskon available"}
+            />
             {/* <p className="font-semibold mt-4 mb-2">Extras</p>
             <select
               id="company"
@@ -983,33 +966,20 @@ const Menu = () => {
               )}
             </select> */}
             <div className="flex justify-end mt-4">
-              {/* <button
-              type="button"
-              className="mr-2 bg-gray-400 text-white p-2 rounded-lg"
-              onClick={onClose}
-            >
-              Batal
-            </button> */}
               <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
+                type="button"
+                className="closeBtn"
+                onClick={() => modalOpen("update", false)}
               >
-                Simpan Perubahan
+                Batal
+              </button>
+              <button type="submit" className="submitBtn">
+                Simpan
               </button>
             </div>
           </form>
         </Modal>
       )}
-      {/* {isModalOpen && (
-        <ModalAddProduct onClose={closeModal} onAddProduct={addNewProduct} />
-      )}
-      {isUpdateModalOpen && (
-        <ModalEditProduct
-          id={productToUpdate._id}
-          initialData={productToUpdate}
-          onClose={() => setIsUpdateModalOpen(false)}
-        />
-      )} */}
     </div>
   );
 };
