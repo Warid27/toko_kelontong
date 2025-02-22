@@ -30,13 +30,14 @@ const SalesChart = () => {
         const response = await client.post("/sales/sales-today", {
           id_store,
           id_company,
-          limit : 6
+          limit : 5,
+          sortni : 1
         });
         const data = response.data.data;
 
         const formattedData = data.map((item) => ({
           date: item._id,
-          total: item.total_price, // Total harga
+          total: item.total_sales, // Total harga
         }));
 
         setSalesData(formattedData);
