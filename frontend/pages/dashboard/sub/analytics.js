@@ -12,12 +12,15 @@ export const Analytics = () => {
   const [transaksiHistoryList, setTransaksiHistoryList] = useState([]);
   const [productList, setProductList] = useState([]);
   const [userList, setUserList] = useState([]);
+  const [filterBy, setFilterBy] = useState("daily")
 
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [sortBest, setSortBest] = useState(1);
   const [salesTodayData, setSalesTodayData] = useState(0);
   const [salesPersenData, setSalesPersenData] = useState(0);
+  const [salesCountData, setSalesCountData] = useState(0);
+  const [salesProfitData, setSalesProfitData] = useState(0);
 
   useEffect(() => {
     const fetchSalesTodayData = async () => {
@@ -116,8 +119,7 @@ export const Analytics = () => {
       const id_company = localStorage.getItem("id_company");
       if (!startDate || !endDate) {
         const response = await client.post("/sales/best-selling", {
-          start_date: new Date(new Date().setDate(new Date().getDate() - 1)),
-          end_date: new Date(),
+          filterBy: filterBy,
           id_store: id_store,
           id_company: id_company,
           // sort : sortBest
@@ -129,8 +131,7 @@ export const Analytics = () => {
 
       try {
         const payload = {
-          start_date: startDate,
-          end_date: endDate,
+          filterBy: filterBy,
           sort: { total_quantity: parseInt(sortBest) },
           id_store: id_store,
           id_company: id_company,
@@ -149,7 +150,7 @@ export const Analytics = () => {
       }
     };
     fetchBestSelling();
-  }, [startDate, endDate, sortBest]);
+  }, [filterBy, sortBest]);
   useEffect(() => {
     const fetchTransaksiHistory = async () => {
       try {
@@ -178,6 +179,56 @@ export const Analytics = () => {
     };
     fetchTransaksiHistory();
   }, []);
+  useEffect(() => {
+    const fetchSalesCount = async () => {
+      try {
+        const id_store = localStorage.getItem("id_store")
+        const id_company = localStorage.getItem("id_company")
+        const response = await client.post("/sales/sales-count", {
+          id_store,
+          id_company
+        });
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!data || typeof data.total_sales !== "number") {
+          console.error("Unexpected data format:", data);
+          setSalesCountData(0);
+        } else {
+          setSalesCountData(data.total_sales);
+        }
+      } catch (error) {
+        console.error("Error fetching sales:", error);
+        setSalesCountData(0);
+      }
+    };
+    fetchSalesCount();
+  }, []);
+  useEffect(() => {
+    const fetchProfit = async () => {
+      try {
+        const id_store = localStorage.getItem("id_store")
+        const id_company = localStorage.getItem("id_company")
+        const response = await client.post("/sales/profit-today", {
+          id_store,
+          id_company
+        });
+        const data = response.data;
+
+        // Validate that the response is an array
+        if (!data.success) {
+          console.error("Unexpected data format:", data);
+          setSalesProfitData(0);
+        } else {
+          setSalesProfitData(data.total_profit);
+        }
+      } catch (error) {
+        console.error("Error fetching sales:", error);
+        setSalesProfitData(0);
+      }
+    };
+    fetchProfit();
+  }, []);
   return (
     <div className="w-full h-screen pt-10 ">
       {/* <div className="bg-white shadow-lg w-full flex flex-row p-2 justify-between">
@@ -192,7 +243,18 @@ export const Analytics = () => {
         <main class="flex-1 p-6">
           <div class="grid grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded-lg shadow-md text-center">
+            <p className="text-gray-500 text-left absolute">{new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</p>
+
               <p class="text-gray-500">Sales</p>
+              <h2 class="text-lg font-bold">
+                {salesCountData}
+                
+              </h2>
+        
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md text-center">
+            <p className="text-gray-500 text-left absolute">{new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</p>
+              <p class="text-gray-500">Total Revenue</p>
               <h2 class="text-lg font-bold">
                 {formatNumber(parseInt(salesTodayData))}
                 <span
@@ -207,18 +269,14 @@ export const Analytics = () => {
               </h2>
             </div>
             <div class="bg-white p-4 rounded-lg shadow-md text-center">
-              <p class="text-gray-500">Total Revenue</p>
-              <h2 class="text-lg font-bold">
-                Rp 10.566 <span class="text-green-500">+35%</span>
-              </h2>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow-md text-center">
+            <p className="text-gray-500 text-left absolute">{new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</p>
               <p class="text-gray-500">Return</p>
               <h2 class="text-lg font-bold">
-                Rp 956 <span class="text-red-500">-5%</span>
+                {formatNumber(salesProfitData)} <span class="text-red-500">-5%</span>
               </h2>
             </div>
             <div class="bg-white p-4 rounded-lg shadow-md text-center">
+            <p className="text-gray-500 text-left absolute">{new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</p>
               <p class="text-gray-500">Marketing</p>
               <h2 class="text-lg font-bold">
                 Rp 5.566 <span class="text-green-500">+15%</span>
@@ -243,23 +301,15 @@ export const Analytics = () => {
 
           <div class="grid grid-cols-3 gap-4 mt-6">
             <div class="bg-white p-6 rounded-lg shadow-md col-span-2">
-              <DateTimePicker
-                options={{ dateFormat: "Y-m-d" }}
-                name="start"
-                classname="border border-gray-300 rounded p-1 w-28 bg-white text-center"
-                onChange={(date) =>
-                  date && setStartDate(date.toISOString().split("T")[0])
-                }
-              />{" "}
-              -{" "}
-              <DateTimePicker
-                options={{ dateFormat: "Y-m-d", minDate: startDate }}
-                name="end"
-                classname="border border-gray-300 rounded p-1 w-28 bg-white text-center"
-                onChange={(date) =>
-                  date && setEndDate(date.toISOString().split("T")[0])
-                }
-              />
+              <select
+              className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                value={filterBy}
+                onChange={(e) => setFilterBy(e.target.value)}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
               <h3 class="font-bold mb-2">Selling</h3>
               <select
                 className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -290,7 +340,7 @@ export const Analytics = () => {
                         <td className="p-2">
                           {product?.deskripsi || "No description"}
                         </td>
-                        <td className="p-2">{bsl.total_quantity}</td>
+                        <td className="p-2">{ bsl.total_quantity}</td>
                         <td className="p-2">
                           Rp.
                           {new Intl.NumberFormat("id-ID").format(
@@ -314,7 +364,7 @@ export const Analytics = () => {
                     </p>
                     <p className="font-bold">
                       Rp.
-                      {new Intl.NumberFormat("id-ID").format(thl.total_price)}
+                      {new Intl.NumberFormat("id-ID").format(thl.total_price)} { thl.total_price === thl.total_price_after_all ? "" : `Mendapat diskon menjadi Rp.${new Intl.NumberFormat("id-ID").format(thl.total_price_after_all)}` }
                     </p>
                     <p className="text-sm text-gray-500">
                       {new Date(thl.created_at).toLocaleString("id-ID", {

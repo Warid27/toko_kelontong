@@ -15,7 +15,12 @@ const StockList = () => {
   useEffect(() => {
     const fetchStock = async () => {
       try {
-        const response = await client.post("/stock/liststock", {});
+        const token = localStorage.getItem("token")
+        const response = await client.post("/stock/liststock", {}, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = response.data;
 
         // Validate that the response is an array

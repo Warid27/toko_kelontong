@@ -27,16 +27,17 @@ const SalesChart = () => {
       try {
         const id_store = localStorage.getItem("id_store")
         const id_company = localStorage.getItem("id_company")
-        const response = await client.post("/sales/sales-today", {
+        const response = await client.post("/sales/sales-chart", {
           id_store,
           id_company,
-          limit : 6
+          limit : 5,
+          sortni : 1
         });
         const data = response.data.data;
 
         const formattedData = data.map((item) => ({
           date: item._id,
-          total: item.total_price, // Total harga
+          total: item.total_sales, // Total harga
         }));
 
         setSalesData(formattedData);
