@@ -226,7 +226,7 @@ router.post("/best-selling", async (c) => {
 
 // FILTERING
 
-router.post("/sales-today", async (c) => {
+router.post("/sales-chart", async (c) => {
   try {
     const { id_company, id_store, limit, sortni } = await c.req.json();
 
@@ -290,6 +290,69 @@ router.post("/sales-today", async (c) => {
     return c.json({ success: false, message: error.message }, 500);
   }
 });
+
+router.post("/sales-today", async (c) => {
+  try {
+    const { id_company, id_store } = await c.req.json();
+
+    if (!id_company || !id_store) {
+      return c.json({ success: false, message: "id_company and id_store are required" }, 400);
+    }
+
+    if (!mongoose.isValidObjectId(id_company) || !mongoose.isValidObjectId(id_store)) {
+      return c.json({ success: false, message: "Invalid id_company or id_store" }, 400);
+    }
+
+    const objectIdCompany = new mongoose.Types.ObjectId(id_company);
+    const objectIdStore = new mongoose.Types.ObjectId(id_store);
+
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+    const yesterdayEnd = new Date(todayEnd);
+    yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+
+    const salesSummary = await SalesModels.aggregate([
+      {
+        $match: {
+          "salesDetails.id_company": objectIdCompany,
+          "salesDetails.id_store": objectIdStore,
+          created_at: { $gte: yesterdayStart, $lte: todayEnd },
+        },
+      },
+      { $unwind: "$salesDetails" },
+      {
+        $match: {
+          "salesDetails.id_company": objectIdCompany,
+          "salesDetails.id_store": objectIdStore,
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$created_at" } },
+          total_sales: {
+            $sum: { $multiply: ["$salesDetails.item_price", "$salesDetails.item_quantity"] },
+          },
+        },
+      },
+      { $sort: { _id: -1 } }, 
+      { $limit: 2 }, 
+    ]);
+
+    return c.json({ success: true, data: salesSummary }, 200);
+  } catch (error) {
+    console.error("Error:", error);
+    return c.json({ success: false, message: error.message }, 500);
+  }
+});
+
 
 router.post("/transaksi-history", async (c) => {
   try {

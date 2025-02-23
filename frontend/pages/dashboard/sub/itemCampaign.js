@@ -105,7 +105,14 @@ const ItemCampaign = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await client.post("/user/listuser", {});
+        const token = localStorage.getItem("token")
+        const response = await client.post("/user/listuser", {}, 
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data;
 
         // Validate that the response is an array

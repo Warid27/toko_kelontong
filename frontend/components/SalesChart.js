@@ -27,7 +27,7 @@ const SalesChart = () => {
       try {
         const id_store = localStorage.getItem("id_store")
         const id_company = localStorage.getItem("id_company")
-        const response = await client.post("/sales/sales-today", {
+        const response = await client.post("/sales/sales-chart", {
           id_store,
           id_company,
           limit : 5,
