@@ -27,6 +27,8 @@ const Menu = () => {
   const [itemCampaignList, setItemCampaignList] = useState([]);
   const [sizeList, setSizeList] = useState([]);
 
+  const token = localStorage.getItem("token");
+
   useEffect(() => {
     const fetchExtras = async () => {
       try {
@@ -164,11 +166,17 @@ const Menu = () => {
     try {
       setLoading(true);
 
-      const response = await client.put(`/api/product/${productId}`, {
-        status: selectedStatus,
-      });
-
-      console.log("Response from API:", response.data);
+      const response = await client.put(
+        `/api/product/${productId}`,
+        {
+          status: selectedStatus,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       setProducts((prevProducts) =>
         prevProducts.map((product) =>
@@ -185,7 +193,6 @@ const Menu = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const token = localStorage.getItem("token");
         const id_store = localStorage.getItem("id_store");
 
         if (!id_store) {
@@ -234,8 +241,6 @@ const Menu = () => {
     if (result.isConfirmed) {
       try {
         // Retrieve the token from localStorage (or use a hardcoded token for testing)
-        const token = localStorage.getItem("token");
-
         // Make the DELETE request
         const response = await client.delete(`/api/product/${id}`, {
           headers: {
@@ -283,8 +288,6 @@ const Menu = () => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem("token");
-
       // Ensure all required fields are filled
       if (
         !productDataAdd.name_product ||
@@ -346,6 +349,7 @@ const Menu = () => {
       try {
         const response = await client.post("/api/upload", formData, {
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         });
@@ -410,8 +414,6 @@ const Menu = () => {
     console.log(gambarbaru);
 
     try {
-      // const productId = "67a9615bf59ec80d10014871";
-      const token = localStorage.getItem("token");
       const response = await client.put(
         `/api/product/${productDataUpdate.id}`,
         {

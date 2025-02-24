@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { minioClient, minioUrl, MINIO_BUCKET_NAME } from "@config/config";
+import { minioClient, BACKEND_URI, MINIO_BUCKET_NAME } from "@config/config";
 import { ProductModels } from "@models/product-models";
 import { CompanyModels } from "@models/company-models";
 import { StoreModels } from "@models/store-models";
@@ -154,7 +154,7 @@ router.post("/upload", authenticate, async (c) => {
     const shortKey = generateShortKey();
 
     // Construct the shortened URL
-    const shortenedUrl = `http://localhost:8080/api/image/${shortKey}`;
+    const shortenedUrl = `${BACKEND_URI}/api/image/${shortKey}`;
 
     // Save file metadata to the database
     const fileMetadata = new fileMetadataModels({
@@ -192,7 +192,7 @@ router.post("/upload", authenticate, async (c) => {
   }
 });
 
-router.get("/image/:shortKey", authenticate, async (c) => {
+router.get("/image/:shortKey", async (c) => {
   try {
     const { shortKey } = c.req.param(); // Extract the short key from the URL
 

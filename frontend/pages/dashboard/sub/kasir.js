@@ -238,7 +238,15 @@ const Kasir = () => {
           },
         }
       );
-      setSelectedProduct(response.data); // Set the selected product with fetched data
+
+      const fetchedProduct = response.data;
+
+      if (fetchedProduct.amount === 0) {
+        alert("This product is out of stock.");
+        return;
+      }
+
+      setSelectedProduct(fetchedProduct); // Set selected product with stock details
       modalOpen("add", false);
       modalOpen("product", true);
     } catch (error) {
@@ -247,7 +255,6 @@ const Kasir = () => {
   };
 
   // Add Sales
-
   const handleSales = async (e) => {
     e.preventDefault();
     console.log("KASIR ITEMS:", kasirItems);
@@ -717,17 +724,27 @@ const Kasir = () => {
         <Modal onClose={() => modalOpen("add", false)} title={"Tambah Pesanan"}>
           <br />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {console.log("PRODUCTS:", products)}
             {products.map((product) => (
-              <div key={product._id} onClick={() => handleCardClick(product)}>
-                {}
+              <div
+                key={product._id}
+                onClick={
+                  product?.id_stock?.amount > 0
+                    ? () => handleCardClick(product)
+                    : null
+                }
+                className={
+                  product?.id_stock?.amount > 0
+                    ? "cursor-pointer" // Indicates the div is clickable
+                    : "cursor-not-allowed " // Indicates the div is not clickable
+                }
+              >
                 <Card
                   lebar={50}
                   tinggi={50}
                   image={product.image || "https://placehold.co/100x100"}
                   nama={product.name_product}
-                  // harga={`Rp ${new Intl.NumberFormat("id-ID").format(
-                  //   product.sell_price
-                  // )}`}
+                  stock={product?.id_stock?.amount || 0}
                   harga={`Rp ${new Intl.NumberFormat("id-ID").format(
                     Math.max(
                       product.sell_price *
@@ -839,30 +856,44 @@ const Kasir = () => {
             </div>
 
             {/* Kontrol jumlah produk */}
-            <div className="flex items-center place-content-center mt-4">
-              <button
-                onClick={() => setQuantity(Math.max(0, quantity - 1))}
-                className="py-2 px-3 border border-black rounded-md"
-              >
-                <FaMinus />
-              </button>
+            <div className="flex flex-col items-center mt-4">
+              <div className="flex items-center place-content-center">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))} // Prevent quantity from going below 1
+                  className="py-2 px-3 border border-black rounded-md"
+                  disabled={quantity <= 1} // Disable button if quantity is 1
+                >
+                  <FaMinus />
+                </button>
 
-              {/* Styled input with no spinners */}
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                className="mx-4 w-16 text-center appearance-none bg-transparent border-none focus:outline-none focus:border-b focus:border-black spinner-none"
-              />
+                {/* Styled input with no spinners */}
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={quantity}
+                  onChange={(e) => {
+                    const newQuantity = Number(e.target.value);
+                    setQuantity(newQuantity);
+                  }}
+                  className="mx-4 w-16 text-center appearance-none bg-transparent border-none focus:outline-none focus:border-b focus:border-black spinner-none"
+                />
 
-              <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="py-2 px-3 border border-black rounded-md"
-              >
-                <FaPlus />
-              </button>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="py-2 px-3 border border-black rounded-md"
+                  disabled={quantity >= selectedProduct?.amount} // Prevent exceeding stock
+                >
+                  <FaPlus />
+                </button>
+              </div>
+
+              {/* Show stock warning message when quantity exceeds available stock */}
+              {quantity > selectedProduct?.amount && (
+                <p className="text-red-500 mt-2">
+                  Stok produk ini hanya {selectedProduct?.amount}
+                </p>
+              )}
             </div>
 
             <style jsx>{`

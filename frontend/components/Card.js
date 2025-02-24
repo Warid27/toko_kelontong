@@ -10,6 +10,7 @@ const Card = ({
   hargaDiskon,
   nama,
   diskon,
+  stock,
 }) => {
   return (
     <div
@@ -32,6 +33,9 @@ const Card = ({
         />
       </figure>
       <div className="card-body bg-white p-4 text-left">
+        {stock === 0 && stock < 1 && (
+          <p className="font-bold text-red-500">Produk Habis</p>
+        )}
         <h2 className="card-title text-lg font-semibold">{nama}</h2>
         {hargaDiskon && (
           <p className="font-bold text-sm text-red-500 line-through">

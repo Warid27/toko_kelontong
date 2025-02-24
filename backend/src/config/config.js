@@ -12,6 +12,7 @@ const JWT_SECRET = Bun.env.JWT_SECRET;
 
 // PORT
 const PORT = Bun.env.PORT || 3000;
+const BACKEND_URI = `http://localhost:${PORT}` || "";
 
 // MongoDB
 const MONGO_URI = Bun.env.MONGO_URI || "";
@@ -65,4 +66,5 @@ export {
   minioClient,
   MINIO_BUCKET_NAME,
   minioUrl,
+  BACKEND_URI,
 };

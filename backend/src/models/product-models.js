@@ -56,7 +56,7 @@ const productSchema = new Schema({
   },
   id_stock: {
     type: Schema.Types.ObjectId,
-    ref: "stok",
+    ref: "stock",
   },
   id_extras: {
     type: Schema.Types.ObjectId,

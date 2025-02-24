@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { PORT } from "@config/config";
 import { StockModels } from "@models/stock-models";
+import { ProductModels } from "@models/product-models";
 import { authenticate } from "@middleware/authMiddleware";
+import { mongoose } from "mongoose";
 export const router = new Hono();
 
 // Add Stock
@@ -17,10 +19,88 @@ router.post("/addstock", authenticate, async (c) => {
 });
 
 // Get all stock
-router.post("/liststock", authenticate, async (c) => {
+// router.post("/liststock", authenticate, async (c) => {
+//   try {
+//     // Fetch stock data and populate the 'id_product' field
+//     const stock = await StockModels.find().populate("id_product");
+//     return c.json(stock, 200);
+//   } catch (error) {
+//     console.error("Error fetching products:", error);
+//     return c.json(
+//       { error: "Internal Server Error", details: error.message },
+//       500
+//     );
+//   }
+// });
+
+// Get all stock
+router.post("/liststock", async (c) => {
   try {
-    // Fetch stock data and populate the 'id_product' field
-    const stock = await StockModels.find().populate("id_product");
+    let body;
+    try {
+      body = await c.req.json();
+    } catch (parseError) {
+      return c.json({ error: "Invalid JSON payload" }, 400);
+    }
+
+    // Jika body kosong, ambil semua stock
+    if (!body || Object.keys(body).length === 0) {
+      const stock = await StockModels.find().populate("id_product");
+      return c.json(stock, 200);
+    }
+
+    const query = {};
+    if (body.id_store) {
+      if (typeof body.id_store !== "string") {
+        return c.json({ error: "id_store must be a string" }, 400);
+      }
+      query.id_store = body.id_store;
+    }
+
+    // Ambil produk sesuai query
+    const product = await ProductModels.find(query);
+
+    const stocks = [];
+    for (const prod of product) {
+      const productIDObj = new mongoose.Types.ObjectId(prod._id);
+      const stockData = await StockModels.find({
+        id_product: productIDObj,
+      }).populate("id_product");
+      stocks.push(...stockData);
+    }
+
+    return c.json(stocks, 200);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return c.json(
+      { error: "Internal Server Error", details: error.message },
+      500
+    );
+  }
+});
+
+// Get Stock by Product ID
+
+router.post("/getstock", async (c) => {
+  try {
+    let body;
+    try {
+      body = await c.req.json();
+    } catch (parseError) {
+      return c.json({ error: "Invalid JSON payload" }, 400);
+    }
+
+    const query = {};
+    if (body.id_product) {
+      if (typeof body.id_product !== "string") {
+        return c.json({ error: "id_product must be a string" }, 400);
+      }
+      query.id_product = body.id_product;
+    }
+
+    // Ambil stock sesuai query
+    const stock = await StockModels.find(query).populate("id_product");
+
     return c.json(stock, 200);
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -30,4 +110,5 @@ router.post("/liststock", authenticate, async (c) => {
     );
   }
 });
+
 export default router;

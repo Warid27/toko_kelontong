@@ -25,9 +25,11 @@ router.post("/listproduct", async (c) => {
 
     // Jika body kosong, ambil semua produk
     if (!body || Object.keys(body).length === 0) {
-      const products = await ProductModels.find()
-        .populate("id_extras")
-        .populate("id_size");
+      const products = await ProductModels.find().populate([
+        "id_extras",
+        "id_size",
+        "id_stock",
+      ]);
       return c.json(products, 200);
     }
 
@@ -42,10 +44,12 @@ router.post("/listproduct", async (c) => {
     if (body.id_category_product)
       query.id_category_product = body.id_category_product;
 
-    // Ambil produk sesuai query
-    const products = await ProductModels.find(query)
-      .populate("id_extras")
-      .populate("id_size");
+    // Fetch product details
+    const products = await ProductModels.find(query).populate([
+      "id_extras",
+      "id_size",
+      "id_stock",
+    ]);
 
     return c.json(products, 200);
   } catch (error) {
@@ -57,28 +61,47 @@ router.post("/listproduct", async (c) => {
   }
 });
 
-// Get Company by ID
+// Get Product by ID
 router.post("/getproduct", async (c) => {
   try {
-    const { id } = await c.req.json();
-
-    if (!id) {
-      return c.json({ message: "ID perusahaan diperlukan." }, 400);
+    let body;
+    try {
+      body = await c.req.json();
+    } catch (parseError) {
+      return c.json({ message: "Invalid JSON payload." }, 400);
     }
 
-    const product = await ProductModels.findById(id)
-      .populate("id_extras")
-      .populate("id_size");
+    const { id } = body;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return c.json({ message: "ID Produk tidak valid atau diperlukan." }, 400);
+    }
+
+    // Fetch product details
+    const product = await ProductModels.findById(id).populate([
+      "id_extras",
+      "id_size",
+    ]);
 
     if (!product) {
-      return c.json({ message: "Perusahaan tidak ditemukan." }, 404);
+      return c.json({ message: "Produk tidak ditemukan." }, 404);
     }
 
-    return c.json(product, 200);
-  } catch (error) {
+    // Fetch stock amount
+    const stock = await StockModels.findOne({ id_product: id });
+
     return c.json(
       {
-        message: "Terjadi kesalahan saat mengambil product.",
+        ...product.toObject(),
+        amount: stock ? stock.amount : 0, // Include stock amount in response
+      },
+      200
+    );
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return c.json(
+      {
+        message: "Terjadi kesalahan saat mengambil produk.",
         error: error.message,
       },
       500

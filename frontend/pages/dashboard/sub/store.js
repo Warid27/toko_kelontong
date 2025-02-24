@@ -145,8 +145,10 @@ const StoreData = () => {
       formData.append("pathPrefix", pathPrefix); // Append the pathPrefix
 
       try {
+        const token = localStorage.getItem("token");
         const response = await client.post("/api/upload", formData, {
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         });
