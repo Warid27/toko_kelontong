@@ -61,3 +61,15 @@ table * {
   margin-right: 0.5rem;
 }
 /* === BUTTON === */
+
+/* Remove spinners for WebKit browsers (Chrome, Safari, Edge) */
+input[type="number"].spinner-none::-webkit-inner-spin-button,
+input[type="number"].spinner-none::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0;
+}
+
+/* Remove spinners for Firefox
+input[type="number"].spinner-none {
+  -moz-appearance: textfield !important;
+} */

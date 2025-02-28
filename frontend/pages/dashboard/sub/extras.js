@@ -8,6 +8,9 @@ import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit, FaInfoCircle } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
+import { fetchProductsList } from "@/libs/fetching/product";
+import { fetchExtrasGet } from "@/libs/fetching/extras";
+import ReactPaginate from "react-paginate";
 
 const Extras = () => {
   const [extrasData, setExtrasData] = useState({}); // Changed to object
@@ -20,6 +23,16 @@ const Extras = () => {
     deskripsi: "",
     id_product: "",
   });
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
+  const id_store =
+    localStorage.getItem("id_store") == "undefined"
+      ? null
+      : localStorage.getItem("id_store");
+  const id_company =
+    localStorage.getItem("id_company") == "undefined"
+      ? null
+      : localStorage.getItem("id_company");
 
   // --- Function
   const modalOpen = (param, bool) => {
@@ -34,30 +47,17 @@ const Extras = () => {
   // Fetch extras data for a given product ID
   const getExtras = async (productId, extrasId) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await client.post(
-        "/extras/getextras",
-        { id: extrasId }, // Use `data` for Axios payload
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const data_extras = await fetchExtrasGet(extrasId);
 
       // Store the entire response data for the product
       setExtrasData((prevData) => ({
         ...prevData,
-        [productId]: response.data || {
+        [productId]: data_extras || {
           name: "Belum ada varian untuk produk ini",
         },
       }));
     } catch (error) {
-      console.error(
-        "Error fetching extras:",
-        error.response?.data || error.message
-      );
+      console.error("Error fetching extras:", error);
       setExtrasData((prevData) => ({
         ...prevData,
         [productId]: { name: "Belum ada varian untuk produk ini" },
@@ -66,47 +66,15 @@ const Extras = () => {
   };
   // Fetch product list on component mount
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const id_store = localStorage.getItem("id_store");
-
-        if (!id_store) {
-          console.error("id_store is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await client.post(
-          "/product/listproduct",
-          { id_store }, // Pass id_store in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = response.data;
-
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /product/listproduct:",
-            data
-          );
-          setProductList([]);
-        } else {
-          setProductList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setProductList([]);
-      } finally {
+    const fetching_requirement = async () => {
+      const get_product_list = async () => {
+        const data_product = await fetchProductsList(id_store, id_company);
+        setProductList(data_product);
         setIsLoading(false);
-      }
+      };
+      get_product_list();
     };
-
-    fetchProduct();
+    fetching_requirement();
   }, []);
 
   // Fetch extras data for all products once productList is populated
@@ -244,6 +212,9 @@ const Extras = () => {
     }
   };
 
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = productList.slice(startIndex, startIndex + itemsPerPage);
+
   if (isLoading) {
     return (
       <div className="w-full h-screen pt-16 flex justify-center items-center">
@@ -324,11 +295,9 @@ const Extras = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
         </div>
@@ -336,12 +305,13 @@ const Extras = () => {
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
+          <div >
             {productList.length === 0 ? (
               <h1 className="text-center text-gray-500">
                 Data Varian tidak ditemukan!
               </h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -352,9 +322,9 @@ const Extras = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {productList.map((product, index) => (
+                  {selectedData.map((product, index) => (
                     <tr key={product._id}>
-                      <td>{index + 1}</td>
+                      <td>{startIndex + index + 1}</td>
                       <td>
                         <b>{product.name_product}</b>
                       </td>
@@ -371,6 +341,18 @@ const Extras = () => {
                   ))}
                 </tbody>
               </table>
+              <ReactPaginate
+                previousLabel={"← Prev"}
+                nextLabel={"Next →"}
+                pageCount={Math.ceil(productList.length / itemsPerPage)}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
+                containerClassName={"flex gap-2 justify-center mt-4"}
+                pageLinkClassName={"border px-3 py-1"}
+                previousLinkClassName={"border px-3 py-1"}
+                nextLinkClassName={"border px-3 py-1"}
+                activeClassName={"bg-blue-500 text-white"}
+              />
+              </>
             )}
           </div>
         </div>

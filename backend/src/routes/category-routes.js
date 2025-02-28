@@ -26,19 +26,19 @@ router.post("/listcategories", async (c) => {
     }
 
     // Check if name_category exists in the body
-    const { name_category } = body;
+    const { name_category, id_store } = body;
     if (name_category) {
       // Validate name_category
       if (typeof name_category !== "string") {
         return c.json({ error: "name_category must be a string" }, 400);
       }
       // Fetch data by name_category
-      const data = await CategoryProductModels.find({ name_category });
+      const data = await CategoryProductModels.find({ name_category, id_store });
       return c.json(data, 200);
     }
 
     // If name_category does not exist, fetch all data
-    const data = await CategoryProductModels.find();
+    const data = await CategoryProductModels.find({id_store});
     return c.json(data, 200);
   } catch (error) {
     console.error("Error fetching categories:", error);

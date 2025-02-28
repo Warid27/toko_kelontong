@@ -28,10 +28,36 @@ const userSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "store",
   },
+  avatar: {
+    type: String,
+    default: "https://placehold.co/500x500",
+  },
   created_at: {
     type: Date,
     default: Date.now,
   },
+});
+
+// Virtual field for resolving the avatar URL dynamically
+userSchema.virtual("resolvedAvatar").get(async function () {
+  const shortKey = this.avatar;
+  if (!shortKey) {
+    return "https://placehold.co/1440x360"; // Fallback image
+  }
+  try {
+    // Look up the file metadata using the shortKey
+    const fileMetadata = await fileMetadataModels.findOne({
+      shortkey: shortKey,
+    });
+    if (!fileMetadata) {
+      return "https://placehold.co/1440x360"; // Fallback image
+    }
+    // Return the fileUrl
+    return fileMetadata.fileUrl;
+  } catch (error) {
+    console.error("Error resolving avatar:", error);
+    return "https://placehold.co/1440x360"; // Fallback image
+  }
 });
 
 export const UserModels = new model("users", userSchema, "users");

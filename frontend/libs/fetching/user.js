@@ -1,0 +1,41 @@
+import client from "@/libs/axios"
+
+export const fetchUserList = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await client.post(
+        "/user/listuser",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const data = response.data;
+
+      return data
+    } catch (error) {
+      console.error("Error fetching store:", error);
+    }
+  };
+
+export const fetchUserGet = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const id_user = localStorage.getItem("id_user");
+      if (!id_user) {
+        console.error("user_id is missing in localStorage");
+        return;
+      }
+      const response = await client.post(
+        "/user/getuser",
+        { id: id_user },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = response.data
+      return data
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };

@@ -9,6 +9,8 @@ import { MdDelete } from "react-icons/md";
 import { FaInfoCircle } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
+import {fetchPaymentList, fetchPaymentAdd} from "@/libs/fetching/payment"
+import ReactPaginate from "react-paginate";
 
 const Payment = () => {
   const [payments, setPayments] = useState([]);
@@ -17,6 +19,8 @@ const Payment = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
   const [paymentDataAdd, setPaymentDataAdd] = useState({
     payment_method: "",
@@ -46,28 +50,17 @@ const Payment = () => {
     setIsUpdateModalOpen(false);
   };
 
-  // FETCH
+
   useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const response = await client.post("/payment/listpayment", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Set the fetched payments into state
-        setPayments(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching payments:", error);
-        setIsLoading(false);
-      }
+    const fetching_requirement = async () => {
+      const get_payment_list = async () => {
+        const data_payment = await fetchPaymentList();
+        setPayments(data_payment);
+        setIsLoading(false)
+      };
+      get_payment_list();
     };
-
-    fetchPayments();
+    fetching_requirement();
   }, []);
 
   // HANDLE
@@ -122,26 +115,15 @@ const Payment = () => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem("token");
-
       // Ensure all required fields are filled
       if (!paymentDataAdd.payment_method || !paymentDataAdd.keterangan) {
         alert("Please fill all required fields.");
         return;
       }
 
-      const response = await client.post(
-        "/payment/addpayment",
-        {
-          payment_method: paymentDataAdd.payment_method,
-          keterangan: paymentDataAdd.keterangan,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetchPaymentAdd(paymentDataAdd.payment_method, paymentDataAdd.keterangan)
 
-      console.log("Payment added:", response.data);
+      console.log("Payment added:", response);
       Swal.fire("Berhasil", "Pembayaran berhasil ditambahkan!", "success");
 
       // Reload the page or update state
@@ -282,6 +264,9 @@ const Payment = () => {
       return { ...prevState, paymentName: updatedPaymentName };
     });
   };
+
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = payments.slice(startIndex, startIndex + itemsPerPage);
   return (
     <div className="w-full h-screen pt-16">
       <div className="justify-between w-full bg-white shadow-lg p-4">
@@ -317,11 +302,9 @@ const Payment = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
           <div>
@@ -341,6 +324,7 @@ const Payment = () => {
             {payments.length === 0 ? (
               <h1>Data Pembayaran tidak ditemukan!</h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -351,7 +335,7 @@ const Payment = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map((payment, index) => (
+                  {selectedData.map((payment, index) => (
                     <tr key={payment._id}>
                       <td>{index + 1}</td>
                       <td>
@@ -376,6 +360,18 @@ const Payment = () => {
                   ))}
                 </tbody>
               </table>
+              <ReactPaginate
+                previousLabel={"← Prev"}
+                nextLabel={"Next →"}
+                pageCount={Math.ceil(payments.length / itemsPerPage)}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
+                containerClassName={"flex gap-2 justify-center mt-4"}
+                pageLinkClassName={"border px-3 py-1"}
+                previousLinkClassName={"border px-3 py-1"}
+                nextLinkClassName={"border px-3 py-1"}
+                activeClassName={"bg-blue-500 text-white"}
+              />
+              </>
             )}
           </div>
         </div>

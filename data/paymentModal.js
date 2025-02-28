@@ -1,9 +1,57 @@
 {
-  /* Modal */
+  // FETCH PAYMENT
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await client.post("/payment/listpayment", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // Flatten the paymentName arrays into a single list
+        const flattenedPayments = response.data.flatMap((paymentType) =>
+          paymentType.paymentName.map((payment) => ({
+            ...payment,
+            payment_method: paymentType.payment_method,
+          }))
+        );
+
+        setPayments(flattenedPayments);
+      } catch (error) {
+        console.error("Error fetching payments:", error);
+        setError("Failed to load payment methods. Please try again later.");
+      }
+    };
+    fetchPayments();
+  }, []);
+
+  const [payment, SetPayment] = useState({
+    bayar: "",
+  });
+
+  // Payment
+  // Group payments by payment_method
+  const groupedPayments = payments.reduce((acc, payment) => {
+    if (!acc[payment.payment_method]) {
+      acc[payment.payment_method] = [];
+    }
+    acc[payment.payment_method].push(payment);
+    return acc;
+  }, {});
+
+  // Toggle payments expansion
+  const togglePayments = (payments) => {
+    setexpandedPayments((prev) => ({
+      ...prev,
+      [payments]: !prev[payments],
+    }));
+  };
 }
 {
-  isModalOpen && (
-    <Modal onClose={closeModal} title={"Pembayaran"}>
+  isPayModalOpen && (
+    <Modal onClose={() => modalOpen("pay", false)} title={"Pembayaran"}>
       {/* bg-opacity dan blur biar gak ngelag */}
       <div className="bg-opacity-100">
         {/* Ringkasan Belanja */}

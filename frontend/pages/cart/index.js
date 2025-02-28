@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
 import moment from "moment";
-import Cookies from "js-cookie";
 import Image from "next/image";
 import Topbar from "@/components/Topbar";
 import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
@@ -14,17 +13,15 @@ import { IoClose } from "react-icons/io5";
 import { Modal } from "@/components/Modal";
 
 const Cart = () => {
-  const [payments, setPayments] = useState([]);
+  // const [payments, setPayments] = useState([]);
   const [table_custList, setTable_custList] = useState([]);
   const [orderList, setOrderList] = useState([]);
   const orderListRef = useRef(orderList); // Create a ref to track the latest state
   const [cartItems, setCartItems] = useState([]);
   const [isnoteModalOpen, setIsnoteModalOpen] = useState(false);
+  const [itemCampaignList, setItemCampaignList] = useState([]);
 
   // Function
-  const [expandedPayments, setexpandedPayments] = useState({});
-  const [selectedMethod, setSelectedMethod] = useState(null);
-  // State untuk modal
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Update the ref whenever the state changes
@@ -33,6 +30,103 @@ const Cart = () => {
   }, [orderList]);
 
   // FETCH
+  useEffect(() => {
+    const fetchItemCampaign = async () => {
+      try {
+        const response = await client.post(
+          "/itemcampaign/listitemcampaigns",
+          {}
+        );
+        const data = response.data;
+
+        // Validate that the response is an array
+        setItemCampaignList(data);
+      } catch (error) {
+        console.error("Error fetching item campaign:", error);
+        setItemCampaignList([]);
+      }
+    };
+    fetchItemCampaign();
+  }, []);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await client.post("/product/listproduct", {
+          params: "order",
+        });
+        const fullProductList = response.data; // Store all fetched products
+        // Retrieve cart items stored in localStorage (which only contain IDs)
+        const storedCartItems = JSON.parse(
+          localStorage.getItem("cartItems") || "[]"
+        );
+
+        // Merge cart items with full product details
+        const updatedCartItems = storedCartItems
+          .map((cartItem) => {
+            const matchingProduct = fullProductList.find(
+              (product) => product._id === cartItem.id_product
+            );
+            if (!matchingProduct) return null; // Skip if no matching product
+
+            const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+
+            // Find active campaign for the product
+            const campaign = itemCampaignList.find(
+              (icl) =>
+                icl._id === matchingProduct.id_item_campaign &&
+                icl.start_date <= today &&
+                icl.end_date >= today
+            );
+            const discountValue = campaign?.value || 0;
+            const priceAfterDiscount =
+              matchingProduct.sell_price * (1 - discountValue);
+
+            return {
+              product: {
+                id: matchingProduct._id,
+                id_store: matchingProduct.id_store,
+                id_company: matchingProduct.id_company,
+                name: matchingProduct.name_product,
+                image: matchingProduct.image,
+                price: matchingProduct.sell_price,
+                amount: matchingProduct.id_stock?.amount,
+                orderQty: matchingProduct.orderQty,
+                priceAfterDiscount: priceAfterDiscount,
+                discount: discountValue,
+              },
+              quantity: cartItem.quantity,
+              selectedExtra: cartItem.id_extras
+                ? {
+                    _id: cartItem.id_extras,
+                    name:
+                      matchingProduct?.id_extras?.extrasDetails?.find(
+                        (extra) => extra._id === cartItem.id_extras
+                      )?.name || "Tidak ditemukan",
+                  }
+                : null,
+              selectedSize: cartItem.id_size
+                ? {
+                    _id: cartItem.id_size,
+                    name:
+                      matchingProduct?.id_size?.sizeDetails?.find(
+                        (size) => size._id === cartItem.id_size
+                      )?.name || "Tidak ditemukan",
+                  }
+                : null,
+            };
+          })
+          .filter(Boolean); // Remove null values
+
+        setCartItems(updatedCartItems);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, [itemCampaignList]); // Add itemCampaignList as a dependency
+
   useEffect(() => {
     const fetchTable_cust = async () => {
       try {
@@ -55,14 +149,7 @@ const Cart = () => {
   }, []);
   const fetchOrder = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await client.post(
-        "/order/listorder",
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await client.post("/order/listorder", {});
       const data = response.data;
 
       // Validate that the response is an array
@@ -87,40 +174,14 @@ const Cart = () => {
       setOrderList([]);
     }
   };
-  // FETCH PAYMENT
-  useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await client.post("/payment/listpayment", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Flatten the paymentName arrays into a single list
-        const flattenedPayments = response.data.flatMap((paymentType) =>
-          paymentType.paymentName.map((payment) => ({
-            ...payment,
-            payment_method: paymentType.payment_method,
-          }))
-        );
-
-        setPayments(flattenedPayments);
-      } catch (error) {
-        console.error("Error fetching payments:", error);
-        setError("Failed to load payment methods. Please try again later.");
-      }
-    };
-    fetchPayments();
-  }, []);
-  // FETCH ORDER useEffect
   useEffect(() => {
     fetchOrder();
   }, []);
 
   useEffect(() => {
-    const storedCartItems = JSON.parse(Cookies.get("cartItems") || "[]");
+    const storedCartItems = JSON.parse(
+      localStorage.getItem("cartItems") || "[]"
+    );
     setCartItems(storedCartItems);
   }, []);
 
@@ -128,30 +189,6 @@ const Cart = () => {
     await handleAddOrder(e);
   };
 
-  // Wait Order
-  // const waitForOrder = async (orderCodeReal, maxRetries = 5, delay = 1000) => {
-  //   let retries = 0;
-  //   while (retries < maxRetries) {
-  //     await fetchOrder(); // Fetch the latest order list
-
-  //     // Use the ref to access the latest orderList
-  //     const currentOrderList = orderListRef.current;
-
-  //     // Check if the orderList contains the new order
-  //     const order = currentOrderList.find((ol) => ol.code === orderCodeReal);
-  //     if (order) {
-  //       return order; // Return the matching order
-  //     }
-
-  //     retries++;
-  //     await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
-  //   }
-
-  //   throw new Error(
-  //     `Order not found after ${maxRetries} retries: ${orderCodeReal}`
-  //   );
-  // };
-  // Add Order
   const handleAddOrder = async (e) => {
     e.preventDefault();
 
@@ -169,71 +206,81 @@ const Cart = () => {
         return;
       }
 
-      const token = localStorage.getItem("token");
-      // Prepare order details
-      const orderDetails = cartItems.map((element) => {
-        return {
-          id_product: element.product.id,
-          name_product: element.product.name,
-          id_extrasDetails: element.selectedExtra,
-          id_sizeDetails: element.selectedSize,
-          quantity: element.quantity,
-          price_item: element.product.priceAfterDiscount,
-          total_price: element.product.priceAfterDiscount * element.quantity,
-          discount: 0,
-        };
-      });
-      console.log("DETAIL ORDER:", orderDetails);
-      // Generate order code
-      const formattedDate = moment().format("DDMMYYHHmmss");
-
-      const orderCode = "ORD/" + formattedDate;
-      const orderCodeReal = orderCode;
-
-      // Count of items in cartItems
-      const ordersToday = cartItems.length;
-
-      // Generate the unique identifier
-      const no = `${formattedDate}${ordersToday + 1}`;
-      console.log("NOMOR:", no);
-      // Send POST request to create the order
-      const response = await client.post(
-        "order/addorder",
-        {
-          no: no,
-          code: orderCodeReal,
-          person_name: infoBuyyer.nama,
-          status: 2,
-          id_table_cust: tableNumber.nomor,
-          keterangan:
-            infoBuyyer.keterangan == ""
-              ? "user belum menuliskan Keterangan"
-              : infoBuyyer.keterangan,
-          orderDetails: orderDetails,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      // Collect items with insufficient stock
+      const insufficientItems = cartItems.filter(
+        (item) => item.quantity > item.product.amount - item.product.orderQty
       );
 
+      if (insufficientItems.length > 0) {
+        // Build a detailed error message with <br> for line breaks
+        const errorMessage = insufficientItems
+          .map(
+            (item) =>
+              `- ${item.product.name}: Stok hanya ada ${
+                item.product.amount - item.product.orderQty
+              }, tetapi Anda memesan ${item.quantity}`
+          )
+          .join("<br>"); // Use <br> instead of \n for line breaks
+
+        // Show the error message using Swal.fire
+        Swal.fire({
+          title: "Stok tidak mencukupi!",
+          html: `<div style="text-align: left;">Berikut adalah item dengan stok tidak mencukupi:<br>${errorMessage}</div>`, // Wrap in a div with justify
+          icon: "error",
+        });
+        return null;
+      }
+
+      // Prepare order details
+      const orderDetails = cartItems.map((element) => ({
+        id_store: element.product.id_store,
+        id_company: element.product.id_company,
+        id_product: element.product.id,
+        id_extrasDetails: element.selectedExtra,
+        id_sizeDetails: element.selectedSize,
+        name_product: element.product.name,
+        quantity: element.quantity,
+        price_item: element.product.priceAfterDiscount,
+        total_price: element.product.priceAfterDiscount * element.quantity,
+        discount: element.product.discount,
+      }));
+
+      // Generate order code
+      const formattedDate = moment().format("DDMMYYHHmmss");
+      const orderCodeReal = "ORD/" + formattedDate;
+      const ordersToday = cartItems.length;
+      const no = `${formattedDate}${ordersToday + 1}`;
+
+      const total_price = cartItems.reduce(
+        (total, item) =>
+          total + item.quantity * (item.product?.priceAfterDiscount || 0),
+        0
+      );
+      const total_quantity = cartItems.reduce(
+        (total, item) => total + item.quantity,
+        0
+      );
+
+      // Send POST request to create the order
+      const response = await client.post("order/addorder", {
+        no: no,
+        code: orderCodeReal,
+        person_name: infoBuyyer.nama,
+        status: 2,
+        order_status: 1,
+        id_table_cust: tableNumber.nomor,
+        total_quantity: total_quantity,
+        total_price: total_price,
+        keterangan:
+          infoBuyyer.keterangan === ""
+            ? "user belum menuliskan Keterangan"
+            : infoBuyyer.keterangan,
+        orderDetails: orderDetails,
+      });
+
       if (response.status === 201) {
-        // Only order
         Swal.fire("Sukses!", "Berhasil Order.", "success");
         await clearCart();
-        window.location.reload();
-
-        // ORDER AND SALES
-
-        // // Wait for the order to appear in the orderList
-        // const order = await waitForOrder(orderCodeReal);
-
-        // // Process sales
-        // try {
-        //   await handleSales(orderCodeReal);
-        // } catch (salesError) {
-        //   console.error("Error in handleSales:", salesError.message);
-        //   alert("Error: Failed to process sales. Please try again.");
-        // }
       }
     } catch (erroraddorder) {
       // Handle errors
@@ -248,95 +295,7 @@ const Cart = () => {
     }
   };
 
-  // Add Sales
-  // const handleSales = async (orderCodeReal) => {
-  //   try {
-  //     // Validate orderList
-  //     const validateOrderList = () => {
-  //       const currentOrderList = orderListRef.current;
-  //       if (!Array.isArray(currentOrderList) || currentOrderList.length === 0) {
-  //         throw new Error("Error: orderList is empty.");
-  //       }
-  //       return currentOrderList;
-  //     };
-
-  //     const validateOrder = (currentOrderList, orderCode) => {
-  //       const order = currentOrderList.find((ol) => ol.code === orderCode);
-  //       if (!order) {
-  //         throw new Error(`No matching order found for code: ${orderCode}`);
-  //       }
-  //       return order;
-  //     };
-
-  //     // Validate inputs
-  //     const currentOrderList = validateOrderList();
-  //     const order = validateOrder(currentOrderList, orderCodeReal);
-
-  //     // Prepare data for the API request
-  //     const prepareSalesData = () => {
-  //       const totalNumberItem = cartItems.length;
-
-  //       const salesDetail = cartItems.map((item) => ({
-  //         id_product: item.product.id,
-  //         name: item.product.name,
-  //         product_code: item.product.product_code,
-  //         item_price: Number(item.product.price),
-  //         item_quantity: item.quantity,
-  //         item_discount: 0,
-  //       }));
-
-  //       const salesCode = `INV/${Date.now()}/${crypto.randomUUID()}`;
-  //       const totalQty = cartItems.reduce(
-  //         (total, item) => total + item.quantity,
-  //         0
-  //       );
-  //       const totalPrice = cartItems.reduce(
-  //         (total, item) => total + item.product.price * item.quantity,
-  //         0
-  //       );
-  //       return {
-  //         no: salesCode,
-  //         id_user: "67a034f9962111a02fcc5ad2", // Consider making this dynamic
-  //         id_store: "679b448102f7087c0369c23c", // Consider making this dynamic
-  //         id_order: order._id,
-  //         id_sales_campaign: "67adf9ffcf892c7756288622", // Consider making this dynamic
-  //         id_payment_type: selectedMethod._id,
-  //         tax: 0,
-  //         status: 1, // 1 = active, 2 = pending
-  //         total_price: totalPrice,
-  //         total_quantity: totalQty,
-  //         total_discount: 0,
-  //         total_number_item: totalNumberItem,
-  //         salesDetails: salesDetail,
-  //       };
-  //     };
-
-  //     const token = localStorage.getItem("token");
-  //     const salesData = prepareSalesData();
-
-  //     // Make the API call
-  //     const response = await client.post("sales/addsales", salesData, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-
-  //     if (response.status === 201) {
-  //       Swal.fire("Sukses!", "Berhasil Order.", "success");
-  //       await clearCart(); // Clear cart only after successful API call
-  //       window.location.reload(); // Refresh the page
-  //     }
-  //   } catch (error) {
-  //     // Handle errors gracefully
-  //     let errorMessage = "An unexpected error occurred.";
-  //     if (error.response) {
-  //       errorMessage = `Error: ${JSON.stringify(error.response.data)}`;
-  //     } else if (error.message) {
-  //       errorMessage = error.message;
-  //     }
-
-  //     console.error(errorMessage);
-  //     Swal.fire("Error!", errorMessage, "error");
-  //   }
-  // };
+  // ADD SALES DULU DISINI, codenya ada di file cartItemToSales.js
 
   const [infoBuyyer, setInfoBuyyer] = useState({
     nama: "",
@@ -361,41 +320,27 @@ const Cart = () => {
       nomor: e.target.value,
     });
   };
-
-  // nama product
-  // useEffect(() => {
-  //   if (tableNumber.nomor < 1) {
-  //     setTableNumber({ nomor: 1 });
-  //   } else if (tableNumber.nomor > 100) {
-  //     setTableNumber({ nomor: 100 });
-  //   }
-  // }, [tableNumber]);
-  // akhir nama produc
-
-  const [payment, SetPayment] = useState({
-    bayar: "",
-  });
-
-  const handleQuantityChange = (index, newQuantity) => {
+  const handleQuantityChange = async (index, newQuantity) => {
     if (newQuantity < 1) return; // Minimal quantity 1
-    const updatedItems = [...cartItems];
+
+    // Deep copy the cart items to avoid state mutation issues
+    const updatedItems = JSON.parse(JSON.stringify(cartItems));
+
     updatedItems[index].quantity = newQuantity;
     updatedItems[index].totalPrice =
-      updatedItems[index].product.priceAfterDiscount * newQuantity;
+      updatedItems[index].product?.priceAfterDiscount * newQuantity || 0;
+
     setCartItems(updatedItems);
-    Cookies.set("cartItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
+    localStorage.setItem("cartItems", JSON.stringify(updatedItems)); // Simpan perubahan ke localStorage
   };
-  // const handleNameProductChange = (index, newNameProduct) => {
-  //   const updatedItems = [...cartItems];
-  //   updatedItems[index].name = newNameProduct;
-  // };
+
   const handleDeleteInfo = (index) => {
     const updatedItems = cartItems.filter((_, i) => i !== index);
     setCartItems(updatedItems);
-    Cookies.set("cartItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
-    console.log("LATEST COOKIES:", Cookies.get("cartItems"));
+    localStorage.setItem("cartItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
   };
-  const handleDelete = async (index) => {
+
+  const handleDelete = async (index, id_product, quantity) => {
     const result = await Swal.fire({
       title: "Apakah anda yakin?",
       text: "Item ini akan dihapus dari keranjang!",
@@ -438,34 +383,24 @@ const Cart = () => {
     window.history.back();
   };
 
-  // Clear Cookies cartItems
+  // Clear localStorage cartItems
   const clearCart = () => {
     try {
-      setCartItems([]); // Reset the cart state
-      Cookies.set("cartItems", JSON.stringify([]), { expires: 7 }); // Update cookies
+      setCartItems([]);
+      setInfoBuyyer({
+        nama: "",
+        keterangan: "",
+      });
+      setTableNumber({
+        nomor: "",
+      });
+      localStorage.setItem("cartItems", JSON.stringify([])); // Update localStorage
     } catch (error) {
       console.error("Error clearing cart items:", error.message);
       Swal.fire("Error!", "Failed to clear cart items.", "error");
     }
   };
 
-  // Payment
-  // Group payments by payment_method
-  const groupedPayments = payments.reduce((acc, payment) => {
-    if (!acc[payment.payment_method]) {
-      acc[payment.payment_method] = [];
-    }
-    acc[payment.payment_method].push(payment);
-    return acc;
-  }, {});
-
-  // Toggle payments expansion
-  const togglePayments = (payments) => {
-    setexpandedPayments((prev) => ({
-      ...prev,
-      [payments]: !prev[payments],
-    }));
-  };
   return (
     <div className="bg-[#F7F7F7] min-h-screen custom-margin">
       <Topbar onCartUpdate={handleDeleteInfo} />
@@ -535,83 +470,96 @@ const Cart = () => {
             <p>Keranjang Anda kosong.</p>
           ) : (
             <ul className="space-y-4">
-              {cartItems.map((item, index) => (
-                <li
-                  key={index}
-                  className="flex items-center border p-4 rounded-lg bg-white shadow-md"
-                >
-                  <Image
-                    src={item.product.image || "https://placehold.co/100x100"}
-                    alt={item.product.name}
-                    className="w-16 h-16 object-cover rounded-lg mr-4"
-                    width={64}
-                    height={64}
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">
-                      {item.product.name}
-                    </h3>
-                    {/* Hanya tampilkan size atau extra yang dipilih secara horizontal dengan koma natural */}
-                    <div className="flex">
-                      {item.selectedSize?.name && (
+              {cartItems.map((item, index) => {
+                let { product, selectedSize, selectedExtra, quantity } =
+                  item || {};
+                let { name, image, priceAfterDiscount, discount, price, id } =
+                  product || {};
+
+                return (
+                  <li
+                    key={index}
+                    className="flex items-center border p-4 rounded-lg bg-white shadow-md"
+                  >
+                    <Image
+                      src={image || "https://placehold.co/100x100"}
+                      alt={name || "Produk Tidak Diketahui"}
+                      className="w-16 h-16 object-cover rounded-lg mr-4"
+                      width={64}
+                      height={64}
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">
+                        {name || "Produk Tidak Diketahui"}
+                      </h3>
+
+                      {/* Hanya tampilkan size atau extra yang dipilih, dipisahkan dengan koma */}
+                      <div className="flex">
                         <p className="text-sm">
-                          {item.selectedSize.name}
-                          {item.selectedExtra?.name && ","}
+                          {[selectedSize?.name, selectedExtra?.name]
+                            .filter(Boolean)
+                            .join(", ")}
                         </p>
-                      )}
-                      {item.selectedExtra?.name && (
-                        <p className="text-sm ml-1">
-                          {item.selectedExtra.name}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center">
-                    <p className="font-semibold mr-4">
-                      Rp.
-                      {new Intl.NumberFormat("id-ID").format(
-                        item.product.priceAfterDiscount
-                      )}
-                    </p>{" "}
-                    {/* Harga satuan */}
-                    <div className="flex items-center">
-                      <input
-                        type="number"
-                        value={item.quantity}
-                        min="1"
-                        readOnly
-                        className="text-center bg-transparent text-lg w-8 outline-none border-none"
-                      />
-
-                      <div className="flex flex-col items-center ml-2 -space-y-2.5">
-                        <button
-                          onClick={() =>
-                            handleQuantityChange(index, item.quantity + 1)
-                          }
-                          className="text-lg bg-transparent p--4 leading-none"
-                        >
-                          <TiArrowSortedUp />
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleQuantityChange(index, item.quantity - 1)
-                          }
-                          className="text-lg bg-transparent p--4 leading-none"
-                        >
-                          <TiArrowSortedDown />
-                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="ml-4"
-                    >
-                      <VscTrash className="w-6 h-6" />
-                    </button>
-                  </div>
-                </li>
-              ))}
+
+                    <div className="flex items-center">
+                      <p className="font-semibold mr-4 relative">
+                        {discount > 0 ? (
+                          <s className="font-bold text-sm mr-4 text-red-500 italic absolute -top-5 -left-5">
+                            Rp.
+                            {new Intl.NumberFormat("id-ID").format(price)}
+                          </s>
+                        ) : null}
+                        Rp.{" "}
+                        {new Intl.NumberFormat("id-ID").format(
+                          priceAfterDiscount || 0
+                        )}
+                      </p>
+
+                      {/* Harga satuan & tombol quantity */}
+                      <div className="flex items-center">
+                        <input
+                          type="number"
+                          value={quantity}
+                          onChange={(e) => {
+                            const newQuantity = Number(e.target.value);
+                            handleQuantityChange(index, newQuantity);
+                          }}
+                          min="1"
+                          className="mx-4 w-16 text-center appearance-none bg-transparent border-none focus:outline-none focus:border-b focus:border-black spinner-none"
+                        />
+
+                        <div className="flex flex-col items-center ml-2 -space-y-2.5">
+                          <button
+                            onClick={() =>
+                              handleQuantityChange(index, quantity + 1)
+                            }
+                            className={`text-lg bg-transparent p--4 leading-none`}
+                          >
+                            <TiArrowSortedUp />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleQuantityChange(index, quantity - 1)
+                            }
+                            className="text-lg bg-transparent p--4 leading-none"
+                          >
+                            <TiArrowSortedDown />
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleDelete(index, id, quantity)}
+                        className="ml-4"
+                      >
+                        <VscTrash className="w-6 h-6" />
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -637,7 +585,8 @@ const Cart = () => {
             {new Intl.NumberFormat("id-ID").format(
               cartItems.reduce(
                 (total, item) =>
-                  total + item.quantity * item.product.priceAfterDiscount,
+                  total +
+                  item.quantity * (item.product?.priceAfterDiscount || 0),
                 0
               )
             )}
@@ -654,10 +603,9 @@ const Cart = () => {
         </div>
 
         {isnoteModalOpen && (
-          <Modal onClose={closeModalnote}>
+          <Modal onClose={closeModalnote} title={"Catatan Pemesanan"}>
             <div>
               <div className="relative w-full">
-                <p className="font-bold text-2xl mb-5">Catatan Pemesanan </p>
                 <textarea
                   id="infoBuyyerKeterangan"
                   name="keterangan"

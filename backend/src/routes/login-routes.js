@@ -48,8 +48,8 @@ router.post("/", async (c) => {
     const user = await UserModels.findOne({ username }).select(
       "+password +status"
     ); // Ensure 'password' and 'status' are included
-    if (!user) {
-      return c.json({ message: "Wrong username or password" }, 401); // Unauthorized
+    if (!user || !(await argon2.verify(user.password, password))) {
+      return c.json({ message: "Invalid credentials" }, 401);
     }
 
     // Verify password using Argon2

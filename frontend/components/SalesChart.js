@@ -53,7 +53,7 @@ const SalesChart = () => {
     <div>
       <h3 className="font-bold mb-2">Chart Sales</h3>
       <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={salesData}>
+        <LineChart data={salesData? salesData : ""}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
           {/* <YAxis tickFormatter={formatRupiah} /> */}

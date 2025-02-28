@@ -3,128 +3,52 @@ import { IoSearchOutline } from "react-icons/io5";
 import Image from "next/image";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import client from "@/libs/axios";
-import { HiDotsHorizontal } from "react-icons/hi";
+import { FaInfoCircle } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
-import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import Cookies from "js-cookie";
-import ContentRenderer from "@/components/nav/renderContents"; // Import the new component
+import ContentRenderer from "@/components/nav/renderContents";
+import {fetchTableList} from "@/libs/fetching/table"
+import {fetchOrderList} from "@/libs/fetching/order"
+
 const Order = ({ setSelectedLink }) => {
   const [listOrder, setListOrder] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [openDropdown, setOpenDropdown] = useState(null);
-  const [productToUpdate, setProductToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
-  const [loading, setLoading] = useState(false); // Untuk loading saat update status
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [productList, setProductList] = useState([]);
   const [tableList, setTableList] = useState([]);
+  const [orderToUpdate, setOrderToUpdate] = useState(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const response = await client.post("/product/listproduct", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /product/listproduct:",
-            data
-          );
-          setProductList([]);
-        } else {
-          setProductList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching size:", error);
-        setProductList([]);
-      }
+    const fetching_requirement = async () => {
+      const id_store = localStorage.getItem("id_store");
+      const get_table_list = async () => {
+        const data_table = await fetchTableList();
+        setTableList(data_table);
+        setIsLoading(false)
+      };
+      const get_order_list = async () => {
+        const data_order = await fetchOrderList();
+        setListOrder(data_order);
+        setIsLoading(false)
+      };
+      get_table_list();
+      get_order_list();
     };
-    fetchProduct();
-  }, []);
-  useEffect(() => {
-    const fetchTable = async () => {
-      try {
-        const response = await client.get("/table/listtable");
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /table/listtable:", data);
-          setTableList([]);
-        } else {
-          setTableList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching table:", error);
-        setTableList([]);
-      }
-    };
-    fetchTable();
+    fetching_requirement();
   }, []);
 
-  const openModalAdd = () => {
-    setIsModalOpen(true);
+  // Open info modal
+  const handleInfoDetails = (order) => {
+    setOrderToUpdate(order);
+    setIsInfoModalOpen(true);
   };
 
-  const closeModalAdd = () => {
-    setIsModalOpen(false);
-  };
-  const openModalUpdate = () => {
-    setIsUpdateModalOpen(true);
-  };
-
-  const closeModalUpdate = () => {
-    setIsUpdateModalOpen(false);
-  };
-  useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const id_store = localStorage.getItem("id_store");
-
-        if (!id_store) {
-          console.error("id_store is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await client.post(
-          "/order/listorder",
-          {}, // Pass id_store in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // const filter = response.data.filter(num => num.status == "2")
-        // Set the fetched order into state
-        setListOrder(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching order:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrder();
-  }, []);
-
-  const processSubmit = (data) => {
-    const orderData = { ...data };
-    Cookies.set("kasirItems", JSON.stringify(orderData), { expires: 7 });
-  };
-
-  // function
-  const handleNavigateToKasir = () => {
-    // Update the selectedLink to "kasir"
-    console.log("SET ED TO KASIR!!!");
-    setSelectedLink("kasir");
+  // Close info modal
+  const closeModalInfo = () => {
+    setIsInfoModalOpen(false);
   };
 
   if (isLoading) {
@@ -145,7 +69,6 @@ const Order = ({ setSelectedLink }) => {
           </div>
         </div>
       </div>
-
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div className="overflow-x-auto">
@@ -160,6 +83,7 @@ const Order = ({ setSelectedLink }) => {
                     <th>No Meja</th>
                     <th>Jumlah Pesanan</th>
                     <th>Total Harga</th>
+                    <th>Status</th>
                     <th>Aksi</th>
                   </tr>
                 </thead>
@@ -179,6 +103,14 @@ const Order = ({ setSelectedLink }) => {
                           .reduce((acc, curr) => acc + curr, 0)}
                       </td>
                       <td>{order.status == "2" ? "pending" : "selesai"}</td>
+                      <td>
+                        <button
+                          className="p-3 rounded-lg text-2xl"
+                          onClick={() => handleInfoDetails(order)}
+                        >
+                          <FaInfoCircle />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -187,6 +119,32 @@ const Order = ({ setSelectedLink }) => {
           </div>
         </div>
       </div>
+
+      {/* Info Modal */}
+      {isInfoModalOpen && (
+        <Modal onClose={closeModalInfo} title={"Order Detail"}>
+          {orderToUpdate?.orderDetails?.map((detail, index) => (
+            <div key={index}>
+              <div>Detail {index + 1}</div>
+              <div className="grid grid-cols-[auto_auto_1fr] gap-y-2 font-sans">
+                <span className="text-left font-bold pr-2">Kode Produk</span>
+                <span className="font-bold px-2">:</span>
+                <span className="text-gray-700">
+                  {detail.id_product?.product_code || "-"}
+                </span>
+                <span className="text-left font-bold pr-2">
+                  Nama Order Detail
+                </span>
+                <span className="font-bold px-2">:</span>
+                <span className="text-gray-700">
+                  {detail.name_product || "-"}
+                </span>
+              </div>
+              <hr />
+            </div>
+          ))}
+        </Modal>
+      )}
     </div>
   );
 };

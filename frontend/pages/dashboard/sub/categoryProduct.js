@@ -8,6 +8,8 @@ import { HiDotsHorizontal } from "react-icons/hi";
 import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
+import ReactPaginate from "react-paginate";
+import { fetchCategoryList, fetchCategoryAdd } from "@/libs/fetching/category";
 
 const CategoryProduct = () => {
   const [categoryProduct, setCategoryProduct] = useState([]);
@@ -17,14 +19,18 @@ const CategoryProduct = () => {
   const [categoryProductToUpdate, setCategoryProductToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Untuk mengontrol tampilan modal update
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10; 
 
   const [categoryProductDataAdd, setCategoryProductDataAdd] = useState({
     name_category: "",
+    id_store: ""
   });
 
   const [categoryProductDataUpdate, setCategoryProductDataUpdate] = useState({
     id: "",
     name_category: "",
+    id_store: ""
   });
 
   // --- Function
@@ -39,31 +45,15 @@ const CategoryProduct = () => {
   };
 
   useEffect(() => {
-    const fetchCategoryProduct = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const response = await client.post(
-          "/category/listcategories",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Set the fetched categoryProduct into state
-        setCategoryProduct(response.data);
-        console.log("SET ITEMS", categoryProduct);
+    const fetching_requirement = async () => {
+      const get_category_list = async () => {
+        const data_category = await fetchCategoryList();
+        setCategoryProduct(data_category);
         setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching categoryProduct:", error);
-        setIsLoading(false);
-      }
+      };
+      get_category_list();
     };
-
-    fetchCategoryProduct();
+    fetching_requirement();
   }, []);
 
   const handleUpdateCategoryProduct = (categoryProduct, params) => {
@@ -114,8 +104,6 @@ const CategoryProduct = () => {
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
-    console.log("datanya cok asuk", categoryProductDataAdd);
-
     try {
       const token = localStorage.getItem("token");
 
@@ -126,14 +114,9 @@ const CategoryProduct = () => {
       }
 
       // Send product data to the backend
-      const response = await client.post(
-        "/category/addcategory",
-        {
-          name_category: categoryProductDataAdd.name_category,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const response = await fetchCategoryAdd(
+        categoryProductDataAdd.name_category
+
       );
 
       // Auto Reload
@@ -141,7 +124,7 @@ const CategoryProduct = () => {
       Swal.fire("Berhasil", "Kategori Produk berhasil ditambahkan!", "success");
       setCategoryProduct((prevCategoryProducts) => [
         ...prevCategoryProducts,
-        response.data,
+        response,
       ]);
     } catch (error) {
       console.error("Error adding CategoryProduct:", error);
@@ -203,6 +186,9 @@ const CategoryProduct = () => {
     }
   };
 
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = categoryProduct.slice(startIndex, startIndex + itemsPerPage);
+
   if (isLoading) {
     return (
       <div className="w-full h-screen pt-16 flex justify-center items-center">
@@ -246,11 +232,9 @@ const CategoryProduct = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
           <div>
@@ -263,10 +247,11 @@ const CategoryProduct = () => {
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
+          <div>
             {categoryProduct.length === 0 ? (
               <h1>Data Category Product tidak ditemukan!</h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -276,9 +261,9 @@ const CategoryProduct = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {categoryProduct.map((cp, index) => (
+                  {selectedData.map((cp, index) => (
                     <tr key={cp._id}>
-                      <td>{index + 1}</td>
+                      <td>{startIndex + index + 1}</td>
                       <td>{cp.name_category}</td>
                       <td>
                         <button
@@ -300,6 +285,18 @@ const CategoryProduct = () => {
                   ))}
                 </tbody>
               </table>
+              <ReactPaginate
+                previousLabel={"← Prev"}
+                nextLabel={"Next →"}
+                pageCount={Math.ceil(categoryProduct.length / itemsPerPage)}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
+                containerClassName={"flex gap-2 justify-center mt-4"}
+                pageLinkClassName={"border px-3 py-1"}
+                previousLinkClassName={"border px-3 py-1"}
+                nextLinkClassName={"border px-3 py-1"}
+                activeClassName={"bg-blue-500 text-white"}
+              />
+              </>
             )}
           </div>
         </div>

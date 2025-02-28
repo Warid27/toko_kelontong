@@ -9,15 +9,18 @@ const storeSchema = new Schema({
     enum: [0, 1, 2], // (Active, Inactive, Bankrupt)
     default: 1,
   },
+  // Color -> String (bg: rgbcode, text: rgb code)
   icon: {
     type: String,
-    required: true,
+    default: "https://placehold.co/500x500",
+  },
+  header: {
+    type: String,
     default: "https://placehold.co/500x500",
   },
   banner: {
     type: String,
-    required: true,
-    default: "https://placehold.co/1440x360",
+    default: "https://placehold.co/500x500",
   },
   id_company: {
     type: Schema.Types.ObjectId,
@@ -53,7 +56,7 @@ storeSchema.virtual("resolvedIcon").get(async function () {
 storeSchema.virtual("resolvedBanner").get(async function () {
   const shortKey = this.banner;
   if (!shortKey) {
-    return "https://placehold.co/1440x360"; // Fallback image
+    return "https://placehold.co/500x500"; // Fallback image
   }
   try {
     // Look up the file metadata using the shortKey
@@ -61,13 +64,35 @@ storeSchema.virtual("resolvedBanner").get(async function () {
       shortkey: shortKey,
     });
     if (!fileMetadata) {
-      return "https://placehold.co/1440x360"; // Fallback image
+      return "https://placehold.co/500x500"; // Fallback image
     }
     // Return the fileUrl
     return fileMetadata.fileUrl;
   } catch (error) {
     console.error("Error resolving banner:", error);
-    return "https://placehold.co/1440x360"; // Fallback image
+    return "https://placehold.co/500x500"; // Fallback image
+  }
+});
+
+// Virtual field for resolving the header URL dynamically
+storeSchema.virtual("resolvedHeader").get(async function () {
+  const shortKey = this.header;
+  if (!shortKey) {
+    return "https://placehold.co/500x500"; // Fallback image
+  }
+  try {
+    // Look up the file metadata using the shortKey
+    const fileMetadata = await fileMetadataModels.findOne({
+      shortkey: shortKey,
+    });
+    if (!fileMetadata) {
+      return "https://placehold.co/500x500"; // Fallback image
+    }
+    // Return the fileUrl
+    return fileMetadata.fileUrl;
+  } catch (error) {
+    console.error("Error resolving header:", error);
+    return "https://placehold.co/500x500"; // Fallback image
   }
 });
 

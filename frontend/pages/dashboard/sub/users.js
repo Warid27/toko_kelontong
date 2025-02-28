@@ -10,6 +10,10 @@ import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
 import Select from "react-select";
+import { fetchCompanyList } from "@/libs/fetching/company";
+import { fetchStoreList } from "@/libs/fetching/store";
+import { fetchUserList } from "@/libs/fetching/user";
+import ReactPaginate from "react-paginate";
 
 const User = () => {
   const [showPassword, setShowPassword] = useState(false); // State for showing password
@@ -21,6 +25,8 @@ const User = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [userToUpdate, setUserToUpdate] = useState(null); // Untuk menyimpan Pengguna yang akan diupdate
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10; 
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -44,48 +50,28 @@ const User = () => {
   });
 
   useEffect(() => {
-    const fetchCompany = async () => {
-      try {
-        const response = await client.post("/company/listcompany", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /company/listcompany:",
-            data
-          );
-          setCompanyList([]);
-        } else {
-          setCompanyList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-        setCompanyList([]);
-      }
+    const fetching_requirement = async () => {
+      const get_user_list = async () => {
+        const data_user = await fetchUserList();
+        setUsers(data_user);
+        setIsLoading(false);
+      };
+      const get_company_list = async () => {
+        const data_company = await fetchCompanyList();
+        setCompanyList(data_company);
+        setIsLoading(false);
+      };
+      const get_store_list = async () => {
+        const data_store = await fetchStoreList();
+        setStoreList(data_store);
+        setIsLoading(false);
+      };
+      
+      get_user_list();
+      get_company_list();
+      get_store_list();
     };
-    fetchCompany();
-  }, []);
-
-  useEffect(() => {
-    const fetchStore = async () => {
-      try {
-        const response = await client.post("/store/liststore", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /store/liststore:", data);
-          setStoreList([]);
-        } else {
-          setStoreList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-        setStoreList([]);
-      }
-    };
-    fetchStore();
+    fetching_requirement();
   }, []);
 
   const openModalAdd = () => {
@@ -120,39 +106,6 @@ const User = () => {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const id_user = localStorage.getItem("id_user");
-
-        if (!id_user) {
-          console.error("id_user is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await client.post(
-          "/user/listuser",
-          { id_user }, // Pass id_user in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Set the fetched users into state
-        setUsers(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, []);
 
   const handleUpdateUser = (user) => {
     setUserToUpdate(user); // Menyimpan Pengguna yang dipilih
@@ -280,6 +233,9 @@ const User = () => {
     }
   };
 
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = users.slice(startIndex, startIndex + itemsPerPage);
+
   // const closeModal = () => {
   //   setIsModalOpen(false);
   // };
@@ -326,11 +282,9 @@ const User = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
           <div>
@@ -346,10 +300,11 @@ const User = () => {
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
+          <div>
             {users.length === 0 ? (
               <h1>Data Pengguna tidak ditemukan!</h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -360,9 +315,9 @@ const User = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user, index) => (
+                  {selectedData.map((user, index) => (
                     <tr key={user._id}>
-                      <td>{index + 1}</td>
+                      <td>{startIndex + index + 1}</td>
                       <td>
                         <b>{user.username}</b>
                       </td>
@@ -397,6 +352,19 @@ const User = () => {
                   ))}
                 </tbody>
               </table>
+              <ReactPaginate
+                previousLabel={"← Prev"}
+                nextLabel={"Next →"}
+                pageCount={Math.ceil(users.length / itemsPerPage)}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
+                containerClassName={"flex gap-2 justify-center mt-4"}
+                pageLinkClassName={"border px-3 py-1"}
+                previousLinkClassName={"border px-3 py-1"}
+                nextLinkClassName={"border px-3 py-1"}
+                activeClassName={"bg-blue-500 text-white"}
+              />
+              </>
+
             )}
           </div>
         </div>

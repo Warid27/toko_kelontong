@@ -18,7 +18,9 @@ import ItemCampaign from "@/pages/dashboard/sub/itemCampaign";
 import TypeList from "@/pages/dashboard/sub/typeList";
 import CategoryProduct from "@/pages/dashboard/sub/categoryProduct";
 import StockList from "@/pages/dashboard/sub/stock";
+import PembelianList from "@/pages/dashboard/sub/table_pembelian";
 import Pembelian from "@/pages/dashboard/sub/pembelian";
+import Report from "@/pages/dashboard/sub/report";
 import { rolePermissions } from "@/utils/permission";
 
 const ContentRenderer = ({
@@ -26,6 +28,8 @@ const ContentRenderer = ({
   setSelectedLink,
   handleLogout,
   userRole,
+  id_company,
+  id_store,
 }) => {
   // Check if the user has permission to access the selectedLink
   const hasPermission = rolePermissions[userRole]?.includes(selectedLink);
@@ -49,6 +53,8 @@ const ContentRenderer = ({
       return <StoreData />;
     case "analytics":
       return <Analytics />;
+    case "report":
+      return <Report />;
     case "product":
       return <Menu />;
     case "extras":
@@ -65,6 +71,8 @@ const ContentRenderer = ({
       return <Profile />;
     case "payment":
       return <Payment />;
+    case "pembelian_list":
+      return <PembelianList />;
     case "sales_campaign":
       return <SalesCampaign />;
     case "item_campaign":

@@ -10,6 +10,11 @@ import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import DateTimePicker from "@/components/DateTimePicker";
 import Select from "react-select";
+import { fetchCompanyList } from "@/libs/fetching/company";
+import { fetchUserList } from "@/libs/fetching/user";
+import { fetchStoreList } from "@/libs/fetching/store";
+import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
+import ReactPaginate from "react-paginate";
 
 const ItemCampaign = () => {
   const [itemCampaign, setItemCampaign] = useState([]);
@@ -22,6 +27,8 @@ const ItemCampaign = () => {
   const [storeList, setStoreList] = useState([]);
   const [companyList, setCompanyList] = useState([]);
   const [userList, setUserList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
   const [itemCampaignDataAdd, setItemCampaignDataAdd] = useState({
     item_campaign_name: "",
@@ -60,102 +67,33 @@ const ItemCampaign = () => {
   };
 
   useEffect(() => {
-    const fetchStore = async () => {
-      try {
-        const response = await client.post("/store/liststore", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /store/liststore:", data);
-          setStoreList([]);
-        } else {
-          setStoreList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching store:", error);
-        setStoreList([]);
-      }
-    };
-    fetchStore();
-  }, []);
-  useEffect(() => {
-    const fetchCompany = async () => {
-      try {
-        const response = await client.post("/company/listcompany", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /company/listcompany:",
-            data
-          );
-          setCompanyList([]);
-        } else {
-          setCompanyList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching company:", error);
-        setCompanyList([]);
-      }
-    };
-    fetchCompany();
-  }, []);
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem("token")
-        const response = await client.post("/user/listuser", {}, 
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /user/listuser:", data);
-          setUserList([]);
-        } else {
-          setUserList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching store:", error);
-        setUserList([]);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
-    const fetchItemCampaign = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const response = await client.post(
-          "/itemcampaign/listitemcampaigns",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Set the fetched itemCampaign into state
-        setItemCampaign(response.data);
-        console.log("SET ITEMS", itemCampaign);
+    const fetching_requirement = async () => {
+      const get_user_list = async () => {
+        const data_user = await fetchUserList();
+        setUserList(data_user);
         setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching itemCampaign:", error);
+      };
+      const get_company_list = async () => {
+        const data_company = await fetchCompanyList();
+        setCompanyList(data_company);
         setIsLoading(false);
-      }
+      };
+      const get_store_list = async () => {
+        const data_store = await fetchStoreList();
+        setStoreList(data_store);
+        setIsLoading(false);
+      };
+      const get_itemCampaign_list = async () => {
+        const data_itemCampaign = await fetchItemCampaignList();
+        setItemCampaign(data_itemCampaign);
+        setIsLoading(false);
+      };
+      get_user_list();
+      get_company_list();
+      get_store_list();
+      get_itemCampaign_list();
     };
-
-    fetchItemCampaign();
+    fetching_requirement();
   }, []);
 
   const handleUpdateItemCampaign = (itemCampaign, params) => {
@@ -336,6 +274,9 @@ const ItemCampaign = () => {
     }
   };
 
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = itemCampaign.slice(startIndex, startIndex + itemsPerPage);
+
   if (isLoading) {
     return (
       <div className="w-full h-screen pt-16 flex justify-center items-center">
@@ -379,11 +320,9 @@ const ItemCampaign = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
           <div>
@@ -396,10 +335,11 @@ const ItemCampaign = () => {
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
+          <div>
             {itemCampaign.length === 0 ? (
               <h1>Data campaign tidak ditemukan!</h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -413,9 +353,9 @@ const ItemCampaign = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {itemCampaign.map((itemCampaign, index) => (
+                  {selectedData.map((itemCampaign, index) => (
                     <tr key={itemCampaign._id}>
-                      <td>{index + 1}</td>
+                      <td>{startIndex + index + 1}</td>
                       <td>{itemCampaign.item_campaign_name}</td>
                       <td>{itemCampaign.rules}</td>
                       <td>{itemCampaign.start_date}</td>
@@ -445,6 +385,18 @@ const ItemCampaign = () => {
                   ))}
                 </tbody>
               </table>
+              <ReactPaginate
+                previousLabel={"← Prev"}
+                nextLabel={"Next →"}
+                pageCount={Math.ceil(itemCampaign.length / itemsPerPage)}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
+                containerClassName={"flex gap-2 justify-center mt-4"}
+                pageLinkClassName={"border px-3 py-1"}
+                previousLinkClassName={"border px-3 py-1"}
+                nextLinkClassName={"border px-3 py-1"}
+                activeClassName={"bg-blue-500 text-white"}
+              />
+              </>
             )}
           </div>
         </div>

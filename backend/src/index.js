@@ -14,12 +14,12 @@ import orderRoutes from "@routes/order-routes";
 import tableRoutes from "@routes/table-routes";
 import paymentRoutes from "@routes/payment-routes";
 import stockRoutes from "@routes/stock-routes";
-import salesRoutes from "@routes/sales-routes";
 import pembelianRoutes from "@routes/pembelian-routes";
+import salesRoutes from "@routes/sales-routes";
 import salesCampaignRoutes from "@routes/salesCampaign-routes";
 import itemCampaignRoutes from "@routes/itemCampaign-routes";
-
 import categoryRoutes from "@routes/category-routes";
+
 const app = new Hono();
 
 // Middleware for JSON responses
@@ -28,55 +28,53 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-// Routes
-app.route("/stock", stockRoutes);
-app.route("/payment", paymentRoutes);
-app.route("/table", tableRoutes);
-app.route("/order", orderRoutes);
-app.route("/user", userRoutes);
-app.route("/extras", extrasRoutes);
-app.route("/size", sizeRoutes);
-app.route("/store", storeRoutes);
-app.route("/company", companyRoutes);
-app.route("/product", productRoutes);
-app.route("/login", loginRoutes);
-app.route("/register", registerRoutes);
-app.route("/type", typeRoutes);
-app.route("/sales", salesRoutes);
-app.route("/salescampaign", salesCampaignRoutes);
-app.route("/itemcampaign", itemCampaignRoutes);
-app.route("/category", categoryRoutes);
-app.route("/pembelian", pembelianRoutes);
-app.route("/api", apiRoutes);
+// Routes (Alphabetically Sorted)
+const routes = {
+  "/api": apiRoutes,
+  "/category": categoryRoutes,
+  "/company": companyRoutes,
+  "/extras": extrasRoutes,
+  "/itemcampaign": itemCampaignRoutes,
+  "/login": loginRoutes,
+  "/order": orderRoutes,
+  "/payment": paymentRoutes,
+  "/pembelian": pembelianRoutes,
+  "/product": productRoutes,
+  "/register": registerRoutes,
+  "/sales": salesRoutes,
+  "/salescampaign": salesCampaignRoutes,
+  "/size": sizeRoutes,
+  "/stock": stockRoutes,
+  "/store": storeRoutes,
+  "/table": tableRoutes,
+  "/type": typeRoutes,
+  "/user": userRoutes,
+};
+
+for (const [path, handler] of Object.entries(routes)) {
+  app.route(path, handler);
+}
 
 // Static File Serving
-app.use("/public/*", async (c) => {
-  const filePath = `./public${c.req.path.replace("/public", "")}`;
-  return new Response(Bun.file(filePath));
-});
-app.use("/uploads/*", async (c) => {
-  const filePath = `./uploads${c.req.path.replace("/uploads", "")}`;
-  return new Response(Bun.file(filePath));
-});
-app.use("/swal/*", async (c) => {
-  const filePath = `./node_modules/sweetalert2/dist${c.req.path.replace(
-    "/swal",
-    ""
-  )}`;
-  return new Response(Bun.file(filePath));
-});
+const serveStaticFile = async (c, folder) => {
+  try {
+    const filePath = `.${folder}${c.req.path.replace(folder, "")}`;
+    return new Response(Bun.file(filePath));
+  } catch (error) {
+    return c.text("File not found", 404);
+  }
+};
 
-// CORS
-// app.use(
-//   cors({
-//     origin: "http://localhost:8000", // Allow requests from the frontend
-//     credentials: true, // Allow cookies and authorization headers
-//   })
-// );
-// Start the server
+app.use("/public/*", (c) => serveStaticFile(c, "/public"));
+app.use("/uploads/*", (c) => serveStaticFile(c, "/uploads"));
+app.use("/swal/*", (c) => serveStaticFile(c, "/node_modules/sweetalert2/dist"));
+
 Bun.serve({
   port: PORT,
-  fetch: app.fetch,
+  fetch(req) {
+    return app.fetch(req);
+  },
 });
-console.log(`Server listening on PORT ${PORT}`);
-console.log(`http://localhost:${PORT}`);
+
+console.log(`🚀 Server running on PORT ${PORT}`);
+console.log(`🌐 http://localhost:${PORT}`);

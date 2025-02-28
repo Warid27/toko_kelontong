@@ -18,6 +18,8 @@ export const rolePermissions = {
     "type",
     "stock",
     "pembelian",
+    "pembelian_list",
+    "report",
     "category_product",
   ],
   admin: [
@@ -34,11 +36,13 @@ export const rolePermissions = {
     "order",
     "stock",
     "pembelian",
-    "type",
+    "pembelian_list",
+    "report",
   ],
   manajer: [
     "profile",
     "analytics",
+    "report",
     "payment",
     "sales",
     "sales_campaign",
@@ -49,5 +53,5 @@ export const rolePermissions = {
     "order_cust",
     "order",
   ],
-  kasir: ["profile", "order_cust", "sales", "stock", "kasir"],
+  kasir: ["profile", "order_cust", "sales", "kasir"],
 };

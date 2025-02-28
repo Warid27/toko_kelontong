@@ -1,11 +1,17 @@
 import { Hono } from "hono";
 import { PORT, renderEJS } from "@config/config";
 import { ProductModels } from "@models/product-models";
-import { SizeModels } from "@models/size-models";
-import { ExtrasModels } from "@models/extras-models";
+import { CategoryProductModels } from "@models/categoryProduct-models";
+import { OrderModels } from "@models/order-models";
+
+// import { SizeModels } from "@models/size-models";
+// import { ExtrasModels } from "@models/extras-models";
 import { ObjectId, mongoose } from "mongoose";
 import fs from "fs/promises";
-import path from "path";
+import { writeFile, readFile } from "fs/promises";
+import * as XLSX from "xlsx";
+import { join } from "path";
+import { mkdir } from "fs/promises";
 import { StockModels } from "@models/stock-models";
 
 // Middleware
@@ -13,17 +19,111 @@ import { authenticate } from "@middleware/authMiddleware"; // Import the middlew
 
 export const router = new Hono();
 
+// const upload = multer({ dest: "uploads/" });
+
+router.post("/upload", async (c) => {
+  const formData = await c.req.formData();
+  const file = formData.get("file");
+  const id_store = formData.get("id_store");
+  const id_company = formData.get("id_company");
+
+  if (!file) {
+    return c.json({ message: "File tidak ditemukan!" }, 400);
+  }
+
+  // Pastikan folder uploads ada
+  const uploadDir = join(process.cwd(), "uploads");
+  await mkdir(uploadDir, { recursive: true });
+
+  // Simpan file sementara
+  const buffer = await file.arrayBuffer();
+  const filePath = join(uploadDir, file.name);
+  await writeFile(filePath, Buffer.from(buffer));
+
+  try {
+    // Baca file Excel
+    const excelBuffer = await readFile(filePath);
+    const workbook = XLSX.read(excelBuffer, { type: "buffer" });
+
+    // Ambil nama sheet pertama
+    const sheetName = workbook.SheetNames[0];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    // Hapus __rowNum__ dari setiap data
+    const cleanedData = data.map(({ __rowNum__, ...rest }) => rest);
+
+    // Perbaikan: Gunakan Promise.all agar bisa await findOne
+    const formatData = await Promise.all(
+      cleanedData.map(async (d) => {
+        const category = await CategoryProductModels.findOne({
+          name_category: d.category,
+        });
+
+        return {
+          ...d,
+          id_store: id_store,
+          id_company: id_company,
+          id_category_product: category ? category._id : null,
+        };
+      })
+    );
+
+    // Simpan ke MongoDB
+    const result = await ProductModels.insertMany(formatData);
+
+    return c.json({ message: "Upload berhasil! Data disimpan.", result });
+  } catch (error) {
+    console.error("Gagal membaca atau menyimpan file:", error);
+    return c.json(
+      { message: "Gagal membaca atau menyimpan file!", error: error.message },
+      500
+    );
+  }
+});
+
+// router.post("/upload", async (c) => {
+//     const req = c.req.raw;
+
+//     // Gunakan middleware multer untuk upload file
+//     await new Promise((resolve, reject) => {
+//         upload.single("file")(req, {}, (err) => {
+//             if (err) reject(err);
+//             resolve();
+//         });
+//     });
+
+//     // Ambil file yang diupload
+//     const file = req.file;
+//     if (!file) return c.json({ error: "No file uploaded" }, 400);
+
+//     // Baca file Excel
+//     const workbook = xlsx.readFile(file.path);
+//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
+//     const data = xlsx.utils.sheet_to_json(sheet);
+
+//     console.log("data excel= ", data)
+
+//     // Simpan ke MongoDB
+//     // await ProductModels.insertMany(data);
+
+//     // Hapus file setelah diproses
+//     // fs.unlinkSync(file.path);
+
+//     return c.json({ message: "Upload success", data });
+// });
+
 // Get all product
+
 router.post("/listproduct", async (c) => {
   try {
+    // Parse JSON payload
     let body;
     try {
       body = await c.req.json();
     } catch (parseError) {
       return c.json({ error: "Invalid JSON payload" }, 400);
     }
-
-    // Jika body kosong, ambil semua produk
+    // If body is empty, fetch all products
     if (!body || Object.keys(body).length === 0) {
       const products = await ProductModels.find().populate([
         "id_extras",
@@ -33,23 +133,51 @@ router.post("/listproduct", async (c) => {
       return c.json(products, 200);
     }
 
+    // Build query based on request body
     const query = {};
-    if (body.id_store) {
-      if (typeof body.id_store !== "string") {
-        return c.json({ error: "id_store must be a string" }, 400);
-      }
-      query.id_store = body.id_store;
-    }
+    if (body.id_store) query.id_store = body.id_store;
     if (body.id_company) query.id_company = body.id_company;
     if (body.id_category_product)
       query.id_category_product = body.id_category_product;
 
-    // Fetch product details
+    // Fetch products matching the query
     const products = await ProductModels.find(query).populate([
       "id_extras",
       "id_size",
       "id_stock",
     ]);
+
+    // Append order quantities if requested
+    if (body.params === "order") {
+      // Fetch all orders with status = 2, selecting only orderDetails
+      const orders = await OrderModels.find(
+        { status: 2 },
+        { orderDetails: 1 }
+      ).populate("orderDetails.id_product");
+
+      // Map to store product-wise order quantities
+      const orderQuantities = new Map();
+
+      orders.forEach((order) => {
+        order.orderDetails.forEach((detail) => {
+          if (detail.id_product) {
+            const productId = detail.id_product._id.toString();
+            orderQuantities.set(
+              productId,
+              (orderQuantities.get(productId) || 0) + detail.quantity
+            );
+          }
+        });
+      });
+
+      // Create a new array with `orderQty` added to each product
+      const updatedProducts = products.map((product) => ({
+        ...product.toObject(),
+        orderQty: orderQuantities.get(product._id.toString()) || 0,
+      }));
+
+      return c.json(updatedProducts, 200);
+    }
 
     return c.json(products, 200);
   } catch (error) {
@@ -74,26 +202,23 @@ router.post("/getproduct", async (c) => {
     const { id } = body;
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return c.json({ message: "ID Produk tidak valid atau diperlukan." }, 400);
+      return c.json({ message: "ID produk tidak valid atau diperlukan." }, 400);
     }
 
-    // Fetch product details
-    const product = await ProductModels.findById(id).populate([
-      "id_extras",
-      "id_size",
+    // Fetch product and stock in parallel for efficiency
+    const [product, stock] = await Promise.all([
+      ProductModels.findById(id).populate(["id_extras", "id_size"]).lean(),
+      StockModels.findOne({ id_product: id }).lean(),
     ]);
 
     if (!product) {
       return c.json({ message: "Produk tidak ditemukan." }, 404);
     }
 
-    // Fetch stock amount
-    const stock = await StockModels.findOne({ id_product: id });
-
     return c.json(
       {
-        ...product.toObject(),
-        amount: stock ? stock.amount : 0, // Include stock amount in response
+        ...product,
+        amount: stock?.amount || 0, // Ensure amount is always a number
       },
       200
     );

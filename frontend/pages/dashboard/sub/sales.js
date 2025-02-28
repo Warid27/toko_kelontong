@@ -10,6 +10,14 @@ import { FaRegEdit, FaInfoCircle } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import { IoMdArrowRoundBack, IoIosArrowDropdown } from "react-icons/io";
+import { fetchUserList } from "@/libs/fetching/user";
+import { fetchCompanyList } from "@/libs/fetching/company";
+import { fetchStoreList } from "@/libs/fetching/store";
+import { fetchOrderList } from "@/libs/fetching/order";
+import { fetchSalesCampaignList } from "@/libs/fetching/salesCampaign";
+import { fetchSalesList } from "@/libs/fetching/sales";
+import { fetchPaymentList } from "@/libs/fetching/payment";
+import ReactPaginate from "react-paginate";
 
 const SalesMain = () => {
   // State
@@ -17,6 +25,8 @@ const SalesMain = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [salesToUpdate, setSalesToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -30,21 +40,70 @@ const SalesMain = () => {
   const [sales_campaignList, setsales_campaignList] = useState([]); // State for list of users
   const [paymentList, setPaymentList] = useState([]);
 
+  useEffect(() => {
+    const fetching_requirement = async () => {
+      const get_user_list = async () => {
+        const data_user = await fetchUserList();
+        setUserList(data_user);
+        setIsLoading(false);
+      };
+      const get_company_list = async () => {
+        const data_company = await fetchCompanyList();
+        setCompanyList(data_company);
+        setIsLoading(false);
+      };
+      const get_store_list = async () => {
+        const data_store = await fetchStoreList();
+        setStoreList(data_store);
+        setIsLoading(false);
+      };
+      const get_order_list = async () => {
+        const data_order = await fetchOrderList();
+        setOrderList(data_order);
+        setIsLoading(false);
+      };
+      const get_salesCampaign_list = async () => {
+        const data_salesCampaign = await fetchSalesCampaignList();
+        setsales_campaignList(data_salesCampaign);
+        setIsLoading(false);
+      };
+      const get_sales_list = async () => {
+        const data_sales = await fetchSalesList();
+        setSaleses(data_sales);
+        setIsLoading(false);
+      };
+      const get_payment_list = async () => {
+        const data_payment = await fetchPaymentList();
+        setPaymentList(data_payment);
+        setIsLoading(false);
+      };
+
+      get_user_list();
+      get_company_list();
+      get_store_list();
+      get_order_list();
+      get_salesCampaign_list();
+      get_sales_list();
+      get_payment_list();
+    };
+    fetching_requirement();
+  }, []);
+
   const [salesDataUpdate, setSalesDataUpdate] = useState({
     id: "",
     no: "",
     id_user: "",
-    id_store: "",
     id_order: "",
-    id_company: "",
     id_sales_campaign: "",
     id_payment_type: "",
     tax: "",
     total_price: "",
     total_discount: "",
     total_quantity: "",
+    keterangan: "",
     total_number_item: "",
     status: "",
+    salesDetails: [],
   });
 
   const openModalAdd = () => {
@@ -93,225 +152,6 @@ const SalesMain = () => {
       setLoading(false);
     }
   };
-  // FETCH
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await client.post(
-          "/user/listuser",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /user/listuser:", data);
-          setUserList([]);
-        } else {
-          setUserList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        setUserList([]);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
-    const fetchCompany = async () => {
-      try {
-        const response = await client.post(
-          "/company/listcompany",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /company/listcompany:",
-            data
-          );
-          setCompanyList([]);
-        } else {
-          setCompanyList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-        setCompanyList([]);
-      }
-    };
-    fetchCompany();
-  }, []);
-
-  useEffect(() => {
-    const fetchStore = async () => {
-      try {
-        const response = await client.post(
-          "/store/liststore",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /store/liststore:", data);
-          setStoreList([]);
-        } else {
-          setStoreList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching stores:", error);
-        setStoreList([]);
-      }
-    };
-    fetchStore();
-  }, []);
-
-  useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        const response = await client.post(
-          "/order/listorder",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /order/listorder:", data);
-          setOrderList([]);
-        } else {
-          setOrderList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        setOrderList([]);
-      }
-    };
-    fetchOrder();
-  }, []);
-
-  useEffect(() => {
-    const fetchSalesCampaign = async () => {
-      try {
-        const response = await client.post(
-          "/salescampaign/listsalescampaign",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /salescampaign/listsalescampaign:",
-            data
-          );
-          setsales_campaignList([]);
-        } else {
-          setsales_campaignList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching salescampaigns:", error);
-        setsales_campaignList([]);
-      }
-    };
-    fetchSalesCampaign();
-  }, []);
-
-  useEffect(() => {
-    const fetchSaleses = async () => {
-      try {
-        const id_store = localStorage.getItem("id_store");
-
-        if (!id_store) {
-          console.error("id_store is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await client.post(
-          "/sales/listsales",
-          { id_store }, // Pass id_store in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Set the fetched saleses into state
-        setSaleses(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching saleses:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchSaleses();
-  }, []);
-
-  useEffect(() => {
-    const fetchPayment = async () => {
-      try {
-        const response = await client.post(
-          "/payment/listpayment",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /payment/listpayment:",
-            data
-          );
-          setPaymentList([]);
-        } else {
-          setPaymentList(data);
-        }
-        console.log("PAYMENT LIST:", paymentList);
-      } catch (error) {
-        console.error("Error fetching payments:", error);
-        setPaymentList([]);
-      }
-    };
-    fetchPayment();
-  }, []);
-
   // HANDLE
 
   const handleInfoDetails = (sales) => {
@@ -344,6 +184,9 @@ const SalesMain = () => {
       });
     }
   }, [salesToUpdate]);
+
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = saleses.slice(startIndex, startIndex + itemsPerPage);
 
   // LOADING
   if (isLoading) {
@@ -389,11 +232,9 @@ const SalesMain = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
           <div>
@@ -409,65 +250,80 @@ const SalesMain = () => {
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
+          <div>
             {saleses.length === 0 ? (
               <h1>Data produk tidak ditemukan!</h1>
             ) : (
-              <table className="table w-full border border-gray-300">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>No Sales</th>
-                    <th>Tax</th>
-                    <th>Total Price</th>
-                    <th>Total Discount</th>
-                    <th>Total Quantity</th>
-                    <th>Total Number Item</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {saleses.map((sales, index) => (
-                    <tr key={sales._id}>
-                      <td>{index + 1}</td>
-                      <td>{sales.no}</td>
-                      <td>{sales.tax}</td>
-                      <td>
-                        Rp.
-                        {new Intl.NumberFormat("id-ID").format(
-                          sales.total_price
-                        ) || "-"}
-                      </td>
-                      <td>{sales.total_discount}</td>
-                      <td>{sales.total_quantity}</td>
-                      <td>{sales.total_number_item}</td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          className="toggle"
-                          checked={sales.status === 1}
-                          onChange={() => handleStatus(sales._id, sales.status)}
-                        />
-                      </td>
-                      <td className="flex">
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateSales(sales)}
-                        >
-                          <FaRegEdit />
-                        </button>
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleInfoDetails(sales)}
-                        >
-                          <FaInfoCircle />
-                        </button>
-                      </td>
+              <>
+                <table className="table w-full border border-gray-300">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>No Sales</th>
+                      <th>Tax</th>
+                      <th>Total Price</th>
+                      <th>Total Discount</th>
+                      <th>Total Quantity</th>
+                      <th>Total Number Item</th>
+                      <th>Status</th>
+                      <th>Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {selectedData.map((sales, index) => (
+                      <tr key={sales._id}>
+                        <td>{startIndex + index + 1}</td>
+                        <td>{sales.no}</td>
+                        <td>{sales.tax}</td>
+                        <td>
+                          Rp.
+                          {new Intl.NumberFormat("id-ID").format(
+                            sales.total_price
+                          ) || "-"}
+                        </td>
+                        <td>{sales.total_discount}</td>
+                        <td>{sales.total_quantity}</td>
+                        <td>{sales.total_number_item}</td>
+                        <td>
+                          <input
+                            type="checkbox"
+                            className="toggle"
+                            checked={sales.status === 1}
+                            onChange={() =>
+                              handleStatus(sales._id, sales.status)
+                            }
+                          />
+                        </td>
+                        <td className="flex">
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() => handleUpdateSales(sales)}
+                          >
+                            <FaRegEdit />
+                          </button>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() => handleInfoDetails(sales)}
+                          >
+                            <FaInfoCircle />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <ReactPaginate
+                  previousLabel={"← Prev"}
+                  nextLabel={"Next →"}
+                  pageCount={Math.ceil(saleses.length / itemsPerPage)}
+                  onPageChange={({ selected }) => setCurrentPage(selected)}
+                  containerClassName={"flex gap-2 justify-center mt-4"}
+                  pageLinkClassName={"border px-3 py-1"}
+                  previousLinkClassName={"border px-3 py-1"}
+                  nextLinkClassName={"border px-3 py-1"}
+                  activeClassName={"bg-blue-500 text-white"}
+                />
+              </>
             )}
           </div>
         </div>
@@ -574,12 +430,13 @@ const SalesMain = () => {
         <Modal onClose={closeModalInfo} title={"Sales Detail"}>
           {salesDataUpdate.salesDetails?.map((detail, index) => (
             <div key={index}>
+              {console.log("DETIL", detail)}
               <div>Detail {index + 1}</div>
               <div className="grid grid-cols-[auto_auto_1fr] gap-y-2 font-sans">
                 <span className="text-left font-bold pr-2">Kode Produk</span>
                 <span className="font-bold px-2">:</span>
                 <span className="text-gray-700">
-                  {detail.product_code || "-"}
+                  {detail.id_product?.product_code || "-"}
                 </span>
 
                 <span className="text-left font-bold pr-2">

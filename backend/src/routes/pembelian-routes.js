@@ -7,7 +7,7 @@ import { authenticate } from "@middleware/authMiddleware";
 const router = new Hono();
 
 // Get all purchases
-router.get("/listpembelian", authenticate, async (c) => {
+router.post("/listpembelian", authenticate, async (c) => {
   try {
     const pembelian = await PembelianModels.find();
     return c.json(pembelian, 200);
@@ -33,21 +33,28 @@ router.post("/getpembelian", authenticate, async (c) => {
 
     return c.json(pembelian, 200);
   } catch (error) {
-    return c.json({ message: "Terjadi kesalahan saat mengambil pembelian.", error: error.message }, 500);
+    return c.json(
+      {
+        message: "Terjadi kesalahan saat mengambil pembelian.",
+        error: error.message,
+      },
+      500
+    );
   }
 });
 
-// Add new purchase
 router.post("/addpembelian", authenticate, async (c) => {
   try {
     const body = await c.req.json();
+    console.log("Received Body:", body);
 
     const pembelian = new PembelianModels(body);
     await pembelian.save();
 
     return c.json(pembelian, 201);
   } catch (error) {
-    return c.text("Terjadi kesalahan saat menambahkan pembelian.", 400);
+    console.error("Error adding pembelian:", error); // Menampilkan error lebih jelas
+    return c.json({ message: "Terjadi kesalahan", error: error.message }, 400);
   }
 });
 

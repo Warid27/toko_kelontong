@@ -6,30 +6,43 @@ import client from "@/libs/axios";
 import { HiDotsHorizontal } from "react-icons/hi";
 import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
-import { FaRegEdit, FaImage, FaInfoCircle } from "react-icons/fa";
+import { FaRegEdit, FaImage, FaInfoCircle, FaQrcode } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import Select from "react-select";
+import { fetchCompanyList } from "@/libs/fetching/company";
+import { fetchStoreList } from "@/libs/fetching/store";
+import QRCodeGenerator from "@/components/QRCodeGenerator";
+import ReactPaginate from "react-paginate";
 
 const StoreData = () => {
   // --- useState
   const [stores, setStores] = useState([]);
+  const [storeCreateQR, setStoreCreateQR] = useState("");
+  const [companyCreateQR, setCompanyCreateQR] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [companyList, setCompanyList] = useState([]); // State for list of companies
   const [openDropdown, setOpenDropdown] = useState(null);
-  const [storeToUpdate, setStoreToUpdate] = useState(null); // Untuk menyimpan Toko yang akan diupdate
+  const [storeToUpdate, setStoreToUpdate] = useState(null);
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
+  const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+
+  const id_company = localStorage.getItem("id_company");
+  const id_store = localStorage.getItem("id_store");
+  const rule = localStorage.getItem("rule");
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
   const [storeDataAdd, setStoreDataAdd] = useState({
     name: "",
     address: "",
     id_company: "",
     icon: null,
-    banner: null,
+    header: null,
   });
 
   const [storeDataUpdate, setStoreDataUpdate] = useState({
@@ -38,66 +51,25 @@ const StoreData = () => {
     address: "",
     id_company: "",
     icon: null,
-    banner: null,
+    header: null,
   });
 
-  // --- useEffect
   useEffect(() => {
-    const fetchCompany = async () => {
-      try {
-        const response = await client.post("/company/listcompany", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /company/listcompany:",
-            data
-          );
-          setCompanyList([]);
-        } else {
-          setCompanyList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-        setCompanyList([]);
-      }
-    };
-    fetchCompany();
-  }, []);
-
-  useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const id_store = localStorage.getItem("id_store");
-
-        if (!id_store) {
-          console.error("id_store is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await client.post(
-          "/store/liststore",
-          { id_store }, // Pass id_store in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Set the fetched stores into state
-        setStores(response.data);
+    const fetching_requirement = async () => {
+      const get_store_list = async () => {
+        const data_store = await fetchStoreList();
+        setStores(data_store);
         setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching stores:", error);
+      };
+      const get_company_list = async () => {
+        const data_company = await fetchCompanyList();
+        setCompanyList(data_company);
         setIsLoading(false);
-      }
+      };
+      get_store_list();
+      get_company_list();
     };
-
-    fetchStores();
+    fetching_requirement();
   }, []);
 
   useEffect(() => {
@@ -108,7 +80,7 @@ const StoreData = () => {
         address: storeToUpdate.address || "",
         id_company: storeToUpdate.id_company || "",
         icon: storeToUpdate.icon || "",
-        banner: storeToUpdate.banner || "",
+        header: storeToUpdate.header || "",
       });
     }
   }, [storeToUpdate]);
@@ -118,7 +90,8 @@ const StoreData = () => {
     const setters = {
       add: setIsModalOpen,
       update: setIsUpdateModalOpen,
-      banner: setIsBannerModalOpen,
+      header: setIsHeaderModalOpen,
+      QR: setIsQRModalOpen,
     };
     if (setters[param]) {
       setters[param](bool);
@@ -137,8 +110,8 @@ const StoreData = () => {
       let pathPrefix = "";
       if (params == "add" || params == "update") {
         pathPrefix = "store/icon";
-      } else if (params == "banner") {
-        pathPrefix = "store/banner";
+      } else if (params == "header") {
+        pathPrefix = "store/header";
       } else {
         console.error("Error uploading image:", error);
       }
@@ -163,10 +136,10 @@ const StoreData = () => {
             ...prevState,
             icon: uploadedImageUrl,
           }));
-        } else if (params == "banner") {
+        } else if (params == "header") {
           setStoreDataUpdate((prevState) => ({
             ...prevState,
-            banner: uploadedImageUrl,
+            header: uploadedImageUrl,
           }));
         } else {
           console.error("Error uploading image:", error);
@@ -280,7 +253,11 @@ const StoreData = () => {
       console.error("Error adding store:", error);
     }
   };
-
+  const createQR = async (id_store, id_company) => {
+    setStoreCreateQR(id_store);
+    setCompanyCreateQR(id_company);
+    modalOpen("QR", true);
+  };
   const handleChangeUpdate = (e) => {
     const { name, value } = e.target;
     setStoreDataUpdate((prevState) => ({
@@ -313,7 +290,7 @@ const StoreData = () => {
           address: storeDataUpdate.address,
           id_company: storeDataUpdate.id_company,
           icon: storeDataUpdate.icon,
-          banner: storeDataUpdate.banner,
+          header: storeDataUpdate.header,
         },
         {
           headers: {
@@ -339,6 +316,9 @@ const StoreData = () => {
       Swal.fire("Error", "Failed to update store. Please try again.", "error");
     }
   };
+
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = stores.slice(startIndex, startIndex + itemsPerPage);
   if (isLoading) {
     return (
       <div className="w-full h-screen pt-16 flex justify-center items-center">
@@ -381,11 +361,9 @@ const StoreData = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
           <div>
@@ -398,10 +376,11 @@ const StoreData = () => {
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
+          <div>
             {stores.length === 0 ? (
               <h1>Data Toko tidak ditemukan!</h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -413,9 +392,9 @@ const StoreData = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {stores.map((store, index) => (
+                  {selectedData.map((store, index) => (
                     <tr key={store._id}>
-                      <td>{index + 1}</td>
+                      <td>{startIndex + index + 1}</td>
                       <td>
                         <b>{store.name}</b>
                       </td>
@@ -452,15 +431,33 @@ const StoreData = () => {
                         </button>
                         <button
                           className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateStore(store, "banner")}
+                          onClick={() => handleUpdateStore(store, "header")}
                         >
                           <FaImage />
+                        </button>
+                        <button
+                          className=" p-3 rounded-lg text-2xl "
+                          onClick={() => createQR(store._id, store.id_company)}
+                        >
+                          <FaQrcode />
                         </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              <ReactPaginate
+                previousLabel={"← Prev"}
+                nextLabel={"Next →"}
+                pageCount={Math.ceil(stores.length / itemsPerPage)}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
+                containerClassName={"flex gap-2 justify-center mt-4"}
+                pageLinkClassName={"border px-3 py-1"}
+                previousLinkClassName={"border px-3 py-1"}
+                nextLinkClassName={"border px-3 py-1"}
+                activeClassName={"bg-blue-500 text-white"}
+              />
+              </>
             )}
           </div>
         </div>
@@ -523,6 +520,16 @@ const StoreData = () => {
               required
             />
             <p className="font-semibold mt-4 mb-2">Company</p>
+            {rule == 2 && (
+              <input
+                type="text"
+                name="id_company"
+                value={id_company}
+                onChange={handleChangeAdd}
+                disabled={true}
+                className="border rounded-md p-2 w-full bg-white"
+              />
+            )}
             <Select
               id="company"
               className="basic-single"
@@ -668,9 +675,9 @@ const StoreData = () => {
         </Modal>
       )}
 
-      {isBannerModalOpen && (
-        <Modal onClose={() => modalOpen("banner", false)} title={"Banner Toko"}>
-          <form onSubmit={(e) => handleSubmitUpdate(e, "banner")}>
+      {isHeaderModalOpen && (
+        <Modal onClose={() => modalOpen("header", false)} title={"Header Toko"}>
+          <form onSubmit={(e) => handleSubmitUpdate(e, "header")}>
             <div className="upload-container">
               <label className="upload-label">
                 <input
@@ -684,13 +691,13 @@ const StoreData = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleImageChange(e, "banner")}
+                  onChange={(e) => handleImageChange(e, "header")}
                   style={{ display: "none" }}
                 />
                 <div className="upload-content">
-                  {storeDataUpdate.banner ? (
+                  {storeDataUpdate.header ? (
                     <Image
-                      src={storeDataUpdate.banner}
+                      src={storeDataUpdate.header}
                       alt="Uploaded Image"
                       width={500}
                       height={10}
@@ -709,7 +716,7 @@ const StoreData = () => {
               <button
                 type="button"
                 className="closeBtn"
-                onClick={() => modalOpen("banner", false)}
+                onClick={() => modalOpen("header", false)}
               >
                 Batal
               </button>
@@ -718,6 +725,17 @@ const StoreData = () => {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+      {isQRModalOpen && (
+        <Modal onClose={() => modalOpen("QR", false)} title={"QR Toko"}>
+          <div className="flex flex-col items-center justify-center">
+            <h1 className="text-2xl font-bold mb-4">QR Code untuk Produk</h1>
+            <QRCodeGenerator
+              id_store={storeCreateQR || id_store}
+              id_company={companyCreateQR || id_company}
+            />
+          </div>
         </Modal>
       )}
     </div>

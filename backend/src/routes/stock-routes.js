@@ -80,7 +80,6 @@ router.post("/liststock", async (c) => {
 });
 
 // Get Stock by Product ID
-
 router.post("/getstock", async (c) => {
   try {
     let body;

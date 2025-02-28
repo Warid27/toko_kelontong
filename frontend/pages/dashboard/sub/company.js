@@ -9,6 +9,9 @@ import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import Select from "react-select";
+import { fetchTypeList } from "@/libs/fetching/type";
+import { fetchCompanyList } from "@/libs/fetching/company";
+import ReactPaginate from "react-paginate";
 
 const CompanyData = () => {
   const [companies, setCompanies] = useState([]);
@@ -18,6 +21,8 @@ const CompanyData = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Untuk mengontrol tampilan modal update
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
   const [typeList, setTypeList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
   const [companiesDataAdd, setCompaniesDataAdd] = useState({
     name: "",
@@ -50,24 +55,21 @@ const CompanyData = () => {
   };
 
   useEffect(() => {
-    const fetchType = async () => {
-      try {
-        const response = await client.post("/type/listtype", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /type/listtype:", data);
-          setTypeList([]);
-        } else {
-          setTypeList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching type:", error);
-        setTypeList([]);
-      }
+    const fetching_requirement = async () => {
+      const get_type_list = async () => {
+        const data_type = await fetchTypeList();
+        setTypeList(data_type);
+        setIsLoading(false)
+      };
+      const get_company_list = async () => {
+        const data_company = await fetchCompanyList();
+        setCompanies(data_company);
+        setIsLoading(false)
+      };
+      get_type_list();
+      get_company_list();
     };
-    fetchType();
+    fetching_requirement();
   }, []);
 
   const handleStatusSelect = async (companyId, selectedStatus) => {
@@ -91,40 +93,6 @@ const CompanyData = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const fetchCompanys = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const id_store = localStorage.getItem("id_store");
-
-        if (!id_store) {
-          console.error("id_store is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await client.post(
-          "/company/listcompany",
-          { id_store }, // Pass id_store in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Set the fetched companies into state
-        setCompanies(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchCompanys();
-  }, []);
 
   const handleUpdateCompany = (company, params) => {
     setCompanyToUpdate(company); // Menyimpan produk yang dipilih
@@ -277,6 +245,10 @@ const CompanyData = () => {
     }
   };
 
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = companies.slice(startIndex, startIndex + itemsPerPage);
+
+
   if (isLoading) {
     return (
       <div className="w-full h-screen pt-16 flex justify-center items-center">
@@ -320,11 +292,9 @@ const CompanyData = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
           <div>
@@ -337,10 +307,11 @@ const CompanyData = () => {
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
+          <div>
             {companies.length === 0 ? (
               <h1>Data produk tidak ditemukan!</h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -352,9 +323,9 @@ const CompanyData = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {companies.map((company, index) => (
+                  {selectedData.map((company, index) => (
                     <tr key={company._id}>
-                      <td>{index + 1}</td>
+                      <td>{startIndex + index + 1}</td>
                       <td>{company.name}</td>
                       <td>{company.address}</td>
                       <td>
@@ -392,6 +363,18 @@ const CompanyData = () => {
                   ))}
                 </tbody>
               </table>
+              <ReactPaginate
+                previousLabel={"← Prev"}
+                nextLabel={"Next →"}
+                pageCount={Math.ceil(selectedData.length / itemsPerPage)}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
+                containerClassName={"flex gap-2 justify-center mt-4"}
+                pageLinkClassName={"border px-3 py-1"}
+                previousLinkClassName={"border px-3 py-1"}
+                nextLinkClassName={"border px-3 py-1"}
+                activeClassName={"bg-blue-500 text-white"}
+              />
+              </>
             )}
           </div>
         </div>

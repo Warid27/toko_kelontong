@@ -79,15 +79,26 @@ router.post("/addstore", async (c) => {
 
 router.post("/liststore", async (c) => {
   try {
-    // Fetch all stores from the database
-    const stores = await StoreModels.find().lean(); // Use `.lean()` for better performance
+    const body = await c.req.json();
 
-    // Check if any stores exist
-    if (!stores || stores.length === 0) {
-      return c.json({ message: "No stores found" }, 404);
+    let { id_company } = body;
+
+    // Validasi id_company agar tidak berisi string "undefined" atau null
+    if (!id_company || id_company === "undefined" || id_company === "null") {
+      id_company = null;
     }
 
-    // Return the list of stores
+    let stores;
+    if (id_company) {
+      // Pastikan `id_company` valid sebelum dipakai dalam query
+      if (!mongoose.Types.ObjectId.isValid(id_company)) {
+        return c.json({ error: "Invalid id_company format" }, 400);
+      }
+      stores = await StoreModels.find({ id_company }).lean();
+    } else {
+      stores = await StoreModels.find().lean();
+    }
+
     return c.json(stores, 200);
   } catch (error) {
     console.error("Error fetching stores:", error);
@@ -189,7 +200,6 @@ router.post("/getstore", async (c) => {
   try {
     const { id } = await c.req.json();
 
-    console.log("ID:", id);
     if (!id) {
       return c.json({ message: "ID Store diperlukan." }, 400);
     }

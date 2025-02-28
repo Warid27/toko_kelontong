@@ -9,7 +9,12 @@ import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import DateTimePicker from "@/components/DateTimePicker";
-import Select from "react-select"
+import Select from "react-select";
+import { fetchUserList } from "@/libs/fetching/user";
+import { fetchStoreList } from "@/libs/fetching/store";
+import { fetchCompanyList } from "@/libs/fetching/company";
+import { fetchSalesCampaignList } from "@/libs/fetching/salesCampaign";
+import ReactPaginate from "react-paginate";
 
 const SalesCampaign = () => {
   const [salesCampaign, setSalesCampaign] = useState([]);
@@ -22,6 +27,39 @@ const SalesCampaign = () => {
   const [storeList, setStoreList] = useState([]);
   const [companyList, setCompanyList] = useState([]);
   const [userList, setUserList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    const fetching_requirement = async () => {
+      const get_user_list = async () => {
+        const data_user = await fetchUserList();
+        setUserList(data_user);
+        setIsLoading(false);
+      };
+      const get_company_list = async () => {
+        const data_company = await fetchCompanyList();
+        setCompanyList(data_company);
+        setIsLoading(false);
+      };
+      const get_store_list = async () => {
+        const data_store = await fetchStoreList();
+        setStoreList(data_store);
+        setIsLoading(false);
+      };
+      const get_salesCampaign_list = async () => {
+        const data_salesCampaign = await fetchSalesCampaignList();
+        setSalesCampaign(data_salesCampaign);
+        setIsLoading(false);
+      };
+      
+      get_user_list();
+      get_company_list();
+      get_store_list();
+      get_salesCampaign_list();
+    };
+    fetching_requirement();
+  }, []);
 
   const [salesCampaignDataAdd, setSalesCampaignDataAdd] = useState({
     campaign_name: "",
@@ -46,6 +84,8 @@ const SalesCampaign = () => {
     value: "",
   });
 
+  const token = localStorage.getItem("token");
+
   const openModalAdd = () => {
     setIsModalOpen(true);
   };
@@ -64,100 +104,6 @@ const SalesCampaign = () => {
   // const addNewSalesCampaign = (newSalesCampaign) => {
   //   setSalesCampaign((prevSalesCampaigns) => [...prevSalesCampaigns, newSalesCampaign]);
   // };
-
-  useEffect(() => {
-    const fetchStore = async () => {
-      try {
-        const response = await client.post("/store/liststore", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /store/liststore:", data);
-          setStoreList([]);
-        } else {
-          setStoreList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching store:", error);
-        setStoreList([]);
-      }
-    };
-    fetchStore();
-  }, []);
-  useEffect(() => {
-    const fetchCompany = async () => {
-      try {
-        const response = await client.post("/company/listcompany", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /company/listcompany:",
-            data
-          );
-          setCompanyList([]);
-        } else {
-          setCompanyList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching company:", error);
-        setCompanyList([]);
-      }
-    };
-    fetchCompany();
-  }, []);
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await client.post("/user/listuser", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /user/listuser:", data);
-          setUserList([]);
-        } else {
-          setUserList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching store:", error);
-        setUserList([]);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
-    const fetchSalesCampaign = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const id_store = localStorage.getItem("id_store");
-
-        if (!id_store) {
-          console.error("id_type is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await client.post("/salescampaign/listsalescampaign", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Set the fetched salesCampaign into state
-        setSalesCampaign(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching salesCampaign:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchSalesCampaign();
-  }, []);
 
   // const handleAddSalesCampaign = () => {
   //   setIsModalOpen(true);
@@ -182,7 +128,6 @@ const SalesCampaign = () => {
 
     if (result.isConfirmed) {
       try {
-        const token = localStorage.getItem("token");
         const response = await client.delete(`/api/salescampaign/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -213,8 +158,6 @@ const SalesCampaign = () => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem("token");
-
       // Ensure all required fields are filled
       if (
         !salesCampaignDataAdd.campaign_name ||
@@ -292,7 +235,6 @@ const SalesCampaign = () => {
 
     try {
       // const productId = "67a9615bf59ec80d10014871";
-      const token = localStorage.getItem("token");
       const response = await client.put(
         `/api/salescampaign/${salesCampaignDataUpdate.id}`,
         {
@@ -319,6 +261,9 @@ const SalesCampaign = () => {
       console.error("Error updating SalesCampaign:", error);
     }
   };
+
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = salesCampaign.slice(startIndex, startIndex + itemsPerPage);
 
   if (isLoading) {
     return (
@@ -363,11 +308,9 @@ const SalesCampaign = () => {
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
           <div>
@@ -385,8 +328,9 @@ const SalesCampaign = () => {
         <div className="bg-white rounded-lg">
           <div className="overflow-x-auto">
             {salesCampaign.length === 0 ? (
-              <h1>Data produk tidak ditemukan!</h1>
+              <h1>Data promo sales tidak ditemukan!</h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -400,9 +344,9 @@ const SalesCampaign = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {salesCampaign.map((salesCampaign, index) => (
+                  {selectedData.map((salesCampaign, index) => (
                     <tr key={salesCampaign._id}>
-                      <td>{index + 1}</td>
+                      <td>{startIndex + index + 1}</td>
                       <td>{salesCampaign.campaign_name}</td>
                       <td>{salesCampaign.rules}</td>
                       <td>{salesCampaign.start_date}</td>
@@ -432,6 +376,7 @@ const SalesCampaign = () => {
                   ))}
                 </tbody>
               </table>
+              </>
             )}
           </div>
         </div>
@@ -492,9 +437,12 @@ const SalesCampaign = () => {
                 value: c._id,
                 label: c.name,
               }))}
-              value={storeList
-                .map((c) => ({ value: c._id, label: c.name }))
-                .find((opt) => opt.value === salesCampaignDataAdd.id_store) || null}
+              value={
+                storeList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find((opt) => opt.value === salesCampaignDataAdd.id_store) ||
+                null
+              }
               onChange={(selectedOption) =>
                 setSalesCampaignDataAdd((prevState) => ({
                   ...prevState,
@@ -514,9 +462,13 @@ const SalesCampaign = () => {
                 value: c._id,
                 label: c.name,
               }))}
-              value={companyList
-                .map((c) => ({ value: c._id, label: c.name }))
-                .find((opt) => opt.value === salesCampaignDataAdd.id_company) || null}
+              value={
+                companyList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find(
+                    (opt) => opt.value === salesCampaignDataAdd.id_company
+                  ) || null
+              }
               onChange={(selectedOption) =>
                 setSalesCampaignDataAdd((prevState) => ({
                   ...prevState,
@@ -536,9 +488,12 @@ const SalesCampaign = () => {
                 value: c._id,
                 label: c.username,
               }))}
-              value={userList
-                .map((c) => ({ value: c._id, label: c.username }))
-                .find((opt) => opt.value === salesCampaignDataAdd.id_user) || null}
+              value={
+                userList
+                  .map((c) => ({ value: c._id, label: c.username }))
+                  .find((opt) => opt.value === salesCampaignDataAdd.id_user) ||
+                null
+              }
               onChange={(selectedOption) =>
                 setSalesCampaignDataAdd((prevState) => ({
                   ...prevState,
@@ -637,9 +592,13 @@ const SalesCampaign = () => {
                 value: c._id,
                 label: c.name,
               }))}
-              value={storeList
-                .map((c) => ({ value: c._id, label: c.name }))
-                .find((opt) => opt.value === salesCampaignDataUpdate.id_store) || null}
+              value={
+                storeList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find(
+                    (opt) => opt.value === salesCampaignDataUpdate.id_store
+                  ) || null
+              }
               onChange={(selectedOption) =>
                 setSalesCampaignDataUpdate((prevState) => ({
                   ...prevState,
@@ -659,9 +618,13 @@ const SalesCampaign = () => {
                 value: c._id,
                 label: c.name,
               }))}
-              value={companyList
-                .map((c) => ({ value: c._id, label: c.name }))
-                .find((opt) => opt.value === salesCampaignDataUpdate.id_company) || null}
+              value={
+                companyList
+                  .map((c) => ({ value: c._id, label: c.name }))
+                  .find(
+                    (opt) => opt.value === salesCampaignDataUpdate.id_company
+                  ) || null
+              }
               onChange={(selectedOption) =>
                 setSalesCampaignDataUpdate((prevState) => ({
                   ...prevState,
@@ -681,9 +644,13 @@ const SalesCampaign = () => {
                 value: c._id,
                 label: c.username,
               }))}
-              value={userList
-                .map((c) => ({ value: c._id, label: c.username }))
-                .find((opt) => opt.value === salesCampaignDataUpdate.id_user) || null}
+              value={
+                userList
+                  .map((c) => ({ value: c._id, label: c.username }))
+                  .find(
+                    (opt) => opt.value === salesCampaignDataUpdate.id_user
+                  ) || null
+              }
               onChange={(selectedOption) =>
                 setSalesCampaignDataUpdate((prevState) => ({
                   ...prevState,

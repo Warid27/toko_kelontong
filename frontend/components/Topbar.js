@@ -2,20 +2,19 @@ import React, { useEffect, useState } from "react";
 import { PiShoppingCartSimpleBold } from "react-icons/pi";
 import { FiLogIn } from "react-icons/fi";
 import { useRouter } from "next/router";
-import Cookies from "js-cookie";
 
 const Topbar = ({ onCartUpdate }) => {
   const router = useRouter();
   const [cartItemCount, setCartItemCount] = useState(0);
 
   useEffect(() => {
-    const cartItems = JSON.parse(Cookies.get("cartItems") || "[]");
+    const cartItems = JSON.parse(localStorage.getItem("cartItems") || "[]");
     setCartItemCount(cartItems.length);
   }, []);
 
   useEffect(() => {
     if (onCartUpdate) {
-      const cartItems = JSON.parse(Cookies.get("cartItems") || "[]");
+      const cartItems = JSON.parse(localStorage.getItem("cartItems") || "[]");
       setCartItemCount(cartItems.length);
     }
   }, [onCartUpdate]);

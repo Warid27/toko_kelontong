@@ -5,6 +5,9 @@ import Image from "next/image";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import client from "@/libs/axios";
 import Swal from "sweetalert2";
+import { fetchUserGet } from "@/libs/fetching/user";
+import { fetchCompanyList } from "@/libs/fetching/company";
+import { fetchStoreList } from "@/libs/fetching/store";
 
 const Profile = () => {
   const [storeList, setStoreList] = useState([]); // State for list of companies
@@ -24,75 +27,29 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    const fetchStore = async () => {
-      try {
-        const response = await client.post("/store/liststore", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /store/liststore:", data);
-          setStoreList([]);
-        } else {
-          setStoreList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching stores:", error);
-        setStoreList([]);
-      }
-    };
-    fetchStore();
-  }, []);
-
-  useEffect(() => {
-    const fetchCompany = async () => {
-      try {
-        const response = await client.post("/company/listcompany", {});
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /company/listcompany:",
-            data
-          );
-          setCompanyList([]);
-        } else {
-          setCompanyList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-        setCompanyList([]);
-      }
-    };
-    fetchCompany();
-  }, []);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const id_user = localStorage.getItem("id_user");
-        if (!id_user) {
-          console.error("user_id is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-        const response = await client.post(
-          "/user/getuser",
-          { id: id_user },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setUserToUpdate(response.data);
+    const fetching_requirement = async () => {
+      const id_store = localStorage.getItem("id_store");
+      const get_store_list = async () => {
+        const data_store = await fetchStoreList();
+        setStoreList(data_store);
         setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching users:", error);
+      };
+      const get_company_list = async () => {
+        const data_company = await fetchCompanyList();
+        setCompanyList(data_company);
         setIsLoading(false);
-      }
+      };
+      const get_user_get = async () => {
+        const data_user = await fetchUserGet();
+        setUserToUpdate(data_user);
+        setIsLoading(false);
+      };
+      get_store_list();
+      get_company_list();
+      get_user_get();
     };
-    fetchUsers();
+    fetching_requirement();
   }, []);
-
   useEffect(() => {
     if (userToUpdate) {
       setUserDataUpdate({
@@ -185,23 +142,10 @@ const Profile = () => {
               <input
                 type="text"
                 placeholder="Search anything here"
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs"
+                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
               />
               <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
             </div>
-            <div className="avatar">
-              <div className="w-10 h-10 rounded-full">
-                <Image
-                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                />
-              </div>
-            </div>
-            <button className="button btn-ghost btn-sm rounded-lg">
-              <MdKeyboardArrowDown className="text-2xl mt-1" />
-            </button>
           </div>
         </div>
       </div>
@@ -215,7 +159,7 @@ const Profile = () => {
               alt="avatar"
               width={20}
               height={20}
-              className="w-20 h-20 rounded-full object-cover"
+              className="w-20 h-20 rounded-full object-cover border-2 border-primary"
             />
             <h1 className="text-2xl font-bold">
               {userDataUpdate.username || "NAMA USER"}

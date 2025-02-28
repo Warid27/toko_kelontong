@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import Cookies from "js-cookie";
 import moment from "moment";
 import Image from "next/image";
 import Swal from "sweetalert2"; // Import sweetalert2
@@ -17,12 +16,11 @@ import { IoClose } from "react-icons/io5";
 import client from "@/libs/axios";
 import Card from "@/components/Card";
 import { Modal } from "@/components/Modal";
+import { fetchProductsList } from "@/libs/fetching/product";
+import { fetchPembelianAdd } from "@/libs/fetching/pembelian";
 
 const Pembelian = () => {
   const [products, setProducts] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [table_custList, setTable_custList] = useState([]);
-  const [orderList, setOrderList] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isnoteModalOpen, setIsnoteModalOpen] = useState(false);
 
@@ -50,37 +48,35 @@ const Pembelian = () => {
   //     orderListRef.current = orderList;
   //   }, [orderList]);
 
+  const token = localStorage.getItem("token");
   // FETCh
   useEffect(() => {
-    const id_store = localStorage.getItem("id_store");
-    const id_company = localStorage.getItem("id_company");
-    const id_user = localStorage.getItem("id_user");
-
-    console.log("storeny ", id_store);
-    console.log("companynya", id_company);
-
-    const fetchProducts = async () => {
-      try {
-        const response = await client.post("/product/listproduct", {
-          id_store: id_store,
-          id_company: id_company,
-          status: 0, // 0 = Active, 1 = Inactive
-        });
-        setProducts(response.data);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
+    const id_store =
+      localStorage.getItem("id_store") == "undefined"
+        ? null
+        : localStorage.getItem("id_store");
+    const id_company =
+      localStorage.getItem("id_company") == "undefined"
+        ? null
+        : localStorage.getItem("id_company");
+    const fetching_requirement = async () => {
+      const get_product_list = async () => {
+        const data_product = await fetchProductsList(
+          id_store,
+          id_company,
+          null
+        );
+        setProducts(data_product);
+      };
+      get_product_list();
     };
-
-    if (id_store && id_company) {
-      fetchProducts();
-    } else {
-      console.warn("Missing one or more query parameters!");
-    }
+    fetching_requirement();
   }, []);
 
   useEffect(() => {
-    const storedCartItems = JSON.parse(Cookies.get("pembelianItems") || "[]");
+    const storedCartItems = JSON.parse(
+      localStorage.getItem("pembelianItems") || "[]"
+    );
     setPembelianItems(storedCartItems);
   }, []);
 
@@ -161,17 +157,9 @@ const Pembelian = () => {
         };
       };
 
-      const token = localStorage.getItem("token");
       const pembelianData = preparePembelianData();
-
       // Make the API call
-      const response = await client.post(
-        "/pembelian/addpembelian",
-        pembelianData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetchPembelianAdd(pembelianData, token);
 
       for (const item of pembelianItems) {
         await client.put(
@@ -189,10 +177,10 @@ const Pembelian = () => {
         );
       }
 
-      if (response.status === 201) {
+      if (response && response.status === 201) {
+        // Pastikan response tidak undefined
         await clearPembelian();
         Swal.fire("Sukses!", "Berhasil Order.", "success");
-        window.location.reload();
       } else {
         Swal.fire("Gagal!", "Gagal Order.", "error");
       }
@@ -238,13 +226,13 @@ const Pembelian = () => {
     updatedItems[index].totalPrice =
       updatedItems[index].product.buy_price * newQuantity;
     setPembelianItems(updatedItems);
-    Cookies.set("pembelianItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
+    localStorage.setItem("pembelianItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
   };
   const handleDeleteInfo = (index) => {
     const updatedItems = pembelianItems.filter((_, i) => i !== index);
     setPembelianItems(updatedItems);
-    Cookies.set("pembelianItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
-    // console.log("LATEST COOKIES:", Cookies.get("pembelianItems"));
+    localStorage.setItem("pembelianItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
+    // console.log("LATEST localStorage:", localStorage.get("pembelianItems"));
   };
   const handleDelete = async (index) => {
     const result = await Swal.fire({
@@ -291,12 +279,12 @@ const Pembelian = () => {
     window.history.back();
   };
 
-  // Clear Cookies pembelianItems
+  // Clear localStorage pembelianItems
   const clearPembelian = () => {
     try {
       setPembelianItems([]); // Reset the pembelian state
-      Cookies.set("pembelianItems", JSON.stringify([]), { expires: 7 }); // Update cookies
-      console.log("Pembelian items cleared and cookies updated.");
+      localStorage.setItem("pembelianItems", JSON.stringify([])); // Update localStorage
+      console.log("Pembelian items cleared and localStorage updated.");
     } catch (error) {
       console.error("Error clearing pembelian items:", error.message);
       Swal.fire("Error!", "Failed to clear pembelian items.", "error");
@@ -379,8 +367,13 @@ const Pembelian = () => {
                       <input
                         type="number"
                         value={item.quantity}
+                        onChange={(e) => {
+                          const inputValue = e.target.value.trim(); // Trim whitespace
+                          const newQuantity =
+                            inputValue === "" ? 1 : Number(inputValue); // Default to 1 if empty
+                          handleQuantityChange(index, newQuantity);
+                        }}
                         min="1"
-                        readOnly
                         className="text-center bg-transparent text-lg w-8 outline-none border-none"
                       />
 
@@ -484,23 +477,29 @@ const Pembelian = () => {
         <Modal onClose={closeModal} title={"Tambah Pesanan"}>
           <br />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => (
-              <div key={product._id} onClick={() => handleCardClick(product)}>
-                {}
-                <Card
-                  lebar={50}
-                  tinggi={50}
-                  image={product.image || "https://placehold.co/100x100"}
-                  nama={product.name_product}
-                  // harga={`Rp ${new Intl.NumberFormat("id-ID").format(
-                  //   product.sell_price
-                  // )}`}
-                  harga={`Rp ${new Intl.NumberFormat("id-ID").format(
-                    Math.max(product.buy_price)
-                  )}`}
-                />
+            {products.length === 0 ? (
+              <div className="col-span-full flex justify-center">
+                <h1 className="text-center">Produk tidak ditemukan!</h1>
               </div>
-            ))}
+            ) : (
+              products.map((product) => (
+                <div key={product._id} onClick={() => handleCardClick(product)}>
+                  {}
+                  <Card
+                    lebar={50}
+                    tinggi={50}
+                    image={product.image || "https://placehold.co/100x100"}
+                    nama={product.name_product}
+                    // harga={`Rp ${new Intl.NumberFormat("id-ID").format(
+                    //   product.sell_price
+                    // )}`}
+                    harga={`Rp ${new Intl.NumberFormat("id-ID").format(
+                      Math.max(product.buy_price)
+                    )}`}
+                  />
+                </div>
+              ))
+            )}
           </div>
         </Modal>
       )}
@@ -577,7 +576,17 @@ const Pembelian = () => {
               >
                 <FaMinus />
               </button>
-              <span className="mx-4">{quantity}</span>{" "}
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={quantity}
+                onChange={(e) => {
+                  const newQuantity = Number(e.target.value);
+                  setQuantity(newQuantity);
+                }}
+                className="mx-4 w-16 text-center appearance-none bg-transparent border-none focus:outline-none focus:border-b focus:border-black spinner-none"
+              />
               <button
                 onClick={() => setQuantity(quantity + 1)}
                 className="py-2 px-3 border border-black rounded-md"
@@ -589,10 +598,10 @@ const Pembelian = () => {
             <button
               onClick={() => {
                 // const pembelianItems = JSON.parse(
-                //   Cookies.get("pembelianItems") || "[]"
+                //   localStorage.get("pembelianItems") || "[]"
                 // );
 
-                // console.log("COOKIES BEFORE:", cartItems);
+                // console.log("localStorage BEFORE:", cartItems);
 
                 // Cek apakah item dengan extras & size yang sama sudah ada
                 const existingIndex = pembelianItems.findIndex(

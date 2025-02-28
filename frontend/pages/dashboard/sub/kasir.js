@@ -1,16 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
-import Cookies from "js-cookie";
 import moment from "moment";
 import Image from "next/image";
-import Swal from "sweetalert2"; // Import sweetalert2
+import Swal from "sweetalert2";
 
 // Icon
 import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
-import { IoMdArrowRoundBack, IoIosArrowDropdown } from "react-icons/io";
 import { VscTrash } from "react-icons/vsc";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import { CgNotes } from "react-icons/cg";
-import { IoClose } from "react-icons/io5";
+import { IoMdArrowRoundBack, IoIosArrowDropdown } from "react-icons/io";
 
 // import axios from "axios";
 
@@ -18,9 +16,10 @@ import client from "@/libs/axios";
 import Card from "@/components/Card";
 import { Modal } from "@/components/Modal";
 
+import { fetchProductsList } from "@/libs/fetching/product";
+
 const Kasir = () => {
   const [products, setProducts] = useState([]);
-  const [payments, setPayments] = useState([]);
   const [table_custList, setTable_custList] = useState([]);
   const [orderList, setOrderList] = useState([]);
   const [itemCampaignList, setItemCampaignList] = useState([]);
@@ -35,12 +34,14 @@ const Kasir = () => {
   const [selectedExtra, setSelectedExtra] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   // State untuk modal
+  const [isModalOpenPay, setIsModalOpenPay] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpenPromo, setIsModalOpenPromo] = useState(false);
   const [isModalOpenProductInfo, setIsModalOpenProductInfo] = useState(false);
   const [isnoteModalOpen, setIsnoteModalOpen] = useState(false);
   const [salesDiskon, setSalesDiskon] = useState(null); // Gunakan useState
   const [idSalesDiskon, setIdSalesDiskon] = useState(null); // Gunakan useState
+  const [payments, setPayments] = useState([]);
   const [infoBuyyer, setInfoBuyyer] = useState({
     nama: "",
     keterangan: "",
@@ -49,22 +50,60 @@ const Kasir = () => {
   const [promo, setPromo] = useState({
     nama: "",
   });
+  const [expandedPayments, setexpandedPayments] = useState({});
+  const [selectedMethod, setSelectedMethod] = useState(null);
+  const [tableNumber, setTableNumber] = useState({
+    nomor: "",
+  });
+
   const token = localStorage.getItem("token");
+  const id_store = localStorage.getItem("id_store");
   const tax = 12 / 100;
   // --- Function
-  const modalOpen = (param, bool) => {
+  const modalOpen = async (param, bool) => {
     const setters = {
       add: setIsModalOpen,
       product: setIsModalOpenProductInfo,
       note: setIsnoteModalOpen,
       promo: setIsModalOpenPromo,
+      pay: setIsModalOpenPay,
     };
+
+    if (param === "add" && bool) {
+      await fetchProduct(); // 🔥 Fetch first before opening modal
+    }
+
     if (setters[param]) {
       setters[param](bool);
     }
   };
 
   // FETCH
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const response = await client.post("/payment/listpayment", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // Flatten the paymentName arrays into a single list
+        const flattenedPayments = response.data.flatMap((paymentType) =>
+          paymentType.paymentName.map((payment) => ({
+            ...payment,
+            payment_method: paymentType.payment_method,
+          }))
+        );
+
+        setPayments(flattenedPayments);
+      } catch (error) {
+        console.error("Error fetching payments:", error);
+        setError("Failed to load payment methods. Please try again later.");
+      }
+    };
+    fetchPayments();
+  }, []);
   useEffect(() => {
     const fetchTable_cust = async () => {
       try {
@@ -125,7 +164,7 @@ const Kasir = () => {
       try {
         const response = await client.post(
           "/salescampaign/listsalescampaign",
-          {},
+          { id_store },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -133,7 +172,6 @@ const Kasir = () => {
           }
         );
         const data = response.data;
-
         // Validate that the response is an array
         if (!Array.isArray(data)) {
           console.error(
@@ -180,45 +218,36 @@ const Kasir = () => {
     fetchOrder();
   }, []);
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await client.post(
-          "/product/listproduct",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /product/listproduct:",
-            data
-          );
-          setProducts([]);
-        } else {
-          setProducts(data);
-        }
-      } catch (error) {
-        console.error("Error fetching table_cust:", error);
-        setProducts([]);
-      }
-    };
-    fetchProduct();
+    const storedKasirItems = JSON.parse(
+      localStorage.getItem("kasirItems") || "[]"
+    );
+    setKasirItems(storedKasirItems);
   }, []);
 
   useEffect(() => {
-    const storedCartItems = JSON.parse(Cookies.get("kasirItems") || "[]");
-    setKasirItems(storedCartItems);
-  }, []);
+    if (kasirItems[0]?.informasi) {
+      setInfoBuyyer((prevInfo) => ({
+        ...prevInfo,
+        keterangan: kasirItems[0].informasi.keterangan || "",
+        nama: kasirItems[0].informasi.person_name || "",
+      }));
+    }
+  }, [kasirItems]);
+
+  const fetchProduct = async () => {
+    const id_store =
+      localStorage.getItem("id_store") == "undefined"
+        ? null
+        : localStorage.getItem("id_store");
+
+    const data_product = await fetchProductsList(id_store, null, null, "order");
+    console.log("DATA:", data_product);
+    setProducts(data_product);
+  };
 
   const handleCartUpdate = () => {
     setKasirItemsUpdate((prev) => !prev);
+    modalOpen("product", false);
   };
 
   const handleButtonClick = async (e) => {
@@ -227,40 +256,68 @@ const Kasir = () => {
 
   const handleCardClick = async (product) => {
     try {
-      const response = await client.post(
-        "product/getproduct",
-        {
-          id: product._id,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      // Filter the products array to find the product with the matching _id
+      const selectedProductFromState = products.find(
+        (p) => p._id === product._id
       );
 
-      const fetchedProduct = response.data;
-
-      if (fetchedProduct.amount === 0) {
-        alert("This product is out of stock.");
-        return;
+      if (selectedProductFromState) {
+        setSelectedProduct(selectedProductFromState); // Set the selected product
+        modalOpen("add", false);
+        modalOpen("product", true);
+      } else {
+        console.warn("Product not found in the current state!");
       }
-
-      setSelectedProduct(fetchedProduct); // Set selected product with stock details
-      modalOpen("add", false);
-      modalOpen("product", true);
     } catch (error) {
       console.error("Error fetching product details:", error);
+      alert("An error occurred while fetching the product.");
     }
   };
 
   // Add Sales
+
   const handleSales = async (e) => {
     e.preventDefault();
-    console.log("KASIR ITEMS:", kasirItems);
     try {
       const prepareSalesData = () => {
         const totalNumberItem = kasirItems.length;
+        const insufficientItems = kasirItems.filter((item) => {
+          const { amount, orderQty = 0 } = item.product;
+          const qtyBefore = item.qty_before || 0;
+
+          // Jika stok barang benar-benar kosong, langsung dianggap tidak cukup
+          if (amount === 0) return true;
+
+          // Hitung stok tersedia
+          const availableStock = amount - orderQty + qtyBefore;
+
+          // Jika jumlah yang diminta lebih dari stok tersedia, item dianggap tidak cukup
+          return item.quantity > availableStock;
+        });
+
+        // will insufficient if item.product.amount === 0, if not 0, then calculate by - orderQty and qty_before
+        if (insufficientItems.length > 0) {
+          const errorMessage = insufficientItems
+            .map((item) => {
+              const { name, amount, orderQty = 0 } = item.product;
+              const qtyBefore = item.qty_before || 0;
+              const availableStock = amount - orderQty + qtyBefore;
+
+              return `- ${name}: Stok hanya ada ${availableStock}, tetapi Anda memesan ${item.quantity}`;
+            })
+            .join("<br>");
+
+          Swal.fire({
+            title: "Stok tidak mencukupi!",
+            html: `<div style="text-align: left;">
+                      Berikut adalah item dengan stok tidak mencukupi:<br>${errorMessage}
+                   </div>`,
+            icon: "error",
+          });
+
+          return null; // Hentikan eksekusi jika stok tidak cukup
+        }
+        console.log("INI BISA");
         const salesDetail = kasirItems.map((item) => ({
           id_product: item.product.id,
           id_extras: item.selectedExtra ? item.selectedExtra._id : null,
@@ -274,6 +331,7 @@ const Kasir = () => {
           item_quantity: item.quantity,
           item_discount: 0,
         }));
+
         const formattedDate = moment().format("DD-MM-YY HH:mm:ss");
 
         const salesCode = `INV/${formattedDate}`;
@@ -288,25 +346,18 @@ const Kasir = () => {
           0
         );
         const totalPriceWithTax = Math.max(
-          kasirItems.reduce(
-            (total, item) =>
-              total + item.quantity * item.product.priceAfterDiscount,
-            0
-          ) *
-            (1 - (salesDiskon || 0)) *
-            (1 + tax),
+          totalPrice * (1 - (salesDiskon || 0)) * (1 + tax),
           0
         );
 
         const id_user = localStorage.getItem("id_user");
         return {
           no: salesCode,
-          id_user: id_user || "TIDAK TERDETEKSI LE", // Consider making this dynamic
-          id_order: kasirItems[0]?.informasi
-            ? kasirItems[0].informasi.id_order || null
-            : null,
-          id_sales_campaign: idSalesDiskon, // Consider making this dynamic
-          id_payment_type: "67ae07107f2282a509936fb7",
+          id_user: id_user,
+          id_order: kasirItems[0]?.informasi?.id_order || null,
+          id_sales_campaign: idSalesDiskon,
+          // id_payment_type: "67ae07107f2282a509936fb7",
+          id_payment_type: selectedMethod._id,
           tax: tax,
           name: infoBuyyer.nama,
           status: infoBuyyer.status,
@@ -319,30 +370,45 @@ const Kasir = () => {
         };
       };
 
-      const token = localStorage.getItem("token");
       const salesData = prepareSalesData();
-      // Make the API call
+
+      if (!salesData) return; // Hentikan eksekusi jika stok tidak cukup
+
+      console.log("SELES", salesData);
       const response = await client.post("sales/addsales", salesData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.status === 201) {
-        const orderId = kasirItems[0]?.informasi?.id_order || null;
-
-        if (orderId != null || orderId != undefined) {
-          const responseOrder = await client.put(
-            `api/order/${orderId}`,
+        for (const item of kasirItems) {
+          console.log("ITEM WAK", item);
+          await client.put(
+            "/api/stock",
             {
-              status: 1,
+              amount: item.quantity,
+              params: "out",
+              id_product: item.product.id,
             },
             {
-              headers: { Authorization: `Bearer ${token}` },
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
             }
+          );
+        }
+
+        const orderId = kasirItems[0]?.informasi?.id_order || null;
+
+        if (orderId) {
+          const responseOrder = await client.put(
+            `api/order/${orderId}`,
+            { status: 1 },
+            { headers: { Authorization: `Bearer ${token}` } }
           );
           if (responseOrder.status === 200) {
             await clearKasir();
+            Swal.fire("Success!", "Pembayaran Berhasil.", "success");
           }
-          Swal.fire("Error!", "ERROR LE.", "error");
         } else {
           await clearKasir();
         }
@@ -358,6 +424,7 @@ const Kasir = () => {
       Swal.fire("Error!", errorMessage, "error");
     }
   };
+
   const infoBuyyerHandleChange = (e) => {
     const { name, value } = e.target;
     setInfoBuyyer({
@@ -366,21 +433,14 @@ const Kasir = () => {
     });
   };
 
-  useEffect(() => {
-    if (kasirItems[0]?.informasi) {
-      setInfoBuyyer((prevInfo) => ({
-        ...prevInfo,
-        keterangan: kasirItems[0].informasi.keterangan || "",
-      }));
-    }
-  }, [kasirItems]);
   const promohandleChange = (e) => {
     setPromo({ ...promo, nama: e.target.value });
   };
 
   const handleSubmitPromo = async (e) => {
     e.preventDefault();
-
+    console.log("PEROMO", promo);
+    console.log("SELES KEMPING", salesCampaignList);
     const cekPromo = salesCampaignList.find(
       (scl) => scl.campaign_name === promo.nama
     );
@@ -397,36 +457,31 @@ const Kasir = () => {
     }
   };
 
-  const [tableNumber, setTableNumber] = useState({
-    nomor: "",
-  });
-
   const tableHandleChange = (e) => {
     setTableNumber({
       ...tableNumber,
       nomor: e.target.value,
     });
   };
-  const [payment, SetPayment] = useState({
-    bayar: "",
-  });
 
-  const handleQuantityChange = (index, newQuantity) => {
-    if (newQuantity < 1) return; // Minimal quantity 1
-    const updatedItems = [...kasirItems];
-    updatedItems[index].quantity = newQuantity;
-    updatedItems[index].totalPrice =
-      updatedItems[index].product.priceAfterDiscount * newQuantity;
-    setKasirItems(updatedItems);
-    Cookies.set("kasirItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
-  };
   const handleDeleteInfo = (index) => {
     const updatedItems = kasirItems.filter((_, i) => i !== index);
+
     setKasirItems(updatedItems);
-    Cookies.set("kasirItems", JSON.stringify(updatedItems)); // Simpan perubahan ke cookie
-    // console.log("LATEST COOKIES:", Cookies.get("kasirItems"));
+    localStorage.setItem("kasirItems", JSON.stringify(updatedItems));
+
+    // Use updatedItems instead of kasirItems
+    if (!updatedItems[0]?.informasi) {
+      setInfoBuyyer({ nama: "", keterangan: "", status: 1 });
+    }
   };
-  const handleDelete = async (index) => {
+
+  const handleDelete = async (index, id_product, quantity) => {
+    if (!kasirItems[index]) {
+      console.error("Index tidak valid:", index);
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Apakah anda yakin?",
       text: "Item ini akan dihapus dari keranjang!",
@@ -439,17 +494,22 @@ const Kasir = () => {
     });
 
     if (result.isConfirmed) {
-      handleDeleteInfo(index);
+      try {
+        handleDeleteInfo(index);
 
-      Swal.fire(
-        "Terhapus!",
-        "Item berhasil dihapus dari keranjang.",
-        "success"
-      );
+        Swal.fire(
+          "Terhapus!",
+          "Item berhasil dihapus dari keranjang.",
+          "success"
+        );
+      } catch (error) {
+        console.error("Error updating stock:", error);
+        Swal.fire("Gagal!", "Terjadi kesalahan saat menghapus item.", "error");
+      }
     }
   };
 
-  // Clear Cookies kasirItems
+  // Clear localStorage kasirItems
   const clearKasir = () => {
     try {
       // Reset all relevant states
@@ -459,66 +519,203 @@ const Kasir = () => {
       setTableNumber({ nomor: "" });
       setInfoBuyyer({ nama: "", keterangan: "", status: 1 });
       setKasirItems([]); // Reset the kasir state
-      Cookies.set("kasirItems", JSON.stringify([]), { expires: 7 }); // Update cookies
-
-      // Show success message
-      Swal.fire("Success!", "Berhasil order!", "success");
+      localStorage.setItem("kasirItems", JSON.stringify([]), { expires: 7 }); // Update localStorage
     } catch (error) {
       console.error("Error clearing kasir items:", error.message);
       Swal.fire("Error!", "Failed to clear kasir items.", "error");
     }
   };
+  const handleQuantityChange = async (index, newQuantity) => {
+    // Validate the new quantity
+    if (isNaN(newQuantity) || newQuantity < 1) return; // Ignore invalid or out-of-range values
+
+    // Deep copy the cart items to avoid state mutation issues
+    const updatedItems = [...kasirItems];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      quantity: newQuantity,
+      totalPrice:
+        updatedItems[index].product?.priceAfterDiscount * newQuantity || 0,
+    };
+
+    // Update state and localStorage
+    setKasirItems(updatedItems);
+    localStorage.setItem("kasirItems", JSON.stringify(updatedItems));
+  };
 
   const addNewItems = (newItem) => {
-    setKasirItems((prevItem) => [...prevItem, newItem]);
+    setKasirItems((prevItems) => {
+      const updatedItems = [...prevItems, newItem];
+      localStorage.setItem("kasirItems", JSON.stringify(updatedItems));
+      return updatedItems;
+    });
+  };
+
+  // Add to kasirItems
+  const handleAddToCart = async () => {
+    const existingIndex = findExistingItemIndex();
+
+    if (existingIndex !== -1) {
+      updateExistingItem(existingIndex);
+    } else {
+      const newItem = createNewItem();
+      addNewItems(newItem);
+    }
+
+    handleCartUpdate();
+  };
+
+  // Find item in kasirItems
+  const findExistingItemIndex = () => {
+    return kasirItems.findIndex(
+      (item) =>
+        item.product.id === selectedProduct._id &&
+        (item.selectedExtra?._id || null) === (selectedExtra || null) &&
+        (item.selectedSize?._id || null) === (selectedSize || null)
+    );
+  };
+
+  // Update existing item in cart
+  const updateExistingItem = (index) => {
+    setKasirItems((prevItems) => {
+      const updatedItems = [...prevItems];
+      updatedItems[index] = {
+        ...updatedItems[index],
+        quantity: updatedItems[index].quantity + quantity,
+      };
+      localStorage.setItem("kasirItems", JSON.stringify(updatedItems));
+      return updatedItems;
+    });
+  };
+
+  const createNewItem = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const campaign = findActiveCampaign(today);
+    const discountValue = campaign ? campaign.value : 0;
+    const baseProduct = {
+      id: selectedProduct._id,
+      product_code: selectedProduct.product_code,
+      id_company: selectedProduct.id_company,
+      id_store: selectedProduct.id_store,
+      id_item_campaign: selectedProduct.id_item_campaign || null,
+      name: selectedProduct.name_product,
+      image: selectedProduct.image,
+      price: selectedProduct.sell_price,
+      diskon: discountValue,
+      amount: selectedProduct?.id_stock?.amount,
+      orderQty: selectedProduct.orderQty,
+      priceAfterDiscount: selectedProduct.sell_price * (1 - discountValue),
+    };
+
+    const newItem = {
+      product: baseProduct,
+      quantity,
+      selectedExtra: getSelectedExtra(),
+      selectedSize: getSelectedSize(),
+    };
+
+    const informasi = kasirItems.find((ki) => ki.informasi != null);
+    if (informasi) {
+      newItem.informasi = {
+        id_order: informasi.informasi.id_order,
+        code: informasi.informasi.code,
+        id_table_cust: informasi.informasi.id_table_cust,
+        person_name: informasi.informasi.person_name,
+      };
+    }
+
+    return newItem;
+  };
+  const findActiveCampaign = (today) => {
+    return itemCampaignList.find(
+      (campaign) =>
+        campaign._id === selectedProduct.id_item_campaign &&
+        campaign.start_date <= today &&
+        campaign.end_date >= today
+    );
+  };
+  const getSelectedExtra = () => {
+    if (!selectedExtra) return null;
+
+    return {
+      _id: selectedExtra,
+      name: selectedProduct?.id_extras?.extrasDetails.find(
+        (extra) => extra._id === selectedExtra
+      )?.name,
+    };
+  };
+  const getSelectedSize = () => {
+    if (!selectedSize) return null;
+
+    return {
+      _id: selectedSize,
+      name: selectedProduct?.id_size?.sizeDetails.find(
+        (size) => size._id === selectedSize
+      )?.name,
+    };
+  };
+
+  // Payment
+  // Group payments by payment_method
+  const groupedPayments = payments.reduce((acc, payment) => {
+    if (!acc[payment.payment_method]) {
+      acc[payment.payment_method] = [];
+    }
+    acc[payment.payment_method].push(payment);
+    return acc;
+  }, {});
+
+  // Toggle payments expansion
+  const togglePayments = (payments) => {
+    setexpandedPayments((prev) => ({
+      ...prev,
+      [payments]: !prev[payments],
+    }));
   };
 
   return (
-    <div className="bg-[#F7F7F7] w-full mt-10">
+    <div className="bg-[#F7F7F7] w-full pt-16 h-screen">
       <div className="p-4 mx-auto max-w-4xl">
         <div className="flex items-center mb-4">
           <h1 className="text-2xl font-semibold">SALES</h1>
         </div>
         <div className="h-[1.5px] bg-gray-300 w-full mb-6"></div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6 bg-white">
+          {/* Input Nama */}
           <div className="relative w-full">
             <label
-              htmlFor="infoBuyyer"
-              className="absolute top-2 left-4 text-sm text-black-500 bg-white px-1 font-semibold"
+              htmlFor="infoBuyyerNama"
+              className="absolute top-2 left-4 text-sm text-gray-500 bg-white px-1 font-semibold"
             >
               Masukkan Nama
             </label>
-            {kasirItems[0]?.informasi ? (
-              <input
-                id="infoBuyyerName"
-                type="text"
-                name="nama"
-                value={kasirItems[0].informasi.person_name || "error"}
-                disabled={true}
-                className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
-              />
-            ) : (
-              <input
-                id="infoBuyyerName"
-                type="text"
-                name="nama"
-                value={infoBuyyer?.nama || ""}
-                onChange={infoBuyyerHandleChange}
-                className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
-              />
-            )}
+            <input
+              id="infoBuyyerNama"
+              type="text"
+              name="nama"
+              value={infoBuyyer?.nama}
+              onChange={infoBuyyerHandleChange}
+              className="bg-white shadow-md border p-4 h-20 rounded-lg w-full text-black placeholder-black"
+            />
           </div>
+
+          {/* Select Nomor Meja */}
           <div className="relative w-full">
-            <label className="absolute top-2 left-4 text-sm text-black-500 bg-white px-1 font-semibold">
+            <label
+              htmlFor="nomer"
+              className="absolute top-2 left-4 text-sm text-gray-500 bg-white px-1 font-semibold"
+            >
               Nomor Meja
             </label>
             <select
               id="nomer"
               name="id_table_cust"
-              className="bg-white shadow appearance-none border rounded w-full p-4 h-20 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="bg-white shadow-md border rounded-lg w-full p-4 h-20 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={
-                kasirItems[0]?.informasi?.id_table_cust || tableNumber.nomor
+                kasirItems?.[0]?.informasi?.id_table_cust ??
+                tableNumber.nomor ??
+                ""
               }
               onChange={tableHandleChange}
               required
@@ -526,7 +723,6 @@ const Kasir = () => {
               <option value="" disabled>
                 === Pilih Table ===
               </option>
-
               {table_custList.length === 0 ? (
                 <option value="default">No Table available</option>
               ) : (
@@ -560,6 +756,8 @@ const Kasir = () => {
                   key={index}
                   className="flex items-center border p-4 rounded-lg bg-white shadow-md"
                 >
+                  {/* {console.log("ITEMNYA", item)} */}
+
                   <Image
                     src={item.product.image || "https://placehold.co/100x100"}
                     alt={item.product.name}
@@ -572,22 +770,19 @@ const Kasir = () => {
                       {item.product.name}
                     </h3>
                     {/* Hanya tampilkan size atau extra yang dipilih secara horizontal dengan koma natural */}
+                    {/* Hanya tampilkan size atau extra yang dipilih, dipisahkan dengan koma */}
                     <div className="flex">
-                      {item.selectedSize?.name && (
-                        <p className="text-sm">
-                          {item.selectedSize.name}
-                          {item.selectedExtra?.name && ","}
-                        </p>
-                      )}
-                      {item.selectedExtra?.name && (
-                        <p className="text-sm ml-1">
-                          {item.selectedExtra.name}
-                        </p>
-                      )}
+                      <p className="text-sm">
+                        {[
+                          item.selectedSize?.name || "Ukuran tidak ada",
+                          item.selectedExtra?.name || "Varian tidak ada",
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
                     </div>
                   </div>
                   {/* <p>{item.product.diskon ? item.product.diskon : "manok"}</p> */}
-
                   <div className="flex items-center">
                     <p className="font-semibold mr-4 relative">
                       {item.product.price != item.product.priceAfterDiscount ? (
@@ -608,11 +803,15 @@ const Kasir = () => {
                       <input
                         type="number"
                         value={item.quantity}
+                        onChange={(e) => {
+                          const inputValue = e.target.value.trim(); // Trim whitespace
+                          const newQuantity =
+                            inputValue === "" ? 1 : Number(inputValue); // Default to 1 if empty
+                          handleQuantityChange(index, newQuantity);
+                        }}
                         min="1"
-                        readOnly
                         className="text-center bg-transparent text-lg w-8 outline-none border-none"
                       />
-
                       <div className="flex flex-col items-center ml-2 -space-y-2.5">
                         <button
                           onClick={() =>
@@ -624,16 +823,24 @@ const Kasir = () => {
                         </button>
                         <button
                           onClick={() =>
-                            handleQuantityChange(index, item.quantity - 1)
+                            handleQuantityChange(
+                              index,
+                              Math.max(item.quantity - 1, 1)
+                            )
                           }
-                          className="text-lg bg-transparent p--4 leading-none"
+                          className={`text-lg bg-transparent p--4 leading-none ${
+                            item.quantity <= 1 ? "opacity-50" : ""
+                          }`}
                         >
                           <TiArrowSortedDown />
                         </button>
                       </div>
                     </div>
+
                     <button
-                      onClick={() => handleDelete(index)}
+                      onClick={() =>
+                        handleDelete(index, item.product.id, item.quantity)
+                      }
                       className="ml-4"
                     >
                       <VscTrash className="w-6 h-6" />
@@ -713,7 +920,10 @@ const Kasir = () => {
             </button>
           </div>
           <div className="flex justify-end">
-            <button onClick={handleButtonClick} className="submitBtn">
+            <button
+              onClick={() => modalOpen("pay", true)}
+              className="submitBtn"
+            >
               Bayar
             </button>
           </div>
@@ -724,27 +934,31 @@ const Kasir = () => {
         <Modal onClose={() => modalOpen("add", false)} title={"Tambah Pesanan"}>
           <br />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {console.log("PRODUCTS:", products)}
             {products.map((product) => (
               <div
                 key={product._id}
                 onClick={
-                  product?.id_stock?.amount > 0
+                  (product?.id_stock?.amount || 0) - (product?.orderQty || 0) >
+                  0
                     ? () => handleCardClick(product)
                     : null
                 }
                 className={
-                  product?.id_stock?.amount > 0
+                  (product?.id_stock?.amount || 0) - (product?.orderQty || 0) >
+                  0
                     ? "cursor-pointer" // Indicates the div is clickable
                     : "cursor-not-allowed " // Indicates the div is not clickable
                 }
               >
+                {console.log("PRODAK", product)}
                 <Card
                   lebar={50}
                   tinggi={50}
                   image={product.image || "https://placehold.co/100x100"}
                   nama={product.name_product}
-                  stock={product?.id_stock?.amount || 0}
+                  stock={
+                    (product?.id_stock?.amount || 0) - (product?.orderQty || 0)
+                  }
                   harga={`Rp ${new Intl.NumberFormat("id-ID").format(
                     Math.max(
                       product.sell_price *
@@ -770,23 +984,16 @@ const Kasir = () => {
           </div>
         </Modal>
       )}
-      {isModalOpenPromo && (
+      {/* {isModalOpenPromo && (
         <Modal
           onClose={() => modalOpen("promo", false)}
           title="Masukkan Kode Promo"
         >
           <form onSubmit={handleSubmitPromo}>
-            <input
-              type="text"
-              value={promo?.nama || ""}
-              onChange={promohandleChange}
-              placeholder="Masukkan Kode Promo..."
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition duration-300 bg-white"
-            />
             <button>Submit</button>
           </form>
         </Modal>
-      )}
+      )} */}
 
       {isnoteModalOpen && (
         <Modal onClose={() => modalOpen("note", false)}>
@@ -807,10 +1014,15 @@ const Kasir = () => {
       )}
       {isModalOpenProductInfo && (
         <Modal
-          onClose={() => modalOpen("product", false)}
+          onClose={() => {
+            modalOpen("product", false);
+            modalOpen("add", true);
+          }}
           title={selectedProduct?.name_product}
         >
           <div>
+            {console.log("SELEKTED LE", selectedProduct)}
+
             <Image
               src={selectedProduct?.image || "https://placehold.co/100x100"}
               alt={selectedProduct?.name_product}
@@ -882,160 +1094,204 @@ const Kasir = () => {
                 <button
                   onClick={() => setQuantity(quantity + 1)}
                   className="py-2 px-3 border border-black rounded-md"
-                  disabled={quantity >= selectedProduct?.amount} // Prevent exceeding stock
+                  disabled={
+                    quantity >=
+                    (selectedProduct?.id_stock?.amount || 0) -
+                      selectedProduct?.orderQty
+                  } // Prevent exceeding stock
                 >
                   <FaPlus />
                 </button>
               </div>
-
               {/* Show stock warning message when quantity exceeds available stock */}
-              {quantity > selectedProduct?.amount && (
+              {quantity >
+                (selectedProduct?.id_stock?.amount || 0) -
+                  selectedProduct?.orderQty && (
                 <p className="text-red-500 mt-2">
-                  Stok produk ini hanya {selectedProduct?.amount}
+                  Stok produk ini hanya{" "}
+                  {(selectedProduct?.id_stock?.amount || 0) -
+                    selectedProduct?.orderQty}
                 </p>
               )}
             </div>
 
-            <style jsx>{`
-              /* Remove spinners for WebKit browsers (Chrome, Safari, etc.) */
-              .spinner-none::-webkit-inner-spin-button,
-              .spinner-none::-webkit-outer-spin-button {
-                -webkit-appearance: none;
-                margin: 0;
-              }
-
-              /* Remove spinners for Firefox */
-              .spinner-none {
-                -moz-appearance: textfield;
-              }
-            `}</style>
-
             <button
-              onClick={() => {
-                // const kasirItems = JSON.parse(
-                //   Cookies.get("kasirItems") || "[]"
-                // );
-
-                // console.log("COOKIES BEFORE:", cartItems);
-
-                // Cek apakah item dengan extras & size yang sama sudah ada
-                const existingIndex = kasirItems.findIndex(
-                  (item) =>
-                    // console.log(item.product._id),
-                    item.product.id === selectedProduct._id &&
-                    item.selectedExtra?._id === selectedExtra &&
-                    item.selectedSize?._id === selectedSize
-                );
-
-                if (existingIndex !== -1) {
-                  kasirItems[existingIndex].quantity += quantity;
-                } else {
-                  const today = new Date().toISOString().split("T")[0];
-
-                  const campaign = itemCampaignList.find(
-                    (icl) =>
-                      icl._id === selectedProduct.id_item_campaign &&
-                      icl.start_date <= today &&
-                      icl.end_date >= today
-                  );
-
-                  const discountValue = campaign ? campaign.value : 0;
-                  const informasi = kasirItems.find(
-                    (ki) => ki.informasi != null
-                  );
-
-                  if (!informasi) {
-                    const newItem = {
-                      product: {
-                        id: selectedProduct._id,
-                        code: selectedProduct.product_code,
-                        id_company: selectedProduct.id_company,
-                        id_store: selectedProduct.id_store,
-                        id_item_campaign:
-                          selectedProduct.id_item_campaign || null,
-                        name: selectedProduct.name_product,
-                        image: selectedProduct.image,
-                        price: selectedProduct.sell_price,
-                        diskon: discountValue, // Diskon hanya jika campaign masih berlaku
-                        priceAfterDiscount:
-                          selectedProduct.sell_price * (1 - discountValue), // Harga setelah diskon
-                      },
-                      quantity,
-                      selectedExtra: selectedExtra
-                        ? {
-                            _id: selectedExtra,
-                            name: selectedProduct?.id_extras?.extrasDetails.find(
-                              (extra) => extra._id === selectedExtra
-                            )?.name,
-                          }
-                        : null,
-                      selectedSize: selectedSize
-                        ? {
-                            _id: selectedSize,
-                            name: selectedProduct?.id_size?.sizeDetails.find(
-                              (size) => size._id === selectedSize
-                            )?.name,
-                          }
-                        : null,
-                    };
-
-                    console.log("item barunya le", newItem);
-                    addNewItems(newItem);
-                  } else {
-                    const newItem = {
-                      informasi: {
-                        id_order: informasi.informasi.id_order,
-                        code: informasi.informasi.code,
-                        id_table_cust: informasi.informasi.id_table_cust,
-                        person_name: informasi.informasi.person_name,
-                      },
-                      product: {
-                        id: selectedProduct._id,
-                        id_company: selectedProduct.id_company,
-                        id_store: selectedProduct.id_store,
-                        code: selectedProduct.product_code,
-                        id_item_campaign:
-                          selectedProduct.id_item_campaign || null,
-                        name: selectedProduct.name_product,
-                        image: selectedProduct.image,
-                        price: selectedProduct.sell_price,
-                        diskon: discountValue, // Diskon hanya jika campaign masih berlaku
-                        priceAfterDiscount:
-                          selectedProduct.sell_price * (1 - discountValue), // Harga setelah diskon
-                      },
-                      quantity,
-                      selectedExtra: selectedExtra
-                        ? {
-                            _id: selectedExtra,
-                            name: selectedProduct?.id_extras?.extrasDetails.find(
-                              (extra) => extra._id === selectedExtra
-                            )?.name,
-                          }
-                        : null,
-                      selectedSize: selectedSize
-                        ? {
-                            _id: selectedSize,
-                            name: selectedProduct?.id_size?.sizeDetails.find(
-                              (size) => size._id === selectedSize
-                            )?.name,
-                          }
-                        : null,
-                    };
-
-                    console.log("item barunya", newItem);
-                    addNewItems(newItem);
-                  }
-                }
-                modalOpen("product", false);
-                handleCartUpdate();
-              }}
+              onClick={handleAddToCart}
               className={`mt-4 w-full p-2 rounded-md ${
-                quantity === 0 ? "closeBtn" : "addBtn"
+                quantity === 0 ||
+                quantity >
+                  ((selectedProduct?.id_stock?.amount || 0) -
+                    (selectedProduct?.orderQty || 0) || 0)
+                  ? "closeBtn"
+                  : "addBtn"
               }`}
-              disabled={quantity === 0 ? true : false}
+              disabled={
+                quantity === 0 ||
+                quantity >
+                  ((selectedProduct?.id_stock?.amount || 0) -
+                    (selectedProduct?.orderQty || 0) || 0)
+              }
             >
               Tambah ke Keranjang
             </button>
+          </div>
+        </Modal>
+      )}
+
+      {isModalOpenPay && (
+        <Modal onClose={() => modalOpen("pay", false)} title={"Pembayaran"}>
+          {/* bg-opacity dan blur biar gak ngelag */}
+          <div className="bg-opacity-100">
+            {/* Ringkasan Belanja */}
+
+            <div className="border rounded-lg mb-4 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
+              <div className="bg-orange-500 text-white p-3 rounded-t-lg font-bold">
+                Ringkasan Belanja
+              </div>
+              <div className="p-4">
+                {/* Header Produk - Qty - Harga */}
+                <div className="flex justify-between text-gray-500 font-semibold text-sm pb-2 border-b border-gray-300">
+                  <p className="w-1/2">Produk</p>
+                  <p className="w-1/4 text-center">Qty</p>
+                  <p className="w-1/4 text-right">Harga</p>
+                </div>
+                {/* Daftar Produk */}
+                {kasirItems.map((item, index) => (
+                  <div key={index} className="flex justify-between py-2">
+                    <p className="w-1/2 font-semibold">{item.product.name}</p>
+                    <p className="w-1/4 text-center">{item.quantity}</p>
+                    <p className="w-1/4 text-right font-semibold">
+                      Rp {item.product.price.toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+
+                {/* Biaya Kirim */}
+                <div className="flex justify-between text-green-500 font-semibold mt-2">
+                  <p>Jumlah Item</p>
+                  <p>{kasirItems.length}</p>
+                </div>
+
+                {/* Biaya Kirim */}
+                <div className="flex justify-between text-green-500 font-semibold mt-2">
+                  <p>Biaya Kirim</p>
+                  <p>0</p>
+                </div>
+
+                {/* Border dashed line */}
+                <div className="border-b border-dashed border-gray-300 my-2"></div>
+
+                {/* Total Harga */}
+                <div className="flex justify-between font-bold text-lg mt-3">
+                  <p className="text-black">Total Harga</p>
+                  <p className="text-orange-500">
+                    Rp.{" "}
+                    {kasirItems
+                      .reduce(
+                        (total, item) =>
+                          total + item.quantity * item.product.price,
+                        0
+                      )
+                      .toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pilih Metode Pembayaran */}
+            <div className="border rounded-lg mb-4 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+              <div className="bg-orange-500 text-white p-3 rounded-t-lg font-bold">
+                Pilih Metode Pembayaran
+              </div>
+              <div className="p-2 space-y-1">
+                {Object.keys(groupedPayments).map((payments) => (
+                  <div key={payments}>
+                    {/* Payments Header */}
+                    <div
+                      className="flex items-center justify-between cursor-pointer p-2 bg-gray-100 rounded-md hover:bg-gray-200"
+                      onClick={() => togglePayments(payments)}
+                    >
+                      <span className="font-semibold">{payments}</span>
+                      <span
+                        className={`transition-transform duration-200 ${
+                          expandedPayments[payments] ? "rotate-180" : ""
+                        }`}
+                      >
+                        <IoIosArrowDropdown />
+                      </span>
+                    </div>
+
+                    {/* Payment Methods (Dropdown Content) */}
+                    {expandedPayments[payments] && (
+                      <div className="pl-4 mt-2 space-y-2">
+                        {groupedPayments[payments].map((payment) => (
+                          <label
+                            key={payment._id}
+                            className="flex items-center cursor-pointer w-full p-2 gap-3 rounded-md hover:bg-orange-50 peer-checked:bg-orange-50"
+                          >
+                            <div className="relative w-6 h-6 flex items-center justify-center">
+                              <div className="absolute w-5 h-5 bg-white rounded-full border-2 border-gray-400"></div>
+                              <input
+                                type="radio"
+                                name="paymentMethod"
+                                value={payment._id}
+                                checked={selectedMethod?._id === payment._id}
+                                onChange={() => setSelectedMethod(payment)}
+                                className="peer relative w-5 h-5 rounded-full border-2 border-gray-400 appearance-none checked:border-orange-500 transition-all duration-200"
+                                aria-label={payment.payment_name}
+                              />
+                              <div className="absolute w-3 h-3 bg-orange-500 rounded-full scale-0 peer-checked:scale-100 transition-all duration-200"></div>
+                            </div>
+                            <div className="flex items-center justify-center gap-5">
+                              <img
+                                src={payment.image}
+                                alt={`${payment.payment_name} logo`}
+                                className="object-contain w-8 h-8"
+                              />
+                              <span>{payment.payment_name}</span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Kupon Promo */}
+            <div className="border rounded-lg shadow-md overflow-hidden">
+              <form onSubmit={handleSubmitPromo}>
+                <div className="bg-orange-500 text-white p-3 font-bold">
+                  Kupon Promo
+                </div>
+                <div className="p-4">
+                  <input
+                    type="text"
+                    value={promo?.nama || ""}
+                    onChange={promohandleChange}
+                    placeholder="Masukkan Kode Promo..."
+                    className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition duration-300 bg-white"
+                  />
+                </div>
+                <button className="addBtn">Add Promo</button>
+              </form>
+            </div>
+
+            {/* Tombol Bayar dan Makan di Tempat */}
+            <div className="flex flex-col gap-3 mt-4">
+              <button
+                className="w-full py-3 rounded-md font-bold text-white bg-[#642416] hover:bg-[#4e1b10] transition-all"
+                onClick={handleButtonClick}
+              >
+                BAYAR
+              </button>
+              <button
+                className="w-full py-3 rounded-md font-bold text-black bg-[#fddc05] hover:bg-[#e6c304] transition-all"
+                onClick={handleButtonClick}
+              >
+                Makan di Tempat
+              </button>
+            </div>
           </div>
         </Modal>
       )}

@@ -1,155 +1,131 @@
 import React, { useEffect, useState } from "react";
-import { IoSearchOutline } from "react-icons/io5";
-import Image from "next/image";
-import { MdKeyboardArrowDown } from "react-icons/md";
 import client from "@/libs/axios";
-import { HiDotsHorizontal } from "react-icons/hi";
-import Swal from "sweetalert2";
-import { MdDelete } from "react-icons/md";
-import { FaRegEdit } from "react-icons/fa";
-import { Modal } from "@/components/Modal";
-import { LiaCloudUploadAltSolid } from "react-icons/lia";
-import Cookies from "js-cookie";
-import ContentRenderer from "@/components/nav/renderContents"; // Import the new component
+import { fetchOrderList } from "@/libs/fetching/order";
+import { fetchProductsList } from "@/libs/fetching/product";
+import { fetchTableList } from "@/libs/fetching/table";
+import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
 const OrderCust = ({ setSelectedLink }) => {
   const [listOrder, setListOrder] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [openDropdown, setOpenDropdown] = useState(null);
-  const [productToUpdate, setProductToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
-  const [loading, setLoading] = useState(false); // Untuk loading saat update status
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [productList, setProductList] = useState([]);
   const [tableList, setTableList] = useState([]);
   const [itemCampaignList, setItemCampaignList] = useState([]);
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const response = await client.post("/product/listproduct", {});
-        const data = response.data;
+    const fetching_requirement = async () => {
+      const id_store =
+        localStorage.getItem("id_store") == "undefined"
+          ? null
+          : localStorage.getItem("id_store");
 
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /product/listproduct:",
-            data
-          );
-          setProductList([]);
-        } else {
-          setProductList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching size:", error);
-        setProductList([]);
-      }
-    };
-    fetchProduct();
-  }, []);
-  useEffect(() => {
-    const fetchItemCampaign = async () => {
-      try {
-        const response = await client.post(
-          "/itemcampaign/listitemcampaigns",
-          {}
+      const get_itemCampaign_list = async () => {
+        const data_itemCampaign = await fetchItemCampaignList();
+        setItemCampaignList(data_itemCampaign);
+      };
+      const get_product_list = async () => {
+        const data_product = await fetchProductsList(
+          id_store,
+          null,
+          null,
+          "order"
         );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /itemcampaign/listitemcampaign:",
-            data
-          );
-          setItemCampaignList([]);
-        } else {
-          setItemCampaignList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching item campaign:", error);
-        setItemCampaignList([]);
-      }
+        setProductList(data_product);
+      };
+      const get_table_list = async () => {
+        const data_table = await fetchTableList();
+        setTableList(data_table);
+      };
+      const get_order_list = async () => {
+        const data_order = await fetchOrderList(id_store, token);
+        setListOrder(data_order);
+      };
+      get_itemCampaign_list();
+      get_product_list();
+      get_table_list();
+      get_order_list();
     };
-    fetchItemCampaign();
-  }, []);
-  useEffect(() => {
-    const fetchTable = async () => {
-      try {
-        const response = await client.get("/table/listtable");
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /table/listtable:", data);
-          setTableList([]);
-        } else {
-          setTableList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching table:", error);
-        setTableList([]);
-      }
-    };
-    fetchTable();
+    fetching_requirement();
+    setIsLoading(false);
   }, []);
 
-  const openModalAdd = () => {
-    setIsModalOpen(true);
-  };
+  const handleProcessOrder = (order) => {
+    console.log("order", order);
 
-  const closeModalAdd = () => {
-    setIsModalOpen(false);
-  };
-  const openModalUpdate = () => {
-    setIsUpdateModalOpen(true);
-  };
+    const { __reactFiber$ihwx534u59, __reactProps, ...safeOrder } = order;
+    console.log("safeOrder", safeOrder);
 
-  const closeModalUpdate = () => {
-    setIsUpdateModalOpen(false);
-  };
-  useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const id_store = localStorage.getItem("id_store");
+    const orderFormat = safeOrder.orderDetails.map((od) => {
+      const quantity = od.quantity || 1;
+      console.log("QTY", quantity);
+      console.log("OD", od);
+      console.log("OD ID", od.id_product?._id);
+      console.log("PL", productList);
+      const selectedProduct = productList.find(
+        (pl) => pl._id === od.id_product?._id
+      );
 
-        if (!id_store) {
-          console.error("id_store is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
+      const today = new Date().toISOString().split("T")[0];
+      const campaign = itemCampaignList.find(
+        (icl) =>
+          icl._id === selectedProduct?.id_item_campaign &&
+          icl.start_date <= today &&
+          icl.end_date >= today
+      );
 
-        const response = await client.post(
-          "/order/listorder",
-          {}, // Pass id_store in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      const discountValue = campaign?.value || 0;
+      console.log("SELEKTED", selectedProduct);
+      return {
+        informasi: {
+          id_order: order._id,
+          code: order.code,
+          id_table_cust: order.id_table_cust,
+          person_name: order.person_name,
+          keterangan: order.keterangan,
+        },
+        product: {
+          id: selectedProduct?._id || null,
+          id_company: selectedProduct?.id_company || null,
+          id_store: selectedProduct?.id_store || null,
+          id_item_campaign: selectedProduct?.id_item_campaign || null,
+          name: selectedProduct?.name_product || "Unknown",
+          image: selectedProduct?.image || "",
+          price: selectedProduct?.sell_price || 0,
+          product_code: selectedProduct?.product_code || "",
+          diskon: discountValue,
+          amount: selectedProduct?.id_stock?.amount,
+          orderQty: selectedProduct?.orderQty,
+          priceAfterDiscount: selectedProduct?.sell_price * (1 - discountValue),
+        },
+        quantity,
+        qty_before: quantity,
+        selectedExtra: od.id_extrasDetails
+          ? {
+              _id: od.id_extrasDetails,
+              name:
+                selectedProduct?.id_extras?.extrasDetails.find(
+                  (extra) => extra._id === od.id_extrasDetails
+                )?.name || "Unknown Extra",
+            }
+          : null,
+        selectedSize: od.id_sizeDetails
+          ? {
+              _id: od.id_sizeDetails,
+              name:
+                selectedProduct?.id_size?.sizeDetails.find(
+                  (size) => size._id === od.id_sizeDetails
+                )?.name || "Unknown Size",
+            }
+          : null,
+      };
+    });
 
-        const filter = response.data.filter((num) => num.status == "2");
-        // Set the fetched order into state
-        setListOrder(filter);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching order:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrder();
-  }, []);
-
-  const processSubmit = (data) => {
-    const orderData = { ...data };
-    Cookies.set("kasirItems", JSON.stringify(orderData), { expires: 7 });
+    localStorage.setItem("kasirItems", JSON.stringify(orderFormat));
+    handleNavigateToKasir(orderFormat);
   };
 
   // function
-  const handleNavigateToKasir = () => {
-    // Update the selectedLink to "kasir"
+  const handleNavigateToKasir = (data) => {
     setSelectedLink("kasir");
   };
 
@@ -207,124 +183,11 @@ const OrderCust = ({ setSelectedLink }) => {
                       <td>
                         <button
                           className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300"
-                          onClick={() => {
-                            console.log("order", order);
-                            const {
-                              __reactFiber$ihwx534u59,
-                              __reactProps,
-                              ...safeOrder
-                            } = order;
-                            console.log("safeorder", safeOrder);
-                            // const productnya = safeOrder.orderDetails.map((od) =>
-                            //   productList.find((pl) => pl._id === od.id_product)
-                            // );
-                            const orderFormat = safeOrder.orderDetails.map(
-                              (od) => {
-                                const selectedProduct = productList.find(
-                                  (pl) => pl._id === od.id_product
-                                );
-
-                                const today = new Date()
-                                  .toISOString()
-                                  .split("T")[0]; // Format YYYY-MM-DD untuk membandingkan tanggal
-
-                                const campaign = itemCampaignList.find(
-                                  (icl) =>
-                                    icl._id ===
-                                      selectedProduct.id_item_campaign &&
-                                    icl.start_date <= today &&
-                                    icl.end_date >= today
-                                );
-
-                                const discountValue = campaign
-                                  ? campaign.value
-                                  : 0;
-
-                                return {
-                                  informasi: {
-                                    id_order: order._id,
-                                    code: order.code,
-                                    id_table_cust: order.id_table_cust,
-                                    person_name: order.person_name,
-                                    keterangan: order.keterangan,
-                                  },
-                                  product: {
-                                    id: selectedProduct?._id || null,
-                                    id_company:
-                                      selectedProduct?.id_company || null,
-                                    id_store: selectedProduct?.id_store || null,
-                                    id_item_campaign:
-                                      selectedProduct?.id_item_campaign || null,
-                                    name:
-                                      selectedProduct?.name_product ||
-                                      "Unknown",
-                                    image: selectedProduct?.image || "",
-                                    // price: od?.total_price || 0,
-                                    price: selectedProduct?.sell_price || 0,
-                                    product_code:
-                                      selectedProduct?.product_code || "",
-
-                                    diskon: discountValue,
-                                    // selectedProduct.id_item_campaign != null
-                                    //   ? itemCampaignList.find(
-                                    //       (icl) =>
-                                    //         icl._id ==
-                                    //         selectedProduct.id_item_campaign
-                                    //     )?.value
-                                    //   : 0,
-                                    priceAfterDiscount:
-                                      selectedProduct.sell_price *
-                                      (1 - discountValue),
-                                    //   priceAfterDiscount:
-                                    //     selectedProduct.sell_price *
-                                    //     (1 -
-                                    //       (selectedProduct.id_item_campaign !=
-                                    //       null
-                                    //         ? itemCampaignList.find(
-                                    //             (icl) =>
-                                    //               icl._id ==
-                                    //               selectedProduct.id_item_campaign
-                                    //           )?.value || 0
-                                    //         : 0)),
-                                  },
-                                  quantity: od.quantity || 1,
-                                  selectedExtra: od.id_extrasDetails
-                                    ? {
-                                        _id: od.id_extrasDetails,
-                                        name:
-                                          selectedProduct?.id_extras?.extrasDetails.find(
-                                            (extra) =>
-                                              extra._id === od.id_extrasDetails
-                                          )?.name || "Unknown Extra",
-                                      }
-                                    : null,
-                                  selectedSize: od.id_sizeDetails
-                                    ? {
-                                        _id: od.id_sizeDetails,
-                                        name:
-                                          selectedProduct?.id_size?.sizeDetails.find(
-                                            (size) =>
-                                              size._id === od.id_sizeDetails
-                                          )?.name || "Unknown Size",
-                                      }
-                                    : null,
-                                };
-                              }
-                            );
-
-                            console.log("orderformatnya ni", orderFormat);
-                            Cookies.set(
-                              "kasirItems",
-                              JSON.stringify(orderFormat),
-                              { expires: 7 }
-                            );
-                            handleNavigateToKasir();
-                            // console.log("kuki manok", Cookies.get("kasirItems"))
-                            // console.log("kuki json", JSON.parse(Cookies.get("kasirItems")))
-                          }}
+                          onClick={() => handleProcessOrder(order)}
                         >
                           Process
                         </button>
+                        ;
                       </td>
                     </tr>
                   ))}

@@ -5,6 +5,11 @@ const categoryProductSchema = new Schema({
     type: String,
     required: true,
   },
+  id_store: {
+    type: Schema.Types.ObjectId,
+    ref: "store",
+    required: true,
+  },
   created_at: {
     type: Date,
     default: Date.now,

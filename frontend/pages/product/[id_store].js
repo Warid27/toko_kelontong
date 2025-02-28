@@ -7,19 +7,20 @@ import client from "@/libs/axios";
 import { Modal } from "@/components/Modal";
 import { useRouter } from "next/router";
 import { FaMinus, FaPlus } from "react-icons/fa6";
-import Cookies from "js-cookie";
 import Link from "next/link";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [queryReady, setQueryReady] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedExtra, setSelectedExtra] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [cartUpdate, setCartUpdated] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [queryReady, setQueryReady] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [itemCampaignList, setItemCampaignList] = useState([]);
   const [categoryProductList, setCategoryProductList] = useState([]);
   const router = useRouter();
@@ -35,12 +36,6 @@ export default function Home() {
     if (!queryReady) return;
 
     const { id_store, id_company, id_category_product } = router.query;
-    // ini dia id_store dan id_company
-    // console.log("Parsed Query Parameters:", {
-    //   id_store,
-    //   id_company,
-    //   id_category_product,
-    // });
 
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -51,7 +46,9 @@ export default function Home() {
           id_company: id_company,
           id_category_product: id_category_product,
           status: 0, // 0 = Active, 1 = Inactive
+          params: "order",
         });
+        console.log("RESP", response.data);
         setProducts(response.data);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -129,7 +126,6 @@ export default function Home() {
           setIsLoading(false);
           return;
         }
-        console.log("ID STORE:", id_store);
         const response = await client.post(
           "/store/getstore",
           { id: id_store },
@@ -152,16 +148,51 @@ export default function Home() {
     getStores();
   }, []);
 
-  const handleCardClick = async (product) => {
+  const handleCardClick = (product) => {
     try {
-      const response = await client.post("product/getproduct", {
-        id: product._id,
-      });
-      setSelectedProduct(response.data); // Set the selected product with fetched data
-      setIsModalOpen(true); // Open the modal
+      // Filter the products array to find the product with the matching _id
+      const selectedProductFromState = products.find(
+        (p) => p._id === product._id
+      );
+
+      if (selectedProductFromState) {
+        setSelectedProduct(selectedProductFromState); // Set the selected product
+        setIsModalOpen(true); // Open the modal
+      } else {
+        console.warn("Product not found in the current state!");
+      }
     } catch (error) {
-      console.error("Error fetching product details:", error);
+      console.error("Error selecting product:", error);
     }
+  };
+
+  const addToCart = async () => {
+    const cartItems = JSON.parse(localStorage.getItem("cartItems") || "[]");
+    const existingIndex = cartItems.findIndex(
+      (item) =>
+        item?.product?.id === selectedProduct?._id &&
+        item?.selectedExtra?._id === selectedExtra &&
+        item?.selectedSize?._id === selectedSize
+    );
+
+    if (existingIndex !== -1) {
+      // Jika produk dengan extras dan size yang sama sudah ada, tambahkan jumlahnya
+      cartItems[existingIndex].quantity += quantity;
+    } else {
+      const newItem = {
+        id_product: selectedProduct?._id || "",
+        id_item_campaign: selectedProduct?.id_item_campaign || null,
+        id_extras: selectedExtra || null,
+        id_size: selectedSize || null,
+        quantity,
+      };
+
+      cartItems.push(newItem);
+    }
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+
+    closeModal();
+    handleCartUpdate();
   };
 
   const closeModal = () => {
@@ -192,7 +223,7 @@ export default function Home() {
       <div className="p-10">
         <div className="flex justify-center max-h-[55vh] overflow-hidden relative">
           <Image
-            src={stores.banner}
+            src={stores.header}
             alt="header"
             layout="responsive"
             width={100}
@@ -224,72 +255,57 @@ export default function Home() {
         <div className="mt-10 space-y-6">
           <h2 className="font-bold text-4xl mb-4">Products</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => (
-              <div
-                className="flex justify-center max-h-[55vh] relative"
-                key={product._id}
-                onClick={() => handleCardClick(product)}
-              >
-                <Card
-                  className="w-full object-cover"
-                  image={product.image || "https://placehold.co/100x100"}
-                  nama={product.name_product}
-                  diskon={
-                    product.id_item_campaign
-                      ? itemCampaignList.find((icl) => {
-                          const today = new Date().toISOString().split("T")[0];
-                          return (
-                            icl._id === product.id_item_campaign &&
-                            icl.start_date <= today &&
-                            icl.end_date >= today
-                          );
-                        })?.value || 0
-                      : 0
+            {products.map((product) => {
+              const today = new Date().toISOString().split("T")[0];
+              const campaign = itemCampaignList.find(
+                (icl) =>
+                  icl._id === product.id_item_campaign &&
+                  icl.start_date <= today &&
+                  icl.end_date >= today
+              );
+
+              const discountValue = campaign?.value || 0;
+              const discountedPrice = Math.max(
+                product.sell_price * (1 - discountValue),
+                0
+              );
+              const originalPrice = product.sell_price;
+
+              return (
+                <div
+                  className="flex justify-center max-h-[55vh] relative"
+                  key={product._id}
+                  onClick={
+                    product?.id_stock
+                      ? product.id_stock.amount - (product.orderQty || 0) > 0
+                        ? () => handleCardClick(product)
+                        : () => {}
+                      : () => {}
                   }
-                  harga={`Rp ${new Intl.NumberFormat("id-ID").format(
-                    Math.max(
-                      product.sell_price *
-                        (1 -
-                          (product.id_item_campaign
-                            ? itemCampaignList.find((icl) => {
-                                const today = new Date()
-                                  .toISOString()
-                                  .split("T")[0];
-                                return (
-                                  icl._id === product.id_item_campaign &&
-                                  icl.start_date <= today &&
-                                  icl.end_date >= today
-                                );
-                              })?.value || 0
-                            : 0)),
-                      0 // Pastikan harga tidak negatif
-                    )
-                  )}`}
-                  hargaDiskon={
-                    //  KONDISI: Apabila ada item_campaignya,
-                    (
-                      product.id_item_campaign
-                        ? itemCampaignList.find((icl) => {
-                            const today = new Date()
-                              .toISOString()
-                              .split("T")[0];
-                            return (
-                              icl._id === product.id_item_campaign &&
-                              icl.start_date <= today &&
-                              icl.end_date >= today
-                            );
-                          })?.value || 0
-                        : 0
-                    )
-                      ? //  KONDISI: maka return yang bawah
-                        `Rp ${new Intl.NumberFormat("id-ID").format(
-                          product.sell_price
-                        )}`
-                      : null
-                  }
-                />
-              </div>
-            ))}
+                >
+                  <Card
+                    className="w-full object-cover"
+                    image={product.image || "https://placehold.co/100x100"}
+                    nama={product.name_product}
+                    stock={Math.max(
+                      product?.id_stock?.amount - product?.orderQty,
+                      0
+                    )}
+                    diskon={discountValue}
+                    harga={`Rp ${new Intl.NumberFormat("id-ID").format(
+                      discountedPrice
+                    )}`}
+                    hargaDiskon={
+                      discountValue
+                        ? `Rp ${new Intl.NumberFormat("id-ID").format(
+                            originalPrice
+                          )}`
+                        : null
+                    }
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -351,92 +367,66 @@ export default function Home() {
               >
                 <FaMinus />
               </button>
-              <span className="mx-4">{quantity}</span>{" "}
+              {/* Styled input with no spinners */}
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={quantity}
+                onChange={(e) => {
+                  const newQuantity = Number(e.target.value);
+                  setQuantity(newQuantity);
+                }}
+                className="mx-4 w-16 text-center appearance-none bg-transparent border-none focus:outline-none focus:border-b focus:border-black spinner-none"
+              />
               <button
                 onClick={() => setQuantity(quantity + 1)}
                 className="py-2 px-3 border border-black rounded-md"
+                disabled={quantity >= selectedProduct?.id_stock?.amount} // Prevent exceeding stock
               >
                 <FaPlus />
               </button>
             </div>
 
+            {/* Show stock warning message when quantity exceeds available stock */}
+            {quantity >
+              (selectedProduct?.id_stock?.amount || 0) -
+                (selectedProduct?.orderQty || 0) && (
+              <p className="text-red-500 mt-2">
+                Stok produk ini hanya{" "}
+                {(selectedProduct?.id_stock?.amount || 0) -
+                  (selectedProduct?.orderQty || 0)}
+              </p>
+            )}
+            <style jsx>{`
+              /* Remove spinners for WebKit browsers (Chrome, Safari, etc.) */
+              .spinner-none::-webkit-inner-spin-button,
+              .spinner-none::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+              }
+
+              /* Remove spinners for Firefox */
+              .spinner-none {
+                -moz-appearance: textfield;
+              }
+            `}</style>
             <button
-              onClick={() => {
-                const cartItems = JSON.parse(Cookies.get("cartItems") || "[]");
-
-                // console.log("COOKIES BEFORE:", cartItems);
-
-                // Cek apakah item dengan extras & size yang sama sudah ada
-                const existingIndex = cartItems.findIndex(
-                  (item) =>
-                    // console.log(item.product._id),
-                    item.product.id === selectedProduct._id &&
-                    item.selectedExtra?._id === selectedExtra &&
-                    item.selectedSize?._id === selectedSize
-                );
-
-                if (existingIndex !== -1) {
-                  // Jika produk dengan extras dan size yang sama sudah ada, tambahkan jumlahnya
-                  cartItems[existingIndex].quantity += quantity;
-                } else {
-                  const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD untuk membandingkan tanggal
-
-                  const campaign = itemCampaignList.find(
-                    (icl) =>
-                      icl._id === selectedProduct.id_item_campaign &&
-                      icl.start_date <= today &&
-                      icl.end_date >= today
-                  );
-
-                  const discountValue = campaign ? campaign.value : 0;
-                  // Jika belum ada, tambahkan sebagai item baru
-                  const newItem = {
-                    product: {
-                      // ...prevProduct  ini bikin ngebug sialannnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
-                      id: selectedProduct._id,
-                      product_code: selectedProduct.product_code,
-                      name: selectedProduct.name_product,
-                      image: selectedProduct.image,
-                      price: selectedProduct.sell_price,
-                      diskon: discountValue, // Diskon hanya jika campaign masih berlaku
-                      priceAfterDiscount:
-                        selectedProduct.sell_price * (1 - discountValue),
-                    },
-                    quantity,
-                    selectedExtra: selectedExtra
-                      ? {
-                          _id: selectedExtra,
-                          name: selectedProduct?.id_extras?.extrasDetails.find(
-                            (extra) => extra._id === selectedExtra
-                          )?.name,
-                        }
-                      : null,
-                    selectedSize: selectedSize
-                      ? {
-                          _id: selectedSize,
-                          name: selectedProduct?.id_size?.sizeDetails.find(
-                            (size) => size._id === selectedSize
-                          )?.name,
-                        }
-                      : null,
-                  };
-                  // console.log("YUDAAA", newItem.selectedExtra);
-                  cartItems.push(newItem);
-                  // console.log("item barunya", newItem);
-                }
-
-                Cookies.set("cartItems", JSON.stringify(cartItems), {
-                  expires: 7,
-                });
-                // console.log("Menambahkan ke keranjang:", cartItems);
-                // console.log("COOKIESSSS:", Cookies.get("cartItems"));
-                closeModal();
-                handleCartUpdate();
-              }}
+              onClick={addToCart}
               className={`mt-4 w-full p-2 rounded-md ${
-                quantity === 0 ? "bg-gray-400" : "bg-green-500 text-white"
+                quantity === 0 ||
+                quantity >
+                  (selectedProduct?.id_stock?.amount -
+                    (selectedProduct?.orderQty || 0) || 0)
+                  ? "closeBtn"
+                  : "addBtn"
               }`}
-              disabled={quantity === 0}
+              disabled={
+                quantity === 0 ||
+                quantity >
+                  (selectedProduct?.id_stock?.amount -
+                    (selectedProduct?.orderQty || 0) || 0)
+              }
             >
               Tambah ke Keranjang
             </button>

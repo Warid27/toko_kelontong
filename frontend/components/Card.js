@@ -2,7 +2,7 @@ import React from "react";
 import Image from "next/image";
 
 const Card = ({
-  lebar,
+  lebar = "80",
   tinggi,
   onClick,
   image,
@@ -12,10 +12,12 @@ const Card = ({
   diskon,
   stock,
 }) => {
+  const stockClass =
+    stock === "not set" ? "" : Number(stock) <= 0 ? "opacity-50" : "";
+
   return (
     <div
-      className={`card bg-base-100 w-${lebar || "80"}
-      } shadow-xl cursor-pointer overflow-hidden relative`}
+      className={`card bg-base-300 w-${lebar} shadow-xl cursor-pointer overflow-hidden relative ${stockClass}`}
       onClick={onClick}
     >
       {diskon > 0 && diskon <= 1 && (

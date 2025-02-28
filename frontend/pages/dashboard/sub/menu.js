@@ -6,10 +6,22 @@ import client from "@/libs/axios";
 import { HiDotsHorizontal } from "react-icons/hi";
 import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
-import { FaRegEdit } from "react-icons/fa";
+import {
+  FaRegEdit,
+  FaRegFileExcel,
+  FaWpforms,
+  FaFileUpload,
+} from "react-icons/fa";
+import { IoIosCloudDone } from "react-icons/io";
 import { Modal } from "@/components/Modal";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import Select from "react-select";
+import { fetchExtrasList } from "@/libs/fetching/extras";
+import { fetchCategoryList } from "@/libs/fetching/category";
+import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
+import { fetchProductsList } from "@/libs/fetching/product";
+import { fetchSizeList } from "@/libs/fetching/size";
+import ReactPaginate from "react-paginate";
 
 const Menu = () => {
   const [products, setProducts] = useState([]);
@@ -22,104 +34,106 @@ const Menu = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isExampleModalOpen, setIsExampleModalOpen] = useState(false);
   const [extrasList, setExtrasList] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [itemCampaignList, setItemCampaignList] = useState([]);
   const [sizeList, setSizeList] = useState([]);
+  const [openMenu, setOpenMenu] = useState("form");
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const fetchExtras = async () => {
-      try {
-        const response = await client.post("/extras/listextras", {});
-        const data = response.data;
+  const id_store =
+    localStorage.getItem("id_store") == "undefined"
+      ? null
+      : localStorage.getItem("id_store");
+  const id_company =
+    localStorage.getItem("id_company") == "undefined"
+      ? null
+      : localStorage.getItem("id_company");
 
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /extras/listextras:",
-            data
-          );
-          setExtrasList([]);
-        } else {
-          setExtrasList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching extras:", error);
-        setExtrasList([]);
-      }
-    };
-    fetchExtras();
-  }, []);
-  useEffect(() => {
-    const fetchCategory = async () => {
-      try {
-        const response = await client.post("/category/listcategories", {});
-        const data = response.data;
+  const [file, setFile] = useState(null);
+  const [message, setMessage] = useState("");
 
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /category/listcategories:",
-            data
-          );
-          setCategoryList([]);
-        } else {
-          setCategoryList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching category:", error);
-        setCategoryList([]);
-      }
-    };
-    fetchCategory();
-  }, []);
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  //   const handleUpload = async () => {
+  //     if (!file) return setMessage("Pilih file terlebih dahulu");
+
+  //     const formData = new FormData();
+  //     formData.append("file", file);
+
+  //     console.log("File yang dikirim:", file); // Debugging
+
+  //     try {
+  //         const res = await client.post("product/upload", formData, {
+  //             headers: { "Content-Type": "multipart/form-data" },
+  //         });
+  //         console.log("Response dari server:", res.data);
+  //         setMessage(res.data.message);
+  //     } catch (err) {
+  //         console.error("Error Upload:", err.response?.data || err.message);
+  //         setMessage("Upload gagal!");
+  //     }
+  // };
+
+  const handleUpload = async () => {
+    if (!file) return setMessage("Pilih file");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("id_store", id_store);
+    formData.append("id_company", id_company);
+
+    try {
+      const res = await client.post("/product/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setMessage(res.data.message);
+    } catch (err) {
+      setMessage("Upload gagal");
+    }
+  };
+
   useEffect(() => {
-    const fetchItemCampaign = async () => {
-      try {
-        const response = await client.post(
-          "/itemcampaign/listitemcampaigns",
+    const fetching_requirement = async () => {
+      const get_extras_list = async () => {
+        const data_extras = await fetchExtrasList();
+        setExtrasList(data_extras);
+      };
+      const get_category_list = async () => {
+        const data_category = await fetchCategoryList();
+        setCategoryList(data_category);
+      };
+      const get_itemCampaign_list = async () => {
+        const data_itemCampaign = await fetchItemCampaignList();
+        setItemCampaignList(data_itemCampaign);
+      };
+      const get_size_list = async () => {
+        const data_size = await fetchSizeList();
+        setSizeList(data_size);
+      };
+      const get_product_list = async () => {
+        const data_product = await fetchProductsList(
+          id_store,
+          id_company,
+          null,
           {}
         );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /itemcampaign/listitemcampaigns:",
-            data
-          );
-          setItemCampaignList([]);
-        } else {
-          setItemCampaignList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching item Campaign:", error);
-        setItemCampaignList([]);
-      }
+        setProducts(data_product);
+      };
+      get_extras_list();
+      get_category_list();
+      get_itemCampaign_list();
+      get_size_list();
+      get_product_list();
     };
-    fetchItemCampaign();
-  }, []);
-  useEffect(() => {
-    const fetchSize = async () => {
-      try {
-        const response = await client.get("/size/listsize");
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /size/listsize:", data);
-          setSizeList([]);
-        } else {
-          setSizeList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching size:", error);
-        setSizeList([]);
-      }
-    };
-    fetchSize();
+    fetching_requirement();
+    setIsLoading(false);
   }, []);
 
   const [productDataAdd, setProductDataAdd] = useState({
@@ -156,6 +170,7 @@ const Menu = () => {
     const setters = {
       add: setIsModalOpen,
       update: setIsUpdateModalOpen,
+      example: setIsExampleModalOpen,
     };
     if (setters[param]) {
       setters[param](bool);
@@ -189,39 +204,6 @@ const Menu = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const id_store = localStorage.getItem("id_store");
-
-        if (!id_store) {
-          console.error("id_store is missing in localStorage");
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await client.post(
-          "/product/listproduct",
-          { id_store }, // Pass id_store in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // Set the fetched products into state
-        setProducts(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
 
   const handleUpdateProduct = (product, params) => {
     setProductToUpdate(product); // Menyimpan produk yang dipilih
@@ -301,8 +283,6 @@ const Menu = () => {
         Swal.fire("Gagal", "Harga tidak boleh lebih rendah dari 1!");
         return;
       }
-      const id_company = localStorage.getItem("id_company");
-      const id_store = localStorage.getItem("id_store");
       // Send product data to the backend
       const response = await client.post(
         "/product/addproduct",
@@ -450,6 +430,9 @@ const Menu = () => {
     }
   };
 
+  const startIndex = currentPage * itemsPerPage;
+  const selectedData = products.slice(startIndex, startIndex + itemsPerPage);
+
   if (isLoading) {
     return (
       <div className="w-full h-screen pt-16 flex justify-center items-center">
@@ -466,54 +449,32 @@ const Menu = () => {
             <p className="text-2xl font-bold">Daftar Product</p>
             <p>Detail daftar product</p>
           </div>
-          <div className="relative mt-2 flex flex-row space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search anything here"
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs"
-              />
-              <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
-            </div>
-            <div className="avatar">
-              <div className="w-10 h-10 rounded-full">
-                <Image
-                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                />
-              </div>
-            </div>
-            <button className="button btn-ghost btn-sm rounded-lg">
-              <MdKeyboardArrowDown className="text-2xl mt-1" />
-            </button>
-          </div>
         </div>
         <div className="flex flex-row justify-between mt-8">
           <div>
             <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option disabled selected>
-                Best sellers
-              </option>
-              <option>Ricebowl</option>
-              <option>Milkshake</option>
+              <option value="">Best sellers</option>
+              <option value="">Ricebowl</option>
+              <option value="">Milkshake</option>
             </select>
           </div>
-          <div>
-            <button className="addBtn" onClick={() => modalOpen("add", true)}>
-              + Tambah Product
-            </button>
-          </div>
+          {id_company && id_store && (
+            <div>
+              <button className="addBtn" onClick={() => modalOpen("add", true)}>
+                + Tambah Product
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
+          <div>
             {products.length === 0 ? (
               <h1>Data produk tidak ditemukan!</h1>
             ) : (
+              <>
               <table className="table w-full border border-gray-300">
                 <thead>
                   <tr>
@@ -526,7 +487,7 @@ const Menu = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product, index) => (
+                  {selectedData.map((product, index) => (
                     <tr key={product._id}>
                       <td>{index + 1}</td>
                       <td>{product.name_product}</td>
@@ -580,182 +541,293 @@ const Menu = () => {
                   ))}
                 </tbody>
               </table>
+              <ReactPaginate
+                previousLabel={"← Prev"}
+                nextLabel={"Next →"}
+                pageCount={Math.ceil(products.length / itemsPerPage)}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
+                containerClassName={"flex gap-2 justify-center mt-4"}
+                pageLinkClassName={"border px-3 py-1"}
+                previousLinkClassName={"border px-3 py-1"}
+                nextLinkClassName={"border px-3 py-1"}
+                activeClassName={"bg-blue-500 text-white"}
+              />
+              </>
             )}
           </div>
         </div>
       </div>
 
+      {isExampleModalOpen && (
+        <Modal
+          onClose={() => modalOpen("example", false)}
+          title={"Example Untuk Menambahkan Product Menggunakan Excel"}
+        >
+          <Image
+            src="http://localhost:8080/uploads/Example.jpg"
+            width={500}
+            height={200}
+          />
+        </Modal>
+      )}
+
       {isModalOpen && (
         <Modal onClose={() => modalOpen("add", false)} title={"Tambah Produk"}>
-          <form onSubmit={handleSubmitAdd}>
-            <p className="font-semibold">Gambar Produk</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Image format .jpg .jpeg .png and minimum size 300 x 300px
-            </p>
-            <div className="upload-container">
-              <label className="upload-label">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageChange(e, "add")}
-                  style={{ display: "none" }}
-                />
-                <div className="upload-content">
-                  {productDataAdd.image ? (
-                    <Image
-                      src={productDataAdd.image}
-                      alt="Uploaded"
-                      className="uploaded-image"
-                      width={80}
-                      height={80}
+          <div className="flex flex-row mb-5">
+            <button
+              className={`${
+                openMenu == "form" ? "addBtn mr-2" : "closeBtn"
+              } w-10 h-10 flex items-center justify-center`}
+              onClick={() => setOpenMenu("form")}
+            >
+              <FaWpforms />
+            </button>
+            <button
+              className={`${
+                openMenu == "excel" ? "addBtn" : "closeBtn"
+              } w-10 h-10 flex items-center justify-center`}
+              onClick={() => setOpenMenu("excel")}
+            >
+              <FaRegFileExcel />
+            </button>
+          </div>
+          {(() => {
+            switch (openMenu) {
+              case "form":
+                return (
+                  <form onSubmit={handleSubmitAdd}>
+                    <p className="font-semibold">Gambar Produk</p>
+                    <p className="mb-2 text-sm text-slate-500">
+                      Image format .jpg .jpeg .png and minimum size 300 x 300px
+                    </p>
+                    <div className="upload-container">
+                      <label className="upload-label">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageChange(e, "add")}
+                          style={{ display: "none" }}
+                        />
+                        <div className="upload-content">
+                          {productDataAdd.image ? (
+                            <Image
+                              src={productDataAdd.image}
+                              alt="Uploaded"
+                              className="uploaded-image"
+                              width={80}
+                              height={80}
+                            />
+                          ) : (
+                            <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                              <div className="icon-container flex flex-col items-center">
+                                <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
+                                <p className="text-sm text-[#FDDC05]">
+                                  New Image
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                    <p className="font-semibold mt-4">Nama Menu</p>
+                    <p className="mb-2 text-sm text-slate-500">
+                      Include min. 40 characters to make it more interesting
+                    </p>
+                    <input
+                      type="text"
+                      name="name_product"
+                      value={productDataAdd.name_product}
+                      onChange={handleChangeAdd}
+                      className="border rounded-md p-2 w-full bg-white"
+                      required
                     />
-                  ) : (
-                    <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                      <div className="icon-container flex flex-col items-center">
-                        <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
-                        <p className="text-sm text-[#FDDC05]">New Image</p>
+                    <p className="font-semibold mt-4">Deskripsi Menu</p>
+                    <p className="mb-2 text-sm text-slate-500">
+                      Include min. 260 characters to make it easier for buyers
+                      to understand and find your product
+                    </p>
+                    <textarea
+                      name="deskripsi"
+                      value={productDataAdd.deskripsi}
+                      onChange={handleChangeAdd}
+                      className="border rounded-md p-2 w-full bg-white"
+                      required
+                    />
+                    <p className="font-semibold mt-4 mb-2">Barcode</p>
+                    <input
+                      type="text"
+                      name="barcode"
+                      value={productDataAdd.barcode}
+                      onChange={handleChangeAdd}
+                      className="border rounded-md p-2 w-full bg-white"
+                      required
+                    />
+                    <div className="flex gap-2 w-full justify-between">
+                      <div className="w-full">
+                        <p className="font-semibold mt-4 mb-2">Harga Beli</p>
+                        <input
+                          type="number"
+                          name="buy_price"
+                          value={productDataAdd.buy_price}
+                          onChange={handleChangeAdd}
+                          className="border rounded-md p-2 w-full bg-white"
+                          required
+                        />
+                      </div>
+                      <div className="w-full">
+                        <p className="font-semibold mt-4 mb-2">Harga Jual</p>
+                        <input
+                          type="number"
+                          name="sell_price"
+                          value={productDataAdd.sell_price}
+                          onChange={handleChangeAdd}
+                          className="border rounded-md p-2 w-full bg-white"
+                          required
+                        />
                       </div>
                     </div>
-                  )}
-                </div>
-              </label>
-            </div>
-            <p className="font-semibold mt-4">Nama Menu</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 40 characters to make it more interesting
-            </p>
-            <input
-              type="text"
-              name="name_product"
-              value={productDataAdd.name_product}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Deskripsi Menu</p>
-            <p className="mb-2 text-sm text-slate-500">
-              Include min. 260 characters to make it easier for buyers to
-              understand and find your product
-            </p>
-            <textarea
-              name="deskripsi"
-              value={productDataAdd.deskripsi}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Barcode</p>
-            <input
-              type="text"
-              name="barcode"
-              value={productDataAdd.barcode}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <div className="flex gap-2 w-full justify-between">
-              <div className="w-full">
-                <p className="font-semibold mt-4 mb-2">Harga Beli</p>
-                <input
-                  type="number"
-                  name="buy_price"
-                  value={productDataAdd.buy_price}
-                  onChange={handleChangeAdd}
-                  className="border rounded-md p-2 w-full bg-white"
-                  required
-                />
-              </div>
-              <div className="w-full">
-                <p className="font-semibold mt-4 mb-2">Harga Jual</p>
-                <input
-                  type="number"
-                  name="sell_price"
-                  value={productDataAdd.sell_price}
-                  onChange={handleChangeAdd}
-                  className="border rounded-md p-2 w-full bg-white"
-                  required
-                />
-              </div>
-            </div>
-            <p className="font-semibold mt-4 mb-2">Product Code</p>
-            <input
-              type="text"
-              name="product_code"
-              value={productDataAdd.product_code}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4 mb-2">Category Product</p>
-            <Select
-              id="categoryProduct"
-              className="basic-single"
-              options={categoryList.map((c) => ({
-                value: c._id,
-                label: c.name_category,
-              }))}
-              value={
-                categoryList
-                  .map((c) => ({ value: c._id, label: c.name_category }))
-                  .find(
-                    (opt) => opt.value === productDataAdd.id_category_product
-                  ) || null
-              }
-              onChange={(selectedOption) =>
-                setProductDataAdd((prevState) => ({
-                  ...prevState,
-                  id_category_product: selectedOption
-                    ? selectedOption.value
-                    : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Category..."
-              noOptionsMessage={() => "No Category available"}
-            />
-            <p className="font-semibold mt-4 mb-2">Diskon</p>
-            <Select
-              id="itemCampaign"
-              className="basic-single"
-              options={itemCampaignList.map((c) => ({
-                value: c._id,
-                label: c.item_campaign_name,
-              }))}
-              value={
-                itemCampaignList
-                  .map((c) => ({ value: c._id, label: c.item_campaign_name }))
-                  .find(
-                    (opt) => opt.value === productDataAdd.id_item_campaign
-                  ) || null
-              }
-              onChange={(selectedOption) => {
-                setProductDataAdd((prevState) => ({
-                  ...prevState,
-                  id_item_campaign: selectedOption ? selectedOption.value : "",
-                }));
-              }}
-              isSearchable
-              placeholder="Pilih diskon..."
-              noOptionsMessage={() => "No diskon available"}
-            />
+                    <p className="font-semibold mt-4 mb-2">Product Code</p>
+                    <input
+                      type="text"
+                      name="product_code"
+                      value={productDataAdd.product_code}
+                      onChange={handleChangeAdd}
+                      className="border rounded-md p-2 w-full bg-white"
+                      required
+                    />
+                    <p className="font-semibold mt-4 mb-2">Category Product</p>
+                    <Select
+                      id="categoryProduct"
+                      className="basic-single"
+                      options={categoryList.map((c) => ({
+                        value: c._id,
+                        label: c.name_category,
+                      }))}
+                      value={
+                        categoryList
+                          .map((c) => ({
+                            value: c._id,
+                            label: c.name_category,
+                          }))
+                          .find(
+                            (opt) =>
+                              opt.value === productDataAdd.id_category_product
+                          ) || null
+                      }
+                      onChange={(selectedOption) =>
+                        setProductDataAdd((prevState) => ({
+                          ...prevState,
+                          id_category_product: selectedOption
+                            ? selectedOption.value
+                            : "",
+                        }))
+                      }
+                      isSearchable
+                      required
+                      placeholder="Pilih Category..."
+                      noOptionsMessage={() => "No Category available"}
+                    />
+                    <p className="font-semibold mt-4 mb-2">Diskon</p>
+                    <Select
+                      id="itemCampaign"
+                      className="basic-single"
+                      options={itemCampaignList.map((c) => ({
+                        value: c._id,
+                        label: c.item_campaign_name,
+                      }))}
+                      value={
+                        itemCampaignList
+                          .map((c) => ({
+                            value: c._id,
+                            label: c.item_campaign_name,
+                          }))
+                          .find(
+                            (opt) =>
+                              opt.value === productDataAdd.id_item_campaign
+                          ) || null
+                      }
+                      onChange={(selectedOption) => {
+                        setProductDataAdd((prevState) => ({
+                          ...prevState,
+                          id_item_campaign: selectedOption
+                            ? selectedOption.value
+                            : "",
+                        }));
+                      }}
+                      isSearchable
+                      placeholder="Pilih diskon..."
+                      noOptionsMessage={() => "No diskon available"}
+                    />
 
-            <div className="flex justify-end mt-5">
-              <button
-                type="button"
-                className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={() => modalOpen("add", false)}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
-                Tambah
-              </button>
-            </div>
-          </form>
+                    <div className="flex justify-end mt-5">
+                      <button
+                        type="button"
+                        className="bg-gray-500 text-white p-2 rounded-lg mr-2"
+                        onClick={() => modalOpen("add", false)}
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="bg-blue-500 text-white p-2 rounded-lg"
+                      >
+                        Tambah
+                      </button>
+                    </div>
+                  </form>
+                );
+              case "excel":
+                return (
+                  <div>
+                    <button
+                      className="addBtn"
+                      onClick={() => modalOpen("example", true)}
+                    >
+                      Example
+                    </button>
+                    <h1 className="text-lg font-semibold text-gray-800 text-center mb-2">
+                      Upload Excel
+                    </h1>
+                    <div className="upload-container">
+                      <label className="upload-label">
+                        <input
+                          type="file"
+                          accept=".xlsx, .xls"
+                          onChange={handleFileChange}
+                          style={{ display: "none" }}
+                        />
+                        <div className="upload-content">
+                          {file ? (
+                            <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                              <IoIosCloudDone className="text-5xl text-[#FDDC05]" />
+                              <p className="text-sm text-[#FDDC05]">
+                                File Uploaded
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                              <FaFileUpload className="text-5xl text-[#FDDC05]" />
+                              <p className="text-sm text-[#FDDC05]">New File</p>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                    <button onClick={handleUpload} className="addBtn">
+                      Upload
+                    </button>
+                    {message && (
+                      <p className="mt-2 text-center text-sm text-gray-600">
+                        {message}
+                      </p>
+                    )}
+                  </div>
+                );
+              default:
+                return null;
+            }
+          })()}
         </Modal>
       )}
 

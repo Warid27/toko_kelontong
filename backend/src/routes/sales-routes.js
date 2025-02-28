@@ -11,7 +11,10 @@ const ObjectId = mongoose.Types.ObjectId;
 // Get all sales
 router.post("/listsales", authenticate, async (c) => {
   try {
-    const sales = await SalesModels.find();
+    const sales = await SalesModels.find().populate({
+      path: "salesDetails.id_product",
+      strictPopulate: false,
+    });;
     return c.json(sales, 200);
   } catch (error) {
     return c.text("Internal Server Error", 500);
@@ -50,7 +53,6 @@ router.post("/addsales", authenticate, async (c) => {
   try {
     // Parse the incoming JSON body
     const body = await c.req.json();
-
     // Create a new sales model instance with the parsed body
     const sales = new SalesModels(body);
 
@@ -110,8 +112,14 @@ router.post("/best-selling", async (c) => {
   try {
     const { filterBy, sort, id_store, id_company } = await c.req.json();
 
-    if (!mongoose.Types.ObjectId.isValid(id_company) || !mongoose.Types.ObjectId.isValid(id_store)) {
-      return c.json({ success: false, message: "Invalid id_company or id_store" }, { status: 400 });
+    if (
+      !mongoose.Types.ObjectId.isValid(id_company) ||
+      !mongoose.Types.ObjectId.isValid(id_store)
+    ) {
+      return c.json(
+        { success: false, message: "Invalid id_company or id_store" },
+        { status: 400 }
+      );
     }
 
     const objectIdCompany = new mongoose.Types.ObjectId(id_company);
@@ -131,7 +139,15 @@ router.post("/best-selling", async (c) => {
       end_date.setHours(23, 59, 59, 999);
     } else if (filterBy === "monthly") {
       start_date = new Date(now.getFullYear(), now.getMonth(), 1);
-      end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      end_date = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
     }
 
     const bestSellingProducts = await SalesModels.aggregate([
@@ -152,7 +168,7 @@ router.post("/best-selling", async (c) => {
         },
       },
       { $sort: sort },
-      { $limit: 5 }
+      { $limit: 5 },
     ]);
 
     return c.json({ success: true, data: bestSellingProducts }, 200);
@@ -160,7 +176,6 @@ router.post("/best-selling", async (c) => {
     return c.json({ success: false, message: error.message }, 500);
   }
 });
-
 
 // router.post("/chart-price", async (c) => {
 //   try {
@@ -291,40 +306,49 @@ router.post("/sales-chart", async (c) => {
   }
 });
 
-router.post("/sales-today", async (c) => {
+router.post("/totalsales", async (c) => {
   try {
-    const { id_company, id_store } = await c.req.json();
-
-    if (!id_company || !id_store) {
-      return c.json({ success: false, message: "id_company and id_store are required" }, 400);
-    }
+    const { id_store, id_company, filterRekapBy, filterBy } = await c.req.json();
 
     if (!mongoose.isValidObjectId(id_company) || !mongoose.isValidObjectId(id_store)) {
-      return c.json({ success: false, message: "Invalid id_company or id_store" }, 400);
+      return c.json(
+        { success: false, message: "Invalid id_company or id_store" },
+        400
+      );
     }
 
     const objectIdCompany = new mongoose.Types.ObjectId(id_company);
     const objectIdStore = new mongoose.Types.ObjectId(id_store);
 
+    let start_date, end_date;
     const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    
-    const todayEnd = new Date(now);
-    todayEnd.setHours(23, 59, 59, 999);
 
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    if (filterBy === "daily") {
+      start_date = new Date(now.setHours(0, 0, 0, 0));
+      end_date = new Date(now.setHours(23, 59, 59, 999));
+    } else if (filterBy === "weekly") {
+      const firstDayOfWeek = now.getDate() - now.getDay();
+      start_date = new Date(now.setDate(firstDayOfWeek));
+      start_date.setHours(0, 0, 0, 0);
+      end_date = new Date();
+      end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "monthly") {
+      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
+      end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
 
-    const yesterdayEnd = new Date(todayEnd);
-    yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+    let filter = {};
+    if (filterRekapBy === "aktif") {
+      filter.status = 1;
+    }
+    if (filterRekapBy === "pending") {
+      filter.status = 2;
+    }
 
     const salesSummary = await SalesModels.aggregate([
       {
         $match: {
-          "salesDetails.id_company": objectIdCompany,
-          "salesDetails.id_store": objectIdStore,
-          created_at: { $gte: yesterdayStart, $lte: todayEnd },
+          ...filter,
         },
       },
       { $unwind: "$salesDetails" },
@@ -332,21 +356,34 @@ router.post("/sales-today", async (c) => {
         $match: {
           "salesDetails.id_company": objectIdCompany,
           "salesDetails.id_store": objectIdStore,
+          "salesDetails.created_at": { $gte: start_date, $lte: end_date },
         },
       },
       {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$created_at" } },
-          total_sales: {
-            $sum: { $multiply: ["$salesDetails.item_price", "$salesDetails.item_quantity"] },
-          },
-        },
+        // $group: {
+        //   _id: { $dateToString: { format: "%Y-%m-%d", date: "$created_at" } },
+        //   total_sales: {
+        //     $sum: {
+        //       $multiply: ["$salesDetails.item_price", "$salesDetails.item_quantity"],
+        //     },
+        //   },
+        // },
+        $project: {
+          id_product: "$salesDetails.id_product",
+          item_quantity: "$salesDetails.item_quantity",
+          item_price: "$salesDetails.item_price",
+        }
       },
-      { $sort: { _id: -1 } }, 
-      { $limit: 2 }, 
     ]);
 
-    return c.json({ success: true, data: salesSummary }, 200);
+    let totalSales = 0
+
+    for(const sale of salesSummary){
+      let sales = sale.item_quantity * sale.item_price
+      totalSales += sales
+    }
+
+    return c.json({ success: true, data: totalSales }, 200);
   } catch (error) {
     console.error("Error:", error);
     return c.json({ success: false, message: error.message }, 500);
@@ -356,22 +393,60 @@ router.post("/sales-today", async (c) => {
 
 router.post("/transaksi-history", async (c) => {
   try {
-    const { id_company, id_store } = await c.req.json();
+    const { id_company, id_store, filterBy } = await c.req.json();
 
-    if (!mongoose.Types.ObjectId.isValid(id_company) || !mongoose.Types.ObjectId.isValid(id_store)) {
-      return c.json({ success: false, message: "Invalid id_company or id_store" }, { status: 400 });
+    if (
+      !mongoose.Types.ObjectId.isValid(id_company) ||
+      !mongoose.Types.ObjectId.isValid(id_store)
+    ) {
+      return c.json(
+        { success: false, message: "Invalid id_company or id_store" },
+        { status: 400 }
+      );
     }
 
     const objectIdCompany = new mongoose.Types.ObjectId(id_company);
     const objectIdStore = new mongoose.Types.ObjectId(id_store);
+
+    let start_date, end_date;
     const now = new Date();
 
+    if (filterBy === "daily") {
+      start_date = new Date(now);
+      start_date.setHours(0, 0, 0, 0);
+      end_date = new Date(now);
+      end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "weekly") {
+      const firstDayOfWeek = now.getDate() - now.getDay();
+      start_date = new Date(now);
+      start_date.setDate(firstDayOfWeek);
+      start_date.setHours(0, 0, 0, 0);
+      end_date = new Date();
+      end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "monthly") {
+      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
+      end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      end_date.setHours(23, 59, 59, 999);
+    }
+
+    const matchQuery = {
+      "salesDetails.id_company": objectIdCompany,
+      "salesDetails.id_store": objectIdStore,
+    };
+
+    if (filterBy) {
+      matchQuery["salesDetails.created_at"] = { $gte: start_date, $lte: end_date };
+    }
+
     const transactionHistory = await SalesModels.aggregate([
-      { $match: { "salesDetails.id_company": objectIdCompany, "salesDetails.id_store": objectIdStore } },
+      {
+        $match: matchQuery,
+      },
       {
         $project: {
           _id: 1,
           id_user: 1,
+          name: 1,
           status: 1,
           created_at: 1,
           salesDetails: {
@@ -381,15 +456,15 @@ router.post("/transaksi-history", async (c) => {
               cond: {
                 $and: [
                   { $eq: ["$$detail.id_company", objectIdCompany] },
-                  { $eq: ["$$detail.id_store", objectIdStore] }
-                ]
-              }
-            }
+                  { $eq: ["$$detail.id_store", objectIdStore] },
+                ],
+              },
+            },
           },
-          id_sales_campaign: 1
-        }
+          id_sales_campaign: 1,
+        },
       },
-      { $sort: { created_at: -1 } }
+      { $sort: { created_at: -1 } },
     ]);
 
     for (const transaction of transactionHistory) {
@@ -406,7 +481,9 @@ router.post("/transaksi-history", async (c) => {
         total_price += itemTotal;
 
         if (sale.id_item_campaign) {
-          const itemCampaign = await itemCampaignModels.findById(sale.id_item_campaign);
+          const itemCampaign = await itemCampaignModels.findById(
+            sale.id_item_campaign
+          );
           if (itemCampaign) {
             const startDate = new Date(itemCampaign.start_date);
             const endDate = new Date(itemCampaign.end_date);
@@ -418,7 +495,9 @@ router.post("/transaksi-history", async (c) => {
         }
 
         if (transaction.id_sales_campaign) {
-          const salesCampaign = await salesCampaignModels.findById(transaction.id_sales_campaign);
+          const salesCampaign = await salesCampaignModels.findById(
+            transaction.id_sales_campaign
+          );
           if (salesCampaign) {
             const startDate = new Date(salesCampaign.start_date);
             const endDate = new Date(salesCampaign.end_date);
@@ -459,18 +538,57 @@ router.post("/transaksi-history", async (c) => {
 
 router.post("/sales-count", async (c) => {
   try {
-    const { id_store, id_company } = await c.req.json();
+    const { id_store, id_company, filterRekapBy, filterBy } = await c.req.json();
 
-    if (!mongoose.Types.ObjectId.isValid(id_company) || !mongoose.Types.ObjectId.isValid(id_store)) {
-      return c.json({ success: false, message: "Invalid id_company or id_store" }, { status: 400 });
+    if (
+      !mongoose.Types.ObjectId.isValid(id_company) ||
+      !mongoose.Types.ObjectId.isValid(id_store)
+    ) {
+      return c.json(
+        { success: false, message: "Invalid id_company or id_store" },
+        { status: 400 }
+      );
     }
 
     const objectIdCompany = new mongoose.Types.ObjectId(id_company);
     const objectIdStore = new mongoose.Types.ObjectId(id_store);
 
+    // const now = new Date();
+    // const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    // const endOfDay = new Date(now.setHours(23, 59, 59, 999));
+
+    let filter = {};
+    if (filterRekapBy === "aktif") {
+      filter.status = 1;
+    }
+    if (filterRekapBy === "pending") {
+      filter.status = 2;
+    }
+
+    let start_date, end_date;
     const now = new Date();
-    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
+
+    if (filterBy === "daily") {
+      start_date = new Date(now.setHours(0, 0, 0, 0));
+      end_date = new Date(now.setHours(23, 59, 59, 999));
+    } else if (filterBy === "weekly") {
+      const firstDayOfWeek = now.getDate() - now.getDay();
+      start_date = new Date(now.setDate(firstDayOfWeek));
+      start_date.setHours(0, 0, 0, 0);
+      end_date = new Date();
+      end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "monthly") {
+      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
+      end_date = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+    }
 
     const salesCount = await SalesModels.aggregate([
       { $unwind: "$salesDetails" },
@@ -478,7 +596,8 @@ router.post("/sales-count", async (c) => {
         $match: {
           "salesDetails.id_company": objectIdCompany,
           "salesDetails.id_store": objectIdStore,
-          "salesDetails.created_at": { $gte: startOfDay, $lte: endOfDay },
+          ...filter,
+          "salesDetails.created_at": { $gte: start_date, $lte: end_date },
         },
       },
       {
@@ -539,28 +658,72 @@ router.post("/sales-count", async (c) => {
 //   }
 // });
 
-router.post("/profit-today", async (c) => {
+router.post("/profitsales", async (c) => {
   try {
-    const { id_store, id_company } = await c.req.json();
+    const { id_store, id_company, filterRekapBy, filterBy } = await c.req.json();
 
-    if (!mongoose.Types.ObjectId.isValid(id_company) || !mongoose.Types.ObjectId.isValid(id_store)) {
-      return c.json({ success: false, message: "Invalid id_company or id_store" }, { status: 400 });
+    if (
+      !mongoose.Types.ObjectId.isValid(id_company) ||
+      !mongoose.Types.ObjectId.isValid(id_store)
+    ) {
+      return c.json(
+        { success: false, message: "Invalid id_company or id_store" },
+        { status: 400 }
+      );
     }
 
     const objectIdCompany = new mongoose.Types.ObjectId(id_company);
     const objectIdStore = new mongoose.Types.ObjectId(id_store);
 
-    const now = new Date();
-    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
+    // const now = new Date();
+    // const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    // const endOfDay = new Date(now.setHours(23, 59, 59, 999));
 
+    let filter = {};
+    if (filterRekapBy === "aktif") {
+      filter.status = 1;
+    }
+    if (filterRekapBy === "pending") {
+      filter.status = 2;
+    }
+
+    let start_date, end_date;
+    const now = new Date();
+
+    if (filterBy === "daily") {
+      start_date = new Date(now.setHours(0, 0, 0, 0));
+      end_date = new Date(now.setHours(23, 59, 59, 999));
+    } else if (filterBy === "weekly") {
+      const firstDayOfWeek = now.getDate() - now.getDay();
+      start_date = new Date(now.setDate(firstDayOfWeek));
+      start_date.setHours(0, 0, 0, 0);
+      end_date = new Date();
+      end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "monthly") {
+      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
+      end_date = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+    }
+    
     const sales = await SalesModels.aggregate([
+      {
+        $match: {
+          ...filter
+        },
+      },
       { $unwind: "$salesDetails" },
       {
         $match: {
           "salesDetails.id_company": objectIdCompany,
           "salesDetails.id_store": objectIdStore,
-          "salesDetails.created_at": { $gte: startOfDay, $lte: endOfDay },
+          "salesDetails.created_at": { $gte: start_date, $lte: end_date },
         },
       },
       {
@@ -586,30 +749,40 @@ router.post("/profit-today", async (c) => {
       let discountSales = 0;
 
       if (sale.id_item_campaign) {
-        const itemCampaign = await itemCampaignModels.findById(sale.id_item_campaign);
+        const itemCampaign = await itemCampaignModels.findById(
+          sale.id_item_campaign
+        );
         if (itemCampaign) {
           const startDate = new Date(itemCampaign.start_date);
           const endDate = new Date(itemCampaign.end_date);
 
           if (now >= startDate && now <= endDate) {
-            discountItem = parseFloat(itemCampaign.value) * sellPrice * totalQuantity;
+            discountItem =
+              parseFloat(itemCampaign.value) * sellPrice * totalQuantity;
           }
         }
       }
 
       if (sale.id_sales_campaign) {
-        const salesCampaign = await salesCampaignModels.findById(sale.id_sales_campaign);
+        const salesCampaign = await salesCampaignModels.findById(
+          sale.id_sales_campaign
+        );
         if (salesCampaign) {
           const startDate = new Date(salesCampaign.start_date);
           const endDate = new Date(salesCampaign.end_date);
 
           if (now >= startDate && now <= endDate) {
-            discountSales = parseFloat(salesCampaign.value) * sellPrice * totalQuantity;
+            discountSales =
+              parseFloat(salesCampaign.value) * sellPrice * totalQuantity;
           }
         }
       }
 
-      const profit = (sellPrice * totalQuantity) - (buyPrice * totalQuantity) - discountItem - discountSales;
+      const profit =
+        sellPrice * totalQuantity -
+        buyPrice * totalQuantity -
+        discountItem -
+        discountSales;
       totalProfit += profit;
     }
 
@@ -618,9 +791,5 @@ router.post("/profit-today", async (c) => {
     return c.json({ success: false, message: error.message }, 500);
   }
 });
-
-
-
-
 
 export default router;

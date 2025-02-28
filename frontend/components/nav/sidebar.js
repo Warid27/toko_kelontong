@@ -21,6 +21,7 @@ import {
   TbMoneybag,
   TbChevronDown,
   TbBuildingWarehouse,
+  TbUserSquare,
 } from "react-icons/tb";
 
 const Sidebar = () => {
@@ -33,7 +34,7 @@ const Sidebar = () => {
     setExpandedMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.clear(); // Removes all localStorage data
     router.push("/login");
   };
 
@@ -57,6 +58,7 @@ const Sidebar = () => {
     { label: "Profile", icon: <TbUser />, key: "profile" },
     ,
     { label: "Analisis", icon: <TbReportAnalytics />, key: "analytics" },
+    { label: "Report", icon: <TbReportAnalytics />, key: "report" },
     { label: "Pembayaran", icon: <TbCash />, key: "payment" },
     { label: "Tipe", icon: <TbBuilding />, key: "type" },
     { label: "Perusahaan", icon: <TbBuilding />, key: "company" },
@@ -68,6 +70,11 @@ const Sidebar = () => {
       submenu: [
         { label: "Persediaan", icon: <TbBuildingWarehouse />, key: "stock" },
         { label: "Pembelian", icon: <TbBuildingWarehouse />, key: "pembelian" },
+        {
+          label: "Tabel Pembelian",
+          icon: <TbBriefcase />,
+          key: "pembelian_list",
+        },
       ],
     },
     {
@@ -112,21 +119,10 @@ const Sidebar = () => {
       .filter(Boolean); // Remove null values
   }, [menuConfig, rolePermissions, userRole]);
 
-  // useEffect(() => {
-  //   // Reset expandedMenus when filteredMenuConfig changes
-  //   const initialExpandedMenus = {};
-  //   filteredMenuConfig.forEach((item) => {
-  //     if (item.submenu) {
-  //       initialExpandedMenus[item.key] = false; // Default to collapsed
-  //     }
-  //   });
-  //   setExpandedMenus(initialExpandedMenus);
-  // }, [filteredMenuConfig]); // Only run when filteredMenuConfig changes
-
   return (
     <div className="drawer lg:drawer-open">
       <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-content flex flex-col items-center justify-center">
+      <div className="drawer-content flex flex-col items-center justify-center overflow-auto">
         <label
           htmlFor="my-drawer-2"
           className="btn btn-primary drawer-button lg:hidden"
@@ -140,8 +136,14 @@ const Sidebar = () => {
           userRole={userRole}
         />
       </div>
-      <div className="drawer-side">
-        <ul className="menu bg-white mt-16 text-black min-h-full w-80 text-lg p-4 flex flex-col gap-1">
+      <div className="drawer-side relative">
+        <div className="top-16 menu w-80 px-4 py-2 border-b-4 border-black fixed z-50 bg-white">
+          <span className="flex items-center text-2xl font-bold ">
+            <TbUserSquare className="mr-4" />
+            {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+          </span>
+        </div>
+        <ul className="menu bg-white mt-28 text-black min-h-full w-80 text-lg p-4 flex flex-col gap-1">
           {filteredMenuConfig.map((item) => {
             if (item.submenu) {
               return (

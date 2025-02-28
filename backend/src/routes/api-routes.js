@@ -28,6 +28,59 @@ import crypto from "crypto";
 
 const router = new Hono();
 
+const clients = new Set();
+
+//Web Socket
+// router.get('/ws', (c) => {
+//   const upgrade = c.req.raw.upgrade
+//   if (upgrade) {
+//     const ws = upgrade()
+//     clients.add(ws)
+
+//     ws.onmessage = (event) => {
+//       console.log('Received:', event.data)
+//     }
+
+//     ws.onclose = () => {
+//       clients.delete(ws)
+//     }
+//   }
+// })
+
+/* WEBSOCKET INI TIDAK DIGUNAKAN!!!
+router.get("/ws", (c) => {
+  console.log("WebSocket request received");
+
+  if (c.req.raw.upgrade) {
+    const ws = c.req.raw.upgrade();
+    console.log("WebSocket connected!");
+
+    clients.add(ws);
+
+    ws.onmessage = (event) => {
+      console.log("Received:", event.data);
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket disconnected");
+      clients.delete(ws);
+    };
+  } else {
+    console.log("WebSocket upgrade failed!");
+    return c.json({ error: "WebSocket upgrade failed" }, 400);
+  }
+});
+*/
+// const broadcast = (message) => {
+//   console.log("Broadcasting:", message); // Debugging log
+//   for (const client of clients) {
+//     if (client.readyState === 1) {
+//       // Cek jika masih terhubung
+//       client.send(JSON.stringify(message));
+//     }
+//   }
+// };
+
 // Utility function to generate a short key
 function generateShortKey(length = 8) {
   return crypto
@@ -50,6 +103,8 @@ const validateIdFormat = (id) => {
 };
 
 // Helper function to handle update operations
+
+// Helper function to handle update operations
 const handleUpdate = async (Model, id, body, modelName) => {
   try {
     const result = await Model.findByIdAndUpdate(id, body, {
@@ -67,7 +122,6 @@ const handleUpdate = async (Model, id, body, modelName) => {
     };
   }
 };
-
 // Helper function to handle delete operations
 const handleDelete = async (Model, id, modelName, imagePath = null) => {
   try {
@@ -97,7 +151,6 @@ const deleteImageFile = async (imagePath) => {
   try {
     await fs.access(fullPath); // Check if the file exists
     await fs.unlink(fullPath); // Delete the file
-    console.log(`Image file deleted successfully at ${fullPath}`);
   } catch (err) {
     if (err.code !== "ENOENT") {
       console.error(`Failed to delete image file at ${fullPath}:`, err.message);
@@ -252,19 +305,90 @@ router.delete("/product/:id", authenticate, async (c) => {
 
 // === STOCK ===
 
+/* RESERVE TIDAK DIGUNAKAN
+router.put("/reserve", async (c) => {
+  try {
+    // Parse request body
+    const body = await c.req.json();
+
+    // Pastikan ID dalam format ObjectId
+    if (!mongoose.Types.ObjectId.isValid(body.id_product)) {
+      return c.json({ error: "Invalid ID format." }, 400);
+    }
+
+    const id = new mongoose.Types.ObjectId(body.id_product);
+
+    // Validasi action dan quantity
+    const { action, quantity } = body;
+    if (!["add", "remove", "confirm"].includes(action)) {
+      return c.json(
+        { error: "Invalid action. Must be 'add', 'remove', or 'confirm'." },
+        400
+      );
+    }
+    if (typeof quantity !== "number" || quantity <= 0) {
+      return c.json(
+        { error: "Invalid quantity. Must be a positive number." },
+        400
+      );
+    }
+
+    // Menyiapkan kondisi query dan update
+    let updateQuery = {};
+    let condition = { id_product: id };
+
+    if (action === "add") {
+      condition.amount = { $gte: quantity }; // Pastikan stok cukup
+      updateQuery = { $inc: { reserved_amount: quantity } };
+    } else if (action === "remove") {
+      condition.reserved_amount = { $gte: quantity };
+      updateQuery = { $inc: { reserved_amount: -quantity } };
+    } else if (action === "confirm") {
+      condition.reserved_amount = { $gte: quantity };
+      condition.amount = { $gte: quantity };
+      updateQuery = {
+        $inc: {
+          reserved_amount: -quantity,
+          amount: -quantity,
+        },
+      };
+    }
+
+    // Eksekusi update atomik
+    const updatedStock = await StockModels.findOneAndUpdate(
+      condition,
+      updateQuery,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedStock) {
+      return c.json({ error: "Stock not found or condition not met." }, 404);
+    }
+
+    return c.json(
+      {
+        message: "Stock reservation updated successfully.",
+        stock: updatedStock,
+      },
+      200
+    );
+  } catch (error) {
+    console.error("Error updating reserved stock:", error);
+    return c.json({ error: "An unexpected error occurred." }, 500);
+  }
+});
+*/
+
 router.put("/stock", authenticate, async (c) => {
   try {
-    // Parse the request body
     const body = await c.req.json();
     const id = body.id_product;
 
-    // Validate the ID format
     const validationError = validateIdFormat(id);
     if (validationError) {
       return c.json(validationError, 400);
     }
 
-    // Validate required fields in the request body
     const { params, amount } = body;
     if (!["in", "out"].includes(params)) {
       return c.json({ error: "Invalid params. Must be 'in' or 'out'." }, 400);
@@ -276,32 +400,20 @@ router.put("/stock", authenticate, async (c) => {
       );
     }
 
-    // Fetch the stock record from the database
     const dataStock = await StockModels.findOne({ id_product: id });
-
     if (!dataStock) {
       return c.json({ error: "Stock not found." }, 404);
     }
 
-    // Update the stock amount based on the params
+    // Update jumlah stok
     if (params === "out") {
-      if (dataStock.amount < amount) {
-        return c.json(
-          {
-            error: `Insufficient product stock. This product's stock is ${dataStock.amount}.`,
-          },
-          400
-        );
-      }
-      dataStock.amount -= amount; // Subtract the amount
+      dataStock.amount -= amount;
     } else if (params === "in") {
-      dataStock.amount += amount; // Add the amount
+      dataStock.amount += amount;
     }
-    // Prepare the update body
-    const updateBody = { amount: dataStock.amount };
 
+    const updateBody = { amount: dataStock.amount };
     const id_stock = dataStock._id;
-    // Use the handleUpdate function to update the stock record
     const { error, data, status } = await handleUpdate(
       StockModels,
       id_stock,
@@ -309,17 +421,26 @@ router.put("/stock", authenticate, async (c) => {
       "stock"
     );
 
-    // Return the response based on the result of handleUpdate
     if (error) {
       return c.json({ error }, status);
     }
+
+    // // 🔥 Broadcast update stok ke client yang terhubung
+    // broadcast({
+    //   type: "update-stock",
+    //   data: {
+    //     id_product: dataStock.id_product,
+    //     amount: dataStock.amount,
+    //   },
+    // });
+
     return c.json({ message: "Stock updated successfully.", data }, status);
   } catch (error) {
-    // Handle unexpected errors
     console.error("Error updating stock:", error);
     return c.json({ error: "An unexpected error occurred." }, 500);
   }
 });
+
 router.delete("/stock/:id", authenticate, async (c) => {
   const id = c.req.param("id");
   const validationError = validateIdFormat(id);
@@ -545,7 +666,6 @@ router.post("/submit-size", authenticate, async (c) => {
       deskripsi: body.deskripsi,
       sizeDetails: sizeDetails, // Use the validated or default sizeDetails
     };
-    console.log("EXTRAS:", newSize);
     let savedSize;
     if (existingSize) {
       // Update existing size
@@ -554,7 +674,6 @@ router.post("/submit-size", authenticate, async (c) => {
         { $set: newSize },
         { new: true, runValidators: true }
       );
-      console.log("SAVED EXTRAS:", savedSize);
     } else {
       // Create new size
       const newSizeModel = new SizeModels(newSize);

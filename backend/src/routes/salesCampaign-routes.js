@@ -7,7 +7,8 @@ const router = new Hono();
 // Get all sales campaigns
 router.post("/listsalescampaign", authenticate, async (c) => {
   try {
-    const campaigns = await salesCampaignModels.find();
+    const { id_store } = await c.req.json();
+    const campaigns = await salesCampaignModels.find({ id_store });
     return c.json(campaigns, 200);
   } catch (error) {
     return c.text("Internal Server Error", 500);
