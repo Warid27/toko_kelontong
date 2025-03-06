@@ -27,6 +27,7 @@ const SalesMain = () => {
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10;
+  const [searchQuery, setSearchQuery] = useState("");
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -185,8 +186,20 @@ const SalesMain = () => {
     }
   }, [salesToUpdate]);
 
+  const statusLabels = {
+    1: "active",
+    2: "inactive",
+  };
+
+  const filteredSalesList = saleses.filter((sales) =>
+    sales.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    sales.no.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    statusLabels[sales.status]
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase())); // yud yud
+
   const startIndex = currentPage * itemsPerPage;
-  const selectedData = saleses.slice(startIndex, startIndex + itemsPerPage);
+  const selectedData = filteredSalesList.slice(startIndex, startIndex + itemsPerPage);
 
   // LOADING
   if (isLoading) {
@@ -207,11 +220,13 @@ const SalesMain = () => {
           </div>
           <div className="relative mt-2 flex flex-row space-x-4">
             <div className="relative">
-              <input
-                type="text"
-                placeholder="Search anything here"
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs"
-              />
+            <input
+              type="text"
+              placeholder="Cari sales..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
+          />
               <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
             </div>
             <div className="avatar">
@@ -251,7 +266,7 @@ const SalesMain = () => {
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div>
-            {saleses.length === 0 ? (
+            {filteredSalesList.length === 0 ? (
               <h1>Data produk tidak ditemukan!</h1>
             ) : (
               <>
@@ -274,14 +289,14 @@ const SalesMain = () => {
                       <tr key={sales._id}>
                         <td>{startIndex + index + 1}</td>
                         <td>{sales.no}</td>
-                        <td>{sales.tax}</td>
+                        <td>{sales.tax * 100}%</td>
                         <td>
                           Rp.
                           {new Intl.NumberFormat("id-ID").format(
                             sales.total_price
                           ) || "-"}
                         </td>
-                        <td>{sales.total_discount}</td>
+                        <td>{sales.total_discount * 100}%</td>
                         <td>{sales.total_quantity}</td>
                         <td>{sales.total_number_item}</td>
                         <td>

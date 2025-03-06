@@ -57,7 +57,10 @@ const Kasir = () => {
   });
 
   const token = localStorage.getItem("token");
-  const id_store = localStorage.getItem("id_store");
+  const id_store =
+    localStorage.getItem("id_store") == "undefined"
+      ? null
+      : localStorage.getItem("id_store");
   const tax = 12 / 100;
   // --- Function
   const modalOpen = async (param, bool) => {
@@ -235,13 +238,7 @@ const Kasir = () => {
   }, [kasirItems]);
 
   const fetchProduct = async () => {
-    const id_store =
-      localStorage.getItem("id_store") == "undefined"
-        ? null
-        : localStorage.getItem("id_store");
-
     const data_product = await fetchProductsList(id_store, null, null, "order");
-    console.log("DATA:", data_product);
     setProducts(data_product);
   };
 

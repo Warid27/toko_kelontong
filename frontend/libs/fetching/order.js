@@ -1,22 +1,19 @@
 import client from "@/libs/axios";
 
-export const fetchOrderList = async (id_store, token) => {
+export const fetchOrderList = async () => {
   try {
-    // If id_store is missing but token exists, return an empty object
-    if (!id_store && token) {
-      return [];
-    }
-
-    // Construct the request payload
-    const payload = id_store ? { id_store } : {};
-
-    // Construct headers conditionally
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
+    const id_store = localStorage.getItem("id_store");
+    const token = localStorage.getItem("token");
     // Make the POST request to fetch the order list
-    const response = await client.post("/order/listorder", payload, {
-      headers,
-    });
+    const response = await client.post(
+      "/order/listorder",
+      { id_store },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     // Validate response format
     if (!Array.isArray(response.data)) {

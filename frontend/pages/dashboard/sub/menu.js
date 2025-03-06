@@ -26,7 +26,6 @@ import ReactPaginate from "react-paginate";
 const Menu = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  // const [isModalOpen, setIsModalOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [productToUpdate, setProductToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
   // const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Untuk mengontrol tampilan modal update
@@ -42,6 +41,7 @@ const Menu = () => {
   const [openMenu, setOpenMenu] = useState("form");
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10;
+  const [searchQuery, setSearchQuery] = useState("");
 
   const token = localStorage.getItem("token");
 
@@ -53,6 +53,7 @@ const Menu = () => {
     localStorage.getItem("id_company") == "undefined"
       ? null
       : localStorage.getItem("id_company");
+  const id_user = localStorage.getItem("id_user");
 
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
@@ -81,6 +82,15 @@ const Menu = () => {
   //     }
   // };
 
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = "/Template_Upload.xlsx"; 
+    link.download = "Template.xlsx"; 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleUpload = async () => {
     if (!file) return setMessage("Pilih file");
 
@@ -91,7 +101,10 @@ const Menu = () => {
 
     try {
       const res = await client.post("/product/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
       });
       setMessage(res.data.message);
     } catch (err) {
@@ -318,7 +331,6 @@ const Menu = () => {
   const handleImageChange = async (e, params) => {
     const file = e.target.files[0];
     if (file) {
-      const id_user = localStorage.getItem("id_user");
       const formData = new FormData();
       formData.append("file", file);
       formData.append("id_user", id_user);
@@ -391,15 +403,14 @@ const Menu = () => {
       formData.append(key, productDataUpdate[key]);
     }
     const gambarbaru = productDataUpdate.image;
-    console.log(gambarbaru);
-
+    console.log("PREDOK", productDataUpdate);
     try {
       const response = await client.put(
         `/api/product/${productDataUpdate.id}`,
         {
           name_product: productDataUpdate.name_product,
           id_category_product: productDataUpdate.id_category_product,
-          id_item_campaign: productDataUpdate.id_item_campaign,
+          id_item_campaign: productDataUpdate.id_item_campaign || null,
           image: gambarbaru,
           buy_price: productDataUpdate.buy_price,
           sell_price: productDataUpdate.sell_price,
@@ -430,8 +441,24 @@ const Menu = () => {
     }
   };
 
+  const statusLabels = {
+    0: "active",
+    1: "inactive",
+  };
+
+  const filteredProductList = products.filter(
+    (product) =>
+      product.name_product.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      statusLabels[product.status]
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase())
+  );
+
   const startIndex = currentPage * itemsPerPage;
-  const selectedData = products.slice(startIndex, startIndex + itemsPerPage);
+  const selectedData = filteredProductList.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   if (isLoading) {
     return (
@@ -448,6 +475,16 @@ const Menu = () => {
           <div className="flex flex-col">
             <p className="text-2xl font-bold">Daftar Product</p>
             <p>Detail daftar product</p>
+            <div className="relative mt-4">
+              <input
+                type="text"
+                placeholder="Cari produk..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
+              />
+              <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
+            </div>
           </div>
         </div>
         <div className="flex flex-row justify-between mt-8">
@@ -471,87 +508,89 @@ const Menu = () => {
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div>
-            {products.length === 0 ? (
+            {filteredProductList.length === 0 ? (
               <h1>Data produk tidak ditemukan!</h1>
             ) : (
               <>
-              <table className="table w-full border border-gray-300">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Product</th>
-                    <th>Foto</th>
-                    <th>Deskripsi</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedData.map((product, index) => (
-                    <tr key={product._id}>
-                      <td>{index + 1}</td>
-                      <td>{product.name_product}</td>
-                      <td>
-                        <div className="avatar">
-                          <div className="mask mask-squircle h-12 w-12">
-                            <Image
-                              src={
-                                `${product.image}` ||
-                                "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                              }
-                              alt={product.name_product}
-                              width={48}
-                              height={48}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td>{product.deskripsi}</td>
-                      <td>
-                        <select
-                          className="select bg-white"
-                          value={product.status}
-                          onChange={(e) =>
-                            handleStatusSelect(
-                              product._id,
-                              Number(e.target.value)
-                            )
-                          }
-                        >
-                          <option value={0}>Active</option>
-                          <option value={1}>Inactive</option>
-                          {/* Tambahkan opsi lain jika diperlukan di masa depan */}
-                        </select>
-                      </td>
-                      <td>
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => deleteProductById(product._id)}
-                        >
-                          <MdDelete />
-                        </button>
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateProduct(product, "update")}
-                        >
-                          <FaRegEdit />
-                        </button>
-                      </td>
+                <table className="table w-full border border-gray-300">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Nama Product</th>
+                      <th>Foto</th>
+                      <th>Deskripsi</th>
+                      <th>Status</th>
+                      <th>Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <ReactPaginate
-                previousLabel={"← Prev"}
-                nextLabel={"Next →"}
-                pageCount={Math.ceil(products.length / itemsPerPage)}
-                onPageChange={({ selected }) => setCurrentPage(selected)}
-                containerClassName={"flex gap-2 justify-center mt-4"}
-                pageLinkClassName={"border px-3 py-1"}
-                previousLinkClassName={"border px-3 py-1"}
-                nextLinkClassName={"border px-3 py-1"}
-                activeClassName={"bg-blue-500 text-white"}
-              />
+                  </thead>
+                  <tbody>
+                    {selectedData.map((product, index) => (
+                      <tr key={product._id}>
+                        <td>{index + 1}</td>
+                        <td>{product.name_product}</td>
+                        <td>
+                          <div className="avatar">
+                            <div className="mask mask-squircle h-12 w-12">
+                              <Image
+                                src={
+                                  `${product.image}` ||
+                                  "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                                }
+                                alt={product.name_product}
+                                width={48}
+                                height={48}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td>{product.deskripsi}</td>
+                        <td>
+                          <select
+                            className="select bg-white"
+                            value={product.status}
+                            onChange={(e) =>
+                              handleStatusSelect(
+                                product._id,
+                                Number(e.target.value)
+                              )
+                            }
+                          >
+                            <option value={0}>Active</option>
+                            <option value={1}>Inactive</option>
+                            {/* Tambahkan opsi lain jika diperlukan di masa depan */}
+                          </select>
+                        </td>
+                        <td>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() => deleteProductById(product._id)}
+                          >
+                            <MdDelete />
+                          </button>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() =>
+                              handleUpdateProduct(product, "update")
+                            }
+                          >
+                            <FaRegEdit />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <ReactPaginate
+                  previousLabel={"← Prev"}
+                  nextLabel={"Next →"}
+                  pageCount={Math.ceil(products.length / itemsPerPage)}
+                  onPageChange={({ selected }) => setCurrentPage(selected)}
+                  containerClassName={"flex gap-2 justify-center mt-4"}
+                  pageLinkClassName={"border px-3 py-1"}
+                  previousLinkClassName={"border px-3 py-1"}
+                  nextLinkClassName={"border px-3 py-1"}
+                  activeClassName={"bg-blue-500 text-white"}
+                />
               </>
             )}
           </div>
@@ -560,14 +599,23 @@ const Menu = () => {
 
       {isExampleModalOpen && (
         <Modal
-          onClose={() => modalOpen("example", false)}
-          title={"Example Untuk Menambahkan Product Menggunakan Excel"}
+          onClose={() => {
+            modalOpen("example", false);
+            modalOpen("add", true);
+          }}
+          title={"Format Menambahkan Produk"}
         >
           <Image
             src="http://localhost:8080/uploads/Example.jpg"
             width={500}
             height={200}
           />
+          <div className="flex justify-center items-center">
+            <button onClick={handleDownload} className="p-2 bg-green-500 text-white rounded">
+              Download Template
+            </button>
+          </div>
+
         </Modal>
       )}
 
@@ -782,7 +830,10 @@ const Menu = () => {
                   <div>
                     <button
                       className="addBtn"
-                      onClick={() => modalOpen("example", true)}
+                      onClick={() => {
+                        modalOpen("add", false);
+                        modalOpen("example", true);
+                      }}
                     >
                       Example
                     </button>
@@ -793,10 +844,11 @@ const Menu = () => {
                       <label className="upload-label">
                         <input
                           type="file"
-                          accept=".xlsx, .xls"
+                          accept=".xlsx, .xls, .csv"
                           onChange={handleFileChange}
                           style={{ display: "none" }}
                         />
+                        {file && <p>File dipilih: {file.name}</p>}
                         <div className="upload-content">
                           {file ? (
                             <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
@@ -842,7 +894,7 @@ const Menu = () => {
               <label className="upload-label">
                 <input
                   type="hidden"
-                  name="_id"
+                  name="id"
                   value={productDataUpdate._id}
                   onChange={handleChangeUpdate}
                   className="border rounded-md p-2 w-full bg-white"

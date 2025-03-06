@@ -4,8 +4,8 @@ import { FaRegEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa6";
 import Swal from "sweetalert2"; // Import SweetAlert2
 import { useRouter } from "next/router";
-import client from "@/libs/axios";
-
+import { loginServices } from "@/libs/fetching/auth";
+import { tokenDecoded } from "@/utils/tokenDecoded";
 const Login = () => {
   const [username, setUsername] = useState(""); // State for username
   const [password, setPassword] = useState(""); // State for password
@@ -19,21 +19,13 @@ const Login = () => {
 
     const loginData = { username, password };
     try {
-      const response = await client.post("/login", loginData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      // Store token and user info in localStorage
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("id_user", response.data.user.id);
-      localStorage.setItem("username", response.data.user.username);
-      localStorage.setItem("id_store", response.data.user.id_store);
-      localStorage.setItem("id_company", response.data.user.id_company);
-      localStorage.setItem("rule", response.data.user.rule);
-
-      router.push("/dashboard");
+      await loginServices(loginData);
+      const userData = tokenDecoded();
+      if (userData.rule != 5) {
+        router.push("/dashboard");
+      } else {
+        router.push("/");
+      }
     } catch (error) {
       console.error("Error during login:", error);
 

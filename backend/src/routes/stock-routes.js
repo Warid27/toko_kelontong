@@ -34,7 +34,7 @@ router.post("/addstock", authenticate, async (c) => {
 // });
 
 // Get all stock
-router.post("/liststock", async (c) => {
+router.post("/liststock", authenticate, async (c) => {
   try {
     let body;
     try {
@@ -80,7 +80,7 @@ router.post("/liststock", async (c) => {
 });
 
 // Get Stock by Product ID
-router.post("/getstock", async (c) => {
+router.post("/getstock", authenticate, async (c) => {
   try {
     let body;
     try {

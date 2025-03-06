@@ -1,13 +1,17 @@
 {
   "name": "versi_3",
   "scripts": {
+    "development": "BUN_ENV=development bun run --hot src/index.js",
     "dev": "bun run --hot src/index.js",
+    "local": "BUN_ENV=local bun run --hot src/index.js",
+    "prod": "BUN_ENV=production bun run src/index.js",
     "no-reload": "bun run src/index.js"
   },
   "dependencies": {
-    "@hono/node-server": "^1.13.8",
+    "@hono/BUN-server": "^1.13.8",
     "argon2": "^0.41.1",
     "crypto": "^1.0.1",
+    "csv-parser": "^3.2.0",
     "hono": "^4.6.20",
     "jsonwebtoken": "^9.0.2",
     "minio": "^8.0.4",

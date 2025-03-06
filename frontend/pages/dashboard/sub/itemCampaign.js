@@ -29,6 +29,7 @@ const ItemCampaign = () => {
   const [userList, setUserList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10;
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [itemCampaignDataAdd, setItemCampaignDataAdd] = useState({
     item_campaign_name: "",
@@ -36,9 +37,6 @@ const ItemCampaign = () => {
     value: "",
     start_date: new Date(),
     end_date: new Date(),
-    id_store: "",
-    id_company: "",
-    id_user: "",
     status: "",
   });
 
@@ -49,11 +47,21 @@ const ItemCampaign = () => {
     value: "",
     start_date: new Date(),
     end_date: new Date(),
-    id_store: "",
-    id_company: "",
-    id_user: "",
     status: "",
   });
+  const id_store =
+    localStorage.getItem("id_store") == "undefined"
+      ? null
+      : localStorage.getItem("id_store");
+  const id_company =
+    localStorage.getItem("id_company") == "undefined"
+      ? null
+      : localStorage.getItem("id_company");
+  const id_user =
+    localStorage.getItem("id_user") == "undefined"
+      ? null
+      : localStorage.getItem("id_user");
+  const token = localStorage.getItem("token");
 
   // --- Function
   const modalOpen = (param, bool) => {
@@ -113,7 +121,6 @@ const ItemCampaign = () => {
 
     if (result.isConfirmed) {
       try {
-        const token = localStorage.getItem("token");
         const response = await client.delete(`/api/itemcampaign/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -145,8 +152,6 @@ const ItemCampaign = () => {
     console.log("datanya cok asuk", itemCampaignDataAdd);
 
     try {
-      const token = localStorage.getItem("token");
-
       // Ensure all required fields are filled
       if (
         !itemCampaignDataAdd.item_campaign_name ||
@@ -176,9 +181,9 @@ const ItemCampaign = () => {
           value: value,
           start_date: itemCampaignDataAdd.start_date,
           end_date: itemCampaignDataAdd.end_date,
-          id_store: itemCampaignDataAdd.id_store,
-          id_company: itemCampaignDataAdd.id_company,
-          id_user: itemCampaignDataAdd.id_user,
+          id_store: id_store,
+          id_company: id_company,
+          id_user: id_user,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -206,9 +211,6 @@ const ItemCampaign = () => {
         value: itemCampaignToUpdate.value * 100 || "",
         start_date: itemCampaignToUpdate.start_date || "",
         end_date: itemCampaignToUpdate.end_date || "",
-        id_store: itemCampaignToUpdate.id_store || "",
-        id_company: itemCampaignToUpdate.id_company || "",
-        id_user: itemCampaignToUpdate.id_user || "",
       });
     }
   }, [itemCampaignToUpdate]);
@@ -229,8 +231,6 @@ const ItemCampaign = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-
       let value = itemCampaignDataUpdate.value;
       if (value.includes(",")) {
         alert("Discount can't have comma.");
@@ -247,9 +247,9 @@ const ItemCampaign = () => {
           value: value || "",
           start_date: itemCampaignDataUpdate.start_date || "",
           end_date: itemCampaignDataUpdate.end_date || "",
-          id_store: itemCampaignDataUpdate.id_store || "",
-          id_company: itemCampaignDataUpdate.id_company || "",
-          id_user: itemCampaignDataUpdate.id_user || "",
+          id_store: id_store,
+          id_company: id_company,
+          id_user: id_user,
         },
 
         {
@@ -274,8 +274,15 @@ const ItemCampaign = () => {
     }
   };
 
+  const filteredItemCampaignList = itemCampaign.filter((item) =>
+    item.item_campaign_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const startIndex = currentPage * itemsPerPage;
-  const selectedData = itemCampaign.slice(startIndex, startIndex + itemsPerPage);
+  const selectedData = filteredItemCampaignList.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   if (isLoading) {
     return (
@@ -297,8 +304,10 @@ const ItemCampaign = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search anything here"
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs"
+                placeholder="Cari diskon..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
               />
               <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
             </div>
@@ -336,66 +345,66 @@ const ItemCampaign = () => {
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div>
-            {itemCampaign.length === 0 ? (
+            {filteredItemCampaignList.length === 0 ? (
               <h1>Data campaign tidak ditemukan!</h1>
             ) : (
               <>
-              <table className="table w-full border border-gray-300">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Item Campaign</th>
-                    <th>Rules</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Value</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedData.map((itemCampaign, index) => (
-                    <tr key={itemCampaign._id}>
-                      <td>{startIndex + index + 1}</td>
-                      <td>{itemCampaign.item_campaign_name}</td>
-                      <td>{itemCampaign.rules}</td>
-                      <td>{itemCampaign.start_date}</td>
-                      <td>{itemCampaign.end_date}</td>
-                      <td>{itemCampaign.value * 100}%</td>
-                      <td className="flex space-x-4">
-                        {" "}
-                        {/* Beri jarak antar tombol */}
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() =>
-                            deleteItemCampaignById(itemCampaign._id)
-                          }
-                        >
-                          <MdDelete />
-                        </button>
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() =>
-                            handleUpdateItemCampaign(itemCampaign, "update")
-                          }
-                        >
-                          <FaRegEdit />
-                        </button>
-                      </td>
+                <table className="table w-full border border-gray-300">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Nama Item Campaign</th>
+                      <th>Rules</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                      <th>Value</th>
+                      <th>Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <ReactPaginate
-                previousLabel={"← Prev"}
-                nextLabel={"Next →"}
-                pageCount={Math.ceil(itemCampaign.length / itemsPerPage)}
-                onPageChange={({ selected }) => setCurrentPage(selected)}
-                containerClassName={"flex gap-2 justify-center mt-4"}
-                pageLinkClassName={"border px-3 py-1"}
-                previousLinkClassName={"border px-3 py-1"}
-                nextLinkClassName={"border px-3 py-1"}
-                activeClassName={"bg-blue-500 text-white"}
-              />
+                  </thead>
+                  <tbody>
+                    {selectedData.map((itemCampaign, index) => (
+                      <tr key={itemCampaign._id}>
+                        <td>{startIndex + index + 1}</td>
+                        <td>{itemCampaign.item_campaign_name}</td>
+                        <td>{itemCampaign.rules}</td>
+                        <td>{itemCampaign.start_date}</td>
+                        <td>{itemCampaign.end_date}</td>
+                        <td>{itemCampaign.value * 100}%</td>
+                        <td className="flex space-x-4">
+                          {" "}
+                          {/* Beri jarak antar tombol */}
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() =>
+                              deleteItemCampaignById(itemCampaign._id)
+                            }
+                          >
+                            <MdDelete />
+                          </button>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() =>
+                              handleUpdateItemCampaign(itemCampaign, "update")
+                            }
+                          >
+                            <FaRegEdit />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <ReactPaginate
+                  previousLabel={"← Prev"}
+                  nextLabel={"Next →"}
+                  pageCount={Math.ceil(itemCampaign.length / itemsPerPage)}
+                  onPageChange={({ selected }) => setCurrentPage(selected)}
+                  containerClassName={"flex gap-2 justify-center mt-4"}
+                  pageLinkClassName={"border px-3 py-1"}
+                  previousLinkClassName={"border px-3 py-1"}
+                  nextLinkClassName={"border px-3 py-1"}
+                  activeClassName={"bg-blue-500 text-white"}
+                />
               </>
             )}
           </div>
@@ -451,82 +460,6 @@ const ItemCampaign = () => {
                   : null
               }
               name="end_date"
-            />
-            <p className="font-semibold mt-4 mb-2">Store</p>
-            <Select
-              id="store"
-              className="basic-single"
-              options={storeList.map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={
-                storeList
-                  .map((c) => ({ value: c._id, label: c.name }))
-                  .find((opt) => opt.value === itemCampaignDataAdd.id_store) ||
-                null
-              }
-              onChange={(selectedOption) =>
-                setItemCampaignDataAdd((prevState) => ({
-                  ...prevState,
-                  id_store: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Store..."
-              noOptionsMessage={() => "No Store available"}
-            />
-            <p className="font-semibold mt-4 mb-2">Company</p>
-            <Select
-              id="company"
-              className="basic-single"
-              options={companyList.map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={
-                companyList
-                  .map((c) => ({ value: c._id, label: c.name }))
-                  .find(
-                    (opt) => opt.value === itemCampaignDataAdd.id_company
-                  ) || null
-              }
-              onChange={(selectedOption) =>
-                setItemCampaignDataAdd((prevState) => ({
-                  ...prevState,
-                  id_company: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Company..."
-              noOptionsMessage={() => "No Company available"}
-            />
-            <p className="font-semibold mt-4 mb-2">User</p>
-            <Select
-              id="user"
-              className="basic-single"
-              options={userList.map((c) => ({
-                value: c._id,
-                label: c.username,
-              }))}
-              value={
-                userList
-                  .map((c) => ({ value: c._id, label: c.username }))
-                  .find((opt) => opt.value === itemCampaignDataAdd.id_user) ||
-                null
-              }
-              onChange={(selectedOption) =>
-                setItemCampaignDataAdd((prevState) => ({
-                  ...prevState,
-                  id_user: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih User..."
-              noOptionsMessage={() => "No User available"}
             />
             <p className="font-semibold mt-4 mb-2">Value</p>
             <div className="relative mt-4">
@@ -613,84 +546,6 @@ const ItemCampaign = () => {
                   : null
               }
               name="end_date"
-            />
-            <p className="font-semibold mt-4 mb-2">Store</p>
-            <Select
-              id="store"
-              className="basic-single"
-              options={storeList.map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={
-                storeList
-                  .map((c) => ({ value: c._id, label: c.name }))
-                  .find(
-                    (opt) => opt.value === itemCampaignDataUpdate.id_store
-                  ) || null
-              }
-              onChange={(selectedOption) =>
-                setItemCampaignDataUpdate((prevState) => ({
-                  ...prevState,
-                  id_store: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Store..."
-              noOptionsMessage={() => "No Store available"}
-            />
-            <p className="font-semibold mt-4 mb-2">Company</p>
-            <Select
-              id="company"
-              className="basic-single"
-              options={companyList.map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={
-                companyList
-                  .map((c) => ({ value: c._id, label: c.name }))
-                  .find(
-                    (opt) => opt.value === itemCampaignDataUpdate.id_company
-                  ) || null
-              }
-              onChange={(selectedOption) =>
-                setItemCampaignDataUpdate((prevState) => ({
-                  ...prevState,
-                  id_company: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Company..."
-              noOptionsMessage={() => "No Company available"}
-            />
-            <p className="font-semibold mt-4 mb-2">User</p>
-            <Select
-              id="user"
-              className="basic-single"
-              options={userList.map((c) => ({
-                value: c._id,
-                label: c.username,
-              }))}
-              value={
-                userList
-                  .map((c) => ({ value: c._id, label: c.username }))
-                  .find(
-                    (opt) => opt.value === itemCampaignDataUpdate.id_user
-                  ) || null
-              }
-              onChange={(selectedOption) =>
-                setItemCampaignDataUpdate((prevState) => ({
-                  ...prevState,
-                  id_user: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih User..."
-              noOptionsMessage={() => "No User available"}
             />
             <p className="font-semibold mt-4 mb-2">Value</p>
             <div className="relative mt-4">

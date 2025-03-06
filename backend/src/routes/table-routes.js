@@ -18,7 +18,7 @@ router.post("/addtable", authenticate, async (c) => {
 });
 
 // Get All Tables
-router.get("/listtable", async (c) => {
+router.post("/listtable", authenticate, async (c) => {
   try {
     const tables = await tableCustModels.find();
     return c.json(tables, 200);
@@ -28,7 +28,7 @@ router.get("/listtable", async (c) => {
 });
 
 // Get Table by ID
-router.post("/gettable", async (c) => {
+router.post("/gettable", authenticate, async (c) => {
   try {
     const body = await c.req.json();
     const id = body.id;

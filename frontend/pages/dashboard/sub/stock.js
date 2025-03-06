@@ -10,6 +10,7 @@ const StockList = () => {
   const [stockList, setStockList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10; // Tampilkan 10 item per halaman
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchStockData = async () => {
@@ -29,9 +30,13 @@ const StockList = () => {
     );
   }
 
+  const filteredStockList = stockList.filter((stock) =>
+    stock.id_product?.name_product.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Hitung data yang akan ditampilkan berdasarkan halaman
   const startIndex = currentPage * itemsPerPage;
-  const selectedData = stockList.slice(startIndex, startIndex + itemsPerPage);
+  const selectedData = filteredStockList.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="w-full h-screen pt-16">
@@ -42,7 +47,9 @@ const StockList = () => {
           <input
             type="text"
             placeholder="Cari produk..."
-            className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
           />
           <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
         </div>
@@ -50,7 +57,7 @@ const StockList = () => {
 
       <div className="p-4 mt-4 bg-white rounded-lg">
         <div>
-          {stockList.length === 0 ? (
+          {filteredStockList.length === 0 ? (
             <h1 className="text-center text-gray-500">Data tidak ditemukan!</h1>
           ) : (
             <>

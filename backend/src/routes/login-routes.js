@@ -67,12 +67,13 @@ router.post("/", async (c) => {
         403
       ); // Forbidden
     }
-
     // Generate a JWT token
     const token = jwt.sign(
       {
         id: user.id,
         username: user.username,
+        id_store: user.id_store,
+        id_company: user.id_company,
         rule: user.rule,
       },
       JWT_SECRET,
@@ -80,17 +81,20 @@ router.post("/", async (c) => {
     );
 
     // Return success response
-    return c.json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        id_store: user.id_store,
-        id_company: user.id_company,
-        rule: user.rule,
+    return c.json(
+      {
+        message: "Login successful",
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          id_store: user.id_store,
+          id_company: user.id_company,
+          rule: user.rule,
+        },
       },
-    });
+      200
+    );
   } catch (error) {
     console.error("Login Error:", error.message);
     return c.json({ message: "An error occurred", error: error.message }, 500); // Internal Server Error

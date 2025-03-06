@@ -9,7 +9,7 @@ const router = new Hono();
 
 // Get all extras
 
-router.post("/listextras", async (c) => {
+router.post("/listextras", authenticate, async (c) => {
   try {
     // Parse the request body
     let body;

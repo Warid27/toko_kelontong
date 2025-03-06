@@ -1,5 +1,10 @@
 import { Hono } from "hono";
-import { minioClient, BACKEND_URI, MINIO_BUCKET_NAME } from "@config/config";
+import {
+  minioClient,
+  BACKEND_URI,
+  MINIO_BUCKET_NAME,
+  minioUrl,
+} from "@config/config";
 import { ProductModels } from "@models/product-models";
 import { CompanyModels } from "@models/company-models";
 import { StoreModels } from "@models/store-models";
@@ -185,7 +190,6 @@ router.post("/upload", authenticate, async (c) => {
 
     // Read the file buffer
     const fileBuffer = await file.arrayBuffer();
-
     // Upload the file to MinIO
     await minioClient.putObject(
       MINIO_BUCKET_NAME,
@@ -195,13 +199,8 @@ router.post("/upload", authenticate, async (c) => {
       file.type // File MIME type (e.g., image/jpeg)
     );
 
-    // Generate a pre-signed URL
-    const expiresInSeconds = 24 * 60 * 60; // URL expires in 24 hours
-    const presignedUrl = await minioClient.presignedGetObject(
-      MINIO_BUCKET_NAME,
-      objectKey,
-      expiresInSeconds
-    );
+    // Generate URL
+    const publicUrl = `${minioUrl}/${objectKey}`;
 
     // Generate a short key
     const shortKey = generateShortKey();
@@ -213,10 +212,10 @@ router.post("/upload", authenticate, async (c) => {
     const fileMetadata = new fileMetadataModels({
       bucketName: MINIO_BUCKET_NAME,
       objectName: objectKey,
-      fileUrl: presignedUrl,
+      fileUrl: publicUrl,
       shortenedUrl: shortenedUrl,
       shortkey: shortKey,
-      id_user: id_user || null, // Store the user ID if provided
+      id_user: id_user || null,
     });
 
     // Save the metadata to the database
@@ -247,7 +246,7 @@ router.post("/upload", authenticate, async (c) => {
 
 router.get("/image/:shortKey", async (c) => {
   try {
-    const { shortKey } = c.req.param(); // Extract the short key from the URL
+    const shortKey = c.req.param("shortKey");
 
     // Look up the file metadata using the short key
     const fileMetadata = await fileMetadataModels.findOne({
@@ -258,7 +257,7 @@ router.get("/image/:shortKey", async (c) => {
       return c.json({ error: "File not found" }, 404);
     }
 
-    // Redirect to the original MinIO file URL (pre-signed URL)
+    // Redirect to the original MinIO file URL
     return c.redirect(fileMetadata.fileUrl, 302);
   } catch (error) {
     console.error("Error fetching file metadata:", error);
@@ -268,21 +267,23 @@ router.get("/image/:shortKey", async (c) => {
     );
   }
 });
+
 // === MinIO ===
 
 // === PRODUCT ===
 router.put("/product/:id", authenticate, async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
+
   const validationError = validateIdFormat(id);
   if (validationError) return c.json(validationError, 400);
-
   const { error, data, status } = await handleUpdate(
     ProductModels,
     id,
     body,
     "Product"
   );
+
   return error ? c.json({ error }, status) : c.json(data, status);
 });
 
@@ -492,7 +493,6 @@ router.put("/store/:id", authenticate, async (c) => {
   const body = await c.req.json();
   const validationError = validateIdFormat(id);
   if (validationError) return c.json(validationError, 400);
-
   const { error, data, status } = await handleUpdate(
     StoreModels,
     id,

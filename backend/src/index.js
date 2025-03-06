@@ -1,5 +1,7 @@
 import { Hono } from "hono";
-import { PORT } from "@config/config";
+import { PORT, HOST_NAME } from "@config/config";
+import { cors } from "hono/cors"; // Import middleware CORS
+
 import loginRoutes from "@routes/login-routes";
 import registerRoutes from "@routes/register-routes";
 import productRoutes from "@routes/product-routes";
@@ -21,6 +23,16 @@ import itemCampaignRoutes from "@routes/itemCampaign-routes";
 import categoryRoutes from "@routes/category-routes";
 
 const app = new Hono();
+
+// Middleware CORS
+app.use(
+  cors({
+    origin: "http://localhost:8000",
+    allowMethods: ["GET", "POST", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
 // Middleware for JSON responses
 app.use("*", async (c, next) => {
@@ -71,10 +83,11 @@ app.use("/swal/*", (c) => serveStaticFile(c, "/node_modules/sweetalert2/dist"));
 
 Bun.serve({
   port: PORT,
+  hostname: HOST_NAME,
   fetch(req) {
     return app.fetch(req);
   },
 });
 
 console.log(`🚀 Server running on PORT ${PORT}`);
-console.log(`🌐 http://localhost:${PORT}`);
+console.log(`🌐 http://${HOST_NAME}:${PORT}`);

@@ -8,7 +8,7 @@ import { authenticate } from "@middleware/authMiddleware"; // Import the middlew
 const router = new Hono();
 
 // Get all categories
-router.post("/listcategories", async (c) => {
+router.post("/listcategories", authenticate, async (c) => {
   try {
     // Parse the request body
     let body;

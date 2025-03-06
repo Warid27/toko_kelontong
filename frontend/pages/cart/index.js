@@ -29,13 +29,20 @@ const Cart = () => {
     orderListRef.current = orderList;
   }, [orderList]);
 
+  const token = localStorage.getItem('token')
+
   // FETCH
   useEffect(() => {
     const fetchItemCampaign = async () => {
       try {
         const response = await client.post(
           "/itemcampaign/listitemcampaigns",
-          {}
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         const data = response.data;
 
@@ -54,6 +61,10 @@ const Cart = () => {
       try {
         const response = await client.post("/product/listproduct", {
           params: "order",
+        },{
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
         const fullProductList = response.data; // Store all fetched products
         // Retrieve cart items stored in localStorage (which only contain IDs)
@@ -130,7 +141,11 @@ const Cart = () => {
   useEffect(() => {
     const fetchTable_cust = async () => {
       try {
-        const response = await client.get("/table/listtable");
+        const response = await client.post("/table/listtable", {}, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = response.data;
 
         // Validate that the response is an array
@@ -149,7 +164,11 @@ const Cart = () => {
   }, []);
   const fetchOrder = async () => {
     try {
-      const response = await client.post("/order/listorder", {});
+      const response = await client.post("/order/listorder", {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = response.data;
 
       // Validate that the response is an array

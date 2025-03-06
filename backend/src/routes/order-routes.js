@@ -9,7 +9,7 @@ import { authenticate } from "@middleware/authMiddleware";
 const router = new Hono();
 
 // Get all order
-router.post("/listorder", async (c) => {
+router.post("/listorder",authenticate, async (c) => {
   try {
     let body;
     try {
@@ -121,7 +121,7 @@ router.post("/addorder", async (c) => {
   }
 });
 
-router.post("/transaksi-history", async (c) => {
+router.post("/transaksi-history", authenticate, async (c) => {
   try {
     const { id_company, id_store, filterBy } = await c.req.json();
 

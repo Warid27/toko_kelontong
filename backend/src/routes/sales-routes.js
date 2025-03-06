@@ -14,7 +14,7 @@ router.post("/listsales", authenticate, async (c) => {
     const sales = await SalesModels.find().populate({
       path: "salesDetails.id_product",
       strictPopulate: false,
-    });;
+    });
     return c.json(sales, 200);
   } catch (error) {
     return c.text("Internal Server Error", 500);
@@ -108,7 +108,7 @@ router.post("/addsales", authenticate, async (c) => {
 //   }
 // });
 
-router.post("/best-selling", async (c) => {
+router.post("/best-selling", authenticate, async (c) => {
   try {
     const { filterBy, sort, id_store, id_company } = await c.req.json();
 
@@ -241,7 +241,7 @@ router.post("/best-selling", async (c) => {
 
 // FILTERING
 
-router.post("/sales-chart", async (c) => {
+router.post("/sales-chart", authenticate, async (c) => {
   try {
     const { id_company, id_store, limit, sortni } = await c.req.json();
 
@@ -306,11 +306,15 @@ router.post("/sales-chart", async (c) => {
   }
 });
 
-router.post("/totalsales", async (c) => {
+router.post("/totalsales", authenticate, async (c) => {
   try {
-    const { id_store, id_company, filterRekapBy, filterBy } = await c.req.json();
+    const { id_store, id_company, filterRekapBy, filterBy } =
+      await c.req.json();
 
-    if (!mongoose.isValidObjectId(id_company) || !mongoose.isValidObjectId(id_store)) {
+    if (
+      !mongoose.isValidObjectId(id_company) ||
+      !mongoose.isValidObjectId(id_store)
+    ) {
       return c.json(
         { success: false, message: "Invalid id_company or id_store" },
         400
@@ -334,7 +338,15 @@ router.post("/totalsales", async (c) => {
       end_date.setHours(23, 59, 59, 999);
     } else if (filterBy === "monthly") {
       start_date = new Date(now.getFullYear(), now.getMonth(), 1);
-      end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      end_date = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
     }
 
     let filter = {};
@@ -372,15 +384,15 @@ router.post("/totalsales", async (c) => {
           id_product: "$salesDetails.id_product",
           item_quantity: "$salesDetails.item_quantity",
           item_price: "$salesDetails.item_price",
-        }
+        },
       },
     ]);
 
-    let totalSales = 0
+    let totalSales = 0;
 
-    for(const sale of salesSummary){
-      let sales = sale.item_quantity * sale.item_price
-      totalSales += sales
+    for (const sale of salesSummary) {
+      let sales = sale.item_quantity * sale.item_price;
+      totalSales += sales;
     }
 
     return c.json({ success: true, data: totalSales }, 200);
@@ -390,8 +402,7 @@ router.post("/totalsales", async (c) => {
   }
 });
 
-
-router.post("/transaksi-history", async (c) => {
+router.post("/transaksi-history", authenticate, async (c) => {
   try {
     const { id_company, id_store, filterBy } = await c.req.json();
 
@@ -435,7 +446,10 @@ router.post("/transaksi-history", async (c) => {
     };
 
     if (filterBy) {
-      matchQuery["salesDetails.created_at"] = { $gte: start_date, $lte: end_date };
+      matchQuery["salesDetails.created_at"] = {
+        $gte: start_date,
+        $lte: end_date,
+      };
     }
 
     const transactionHistory = await SalesModels.aggregate([
@@ -536,9 +550,10 @@ router.post("/transaksi-history", async (c) => {
 //   }
 // });
 
-router.post("/sales-count", async (c) => {
+router.post("/sales-count", authenticate, async (c) => {
   try {
-    const { id_store, id_company, filterRekapBy, filterBy } = await c.req.json();
+    const { id_store, id_company, filterRekapBy, filterBy } =
+      await c.req.json();
 
     if (
       !mongoose.Types.ObjectId.isValid(id_company) ||
@@ -658,9 +673,10 @@ router.post("/sales-count", async (c) => {
 //   }
 // });
 
-router.post("/profitsales", async (c) => {
+router.post("/profitsales", authenticate, async (c) => {
   try {
-    const { id_store, id_company, filterRekapBy, filterBy } = await c.req.json();
+    const { id_store, id_company, filterRekapBy, filterBy } =
+      await c.req.json();
 
     if (
       !mongoose.Types.ObjectId.isValid(id_company) ||
@@ -711,11 +727,11 @@ router.post("/profitsales", async (c) => {
         999
       );
     }
-    
+
     const sales = await SalesModels.aggregate([
       {
         $match: {
-          ...filter
+          ...filter,
         },
       },
       { $unwind: "$salesDetails" },

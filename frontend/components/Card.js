@@ -39,12 +39,14 @@ const Card = ({
           <p className="font-bold text-red-500">Produk Habis</p>
         )}
         <h2 className="card-title text-lg font-semibold">{nama}</h2>
-        {hargaDiskon && (
-          <p className="font-bold text-sm text-red-500 line-through">
-            {hargaDiskon}
-          </p>
-        )}
-        <p className="font-bold text-gray-700">{harga}</p>
+        <div className={`relative ${hargaDiskon ? "mt-3 ms-2" : ""}`}>
+          {hargaDiskon && (
+            <p className="font-bold text-sm text-red-500 line-through absolute -left-1 -top-4">
+              {hargaDiskon}
+            </p>
+          )}
+          <p className="font-bold text-gray-700">{harga}</p>
+        </div>
       </div>
     </div>
   );

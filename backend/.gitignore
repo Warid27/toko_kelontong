@@ -4,6 +4,8 @@ uploads/
 
 # Mengabaikan file .env
 .env
+.env.development
+.env.local
 
 # Opsional: Jika Anda ingin mengabaikan file log atau cache
 *.log

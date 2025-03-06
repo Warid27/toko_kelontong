@@ -8,7 +8,7 @@ import { authenticate } from "@middleware/authMiddleware";
 
 // Get all payment
 
-router.post("/listpayment", async (c) => {
+router.post("/listpayment", authenticate, async (c) => {
   try {
     // Parse the request body
     let body;

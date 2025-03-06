@@ -4,7 +4,8 @@ import Footer from "@/components/Footer";
 import Topbar from "@/components/Topbar";
 import Image from "next/image";
 import Card from "@/components/Card";
-import client from "@/libs/axios";
+import { loginServices } from "@/libs/fetching/auth";
+import { fetchStoreList } from "@/libs/fetching/store";
 
 export default function Home() {
   const [stores, setStores] = useState([]);
@@ -12,22 +13,48 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchStores = async () => {
+    const loginAndFetchStores = async () => {
       try {
-        const response = await client.post("/store/liststore", {});
-        const filteredStores = response.data.filter(
-          (store) => store.status === 0 // Active
-        );
+        let token = localStorage.getItem("token");
+        if (!token) {
+          const reqBody = {
+            username: "customer",
+            password: "customer",
+          };
+          const response = await loginServices(reqBody);
+          token = response;
+          if (token) {
+            localStorage.setItem("token", token);
+          } else {
+            throw new Error("Failed to retrieve token");
+          }
+        }
 
-        setStores(filteredStores);
+        // Now fetch stores using the valid token
+        const fetchStores = async () => {
+          try {
+            const data = await fetchStoreList();
+
+            const filteredStores = data.filter(
+              (store) => store.status === 0 // Active stores
+            );
+
+            setStores(filteredStores);
+          } catch (error) {
+            console.error("Error fetching stores:", error);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        await fetchStores();
       } catch (error) {
-        console.error("Error fetching stores:", error);
-      } finally {
+        console.error("Login error:", error);
         setIsLoading(false);
       }
     };
 
-    fetchStores();
+    loginAndFetchStores();
   }, []);
 
   if (isLoading) {
@@ -36,8 +63,8 @@ export default function Home() {
 
   const toProducts = (id_store, id_company) => {
     router.push({
-      pathname: `/product/${id_store}`,
-      query: { id_company }, // Pass the id_store as a query parameter
+      pathname: `/home/${id_store}`,
+      query: { id_company },
     });
   };
 
@@ -52,7 +79,7 @@ export default function Home() {
             layout="responsive"
             width={200}
             height={200}
-            className="w-full"//kotnototosskmdlasdlkasmadjsandsnjacjxbaasuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+            className="w-full"
           />
         </div>
         <div className="mt-10 space-y-6">

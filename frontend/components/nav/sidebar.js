@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import ExpandableMenu from "@/components/menu/expendableMenu";
 import MenuItem from "@/components/menu/menuItem";
+import { tokenDecoded } from "@/utils/tokenDecoded";
 import ContentRenderer from "@/components/nav/renderContents";
 import { rolePermissions } from "@/utils/permission";
 import {
@@ -27,7 +28,9 @@ import {
 const Sidebar = () => {
   const [selectedLink, setSelectedLink] = useState("profile");
   const [expandedMenus, setExpandedMenus] = useState({});
-  const [userRole, setUserRole] = useState("kasir"); // Default role is "kasir"
+  const [userRole, setUserRole] = useState("kasir");
+  const [idCompany, setIdCompany] = useState(null);
+  const [idStore, setIdStore] = useState(null);
   const router = useRouter();
 
   const toggleMenu = (menuKey) =>
@@ -43,20 +46,41 @@ const Sidebar = () => {
     2: "admin",
     3: "manajer",
     4: "kasir",
+    5: "customer",
   };
 
   useEffect(() => {
-    // Retrieve the numeric role from localStorage
-    const numericRole = localStorage.getItem("rule");
+    const updateStateFromLocalStorage = () => {
+      const userData = tokenDecoded();
+      const numericRole = userData.rule;
 
-    // Map the numeric role to the corresponding role name
-    const mappedRole = roleMapping[numericRole] || "kasir";
-    setUserRole(mappedRole); // Update the userRole state
+      const id_company =
+        localStorage.getItem("id_company") === "undefined"
+          ? null
+          : localStorage.getItem("id_company");
+      const id_store =
+        localStorage.getItem("id_store") === "undefined"
+          ? null
+          : localStorage.getItem("id_store");
+
+      setIdCompany(id_company);
+      setIdStore(id_store);
+
+      const mappedRole = roleMapping[numericRole || ""] || "kasir";
+      setUserRole(mappedRole);
+    };
+
+    // Jalankan langsung pertama kali
+    updateStateFromLocalStorage();
+
+    // Set interval untuk cek perubahan setiap 500ms
+    const intervalId = setInterval(updateStateFromLocalStorage, 1000);
+
+    return () => clearInterval(intervalId);
   }, []); // Run only once on component mount
 
   const menuConfig = [
     { label: "Profile", icon: <TbUser />, key: "profile" },
-    ,
     { label: "Analisis", icon: <TbReportAnalytics />, key: "analytics" },
     { label: "Report", icon: <TbReportAnalytics />, key: "report" },
     { label: "Pembayaran", icon: <TbCash />, key: "payment" },
@@ -106,18 +130,42 @@ const Sidebar = () => {
   ];
 
   const filteredMenuConfig = useMemo(() => {
+    // INI LE
     return menuConfig
+      .filter((item) => {
+        if (["store"].includes(item.key) && !idCompany) {
+          return false;
+        }
+        if (
+          [
+            "gudang",
+            "analytics",
+            "report",
+            "product",
+            "sales",
+            "order_cust",
+            "order",
+            "kasir",
+          ].includes(item.key) &&
+          !idStore
+        ) {
+          return false; // Remove "Toko" if idStore is null
+        }
+        return true;
+      })
       .map((item) => {
         if (item.submenu) {
           const filteredSubmenu = item.submenu.filter((subItem) =>
             rolePermissions[userRole]?.includes(subItem.key)
           );
-          return { ...item, submenu: filteredSubmenu };
+          return filteredSubmenu.length > 0
+            ? { ...item, submenu: filteredSubmenu }
+            : null;
         }
         return rolePermissions[userRole]?.includes(item.key) ? item : null;
       })
       .filter(Boolean); // Remove null values
-  }, [menuConfig, rolePermissions, userRole]);
+  }, [menuConfig, rolePermissions, userRole, idCompany, idStore]);
 
   return (
     <div className="drawer lg:drawer-open">

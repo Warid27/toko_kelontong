@@ -9,7 +9,7 @@ import { authenticate } from "@middleware/authMiddleware"; // Import the middlew
 const router = new Hono();
 
 // Get all company
-router.post("/listcompany", async (c) => {
+router.post("/listcompany",authenticate, async (c) => {
   try {
     // Fetch all companies from the database
     const companies = await CompanyModels.find().lean(); // Use `.lean()` for better performance

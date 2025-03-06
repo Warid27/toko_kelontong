@@ -25,6 +25,7 @@ const SalesChart = () => {
   useEffect(() => {
     const fetchSalesData = async () => {
       try {
+        const token = localStorage.getItem('token')
         const id_store = localStorage.getItem("id_store")
         const id_company = localStorage.getItem("id_company")
         const response = await client.post("/sales/sales-chart", {
@@ -32,6 +33,10 @@ const SalesChart = () => {
           id_company,
           limit : 5,
           sortni : 1
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
         const data = response.data.data;
 

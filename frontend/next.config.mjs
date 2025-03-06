@@ -2,12 +2,20 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8080",
+        pathname: "/api/image/**", // Allow images from your API
+      },
+    ],
     domains: [
-      "localhost",
       "img.daisyui.com",
       "pbs.twimg.com",
       "placehold.co",
       "png.pngtree.com",
+      "localhost",
       "api-storage.cli.pics",
     ],
     dangerouslyAllowSVG: true, // Allow SVG files

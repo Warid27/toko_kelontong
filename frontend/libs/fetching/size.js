@@ -2,7 +2,12 @@ import client from "@/libs/axios"
 
 export const fetchSizeList = async () => {
     try {
-      const response = await client.get("/size/listsize");
+      const token = localStorage.getItem('token')
+      const response = await client.post("/size/listsize",{}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = response.data;
 
       return data

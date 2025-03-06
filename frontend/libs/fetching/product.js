@@ -33,6 +33,37 @@ export const fetchProductsList = async (
   }
 };
 
+export const fetchGetProducts = async (id_product, params = undefined) => {
+  try {
+    if (!id_product) {
+      throw new Error("id_product is required");
+    }
+
+    const requestBody = { id: id_product };
+    if (params) {
+      requestBody.params = params;
+    }
+    const token = localStorage.getItem('token')
+
+    const response = await client.post("/product/getproduct", requestBody,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching product:", error.message);
+    throw error; // Supaya error bisa ditangani di pemanggil fungsi
+  }
+};
+
 export const fetchProductsAdd = async (data) => {
   try {
     const token = localStorage.getItem("token");

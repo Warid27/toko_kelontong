@@ -22,18 +22,25 @@ export const Analytics = () => {
   // const [salesPersenData, setSalesPersenData] = useState(0);
   const [salesCountData, setSalesCountData] = useState(0);
   const [salesProfitData, setSalesProfitData] = useState(0);
+  const token = localStorage.getItem('token')
 
   useEffect(() => {
     const fetchSalesTodayData = async () => {
       try {
         const id_store = localStorage.getItem("id_store");
         const id_company = localStorage.getItem("id_company");
+
         // const response = await client.get("/sales/sales-today");
         const response = await client.post("/sales/totalsales", {
           id_store,
           id_company,
           filterRekapBy,
           filterBy,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
         const data = response.data;
         // const datatoday = parseInt(response.data.data[0]?.total_sales || 0);
@@ -62,7 +69,13 @@ export const Analytics = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await client.post("/product/listproduct", {});
+        const response = await client.post("/product/listproduct", {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data;
 
         // Validate that the response is an array
@@ -131,7 +144,13 @@ export const Analytics = () => {
           id_store: id_store,
           id_company: id_company,
           // sort : sortBest
-        });
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
         const data = response.data.data;
         setBestSellingList(Array.isArray(data) ? data : []);
         return;
@@ -149,7 +168,11 @@ export const Analytics = () => {
           payload.sort = { total_quantity: parseInt(sortBest, 10) };
         }
 
-        const response = await client.post("/sales/best-selling", payload);
+        const response = await client.post("/sales/best-selling", payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = response.data.data;
         setBestSellingList(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -167,7 +190,12 @@ export const Analytics = () => {
         const response = await client.post("/sales/transaksi-history", {
           id_store,
           id_company,
-        });
+        },{
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
         const data = response.data.data;
 
         // Validate that the response is an array
@@ -197,7 +225,13 @@ export const Analytics = () => {
           id_company,
           filterRekapBy,
           filterBy,
-        });
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
         const data = response.data;
 
         // Validate that the response is an array
@@ -224,7 +258,13 @@ export const Analytics = () => {
           id_company,
           filterRekapBy,
           filterBy,
-        });
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
         const data = response.data;
 
         // Validate that the response is an array

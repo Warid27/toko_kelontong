@@ -13,6 +13,6 @@ const CategoryProductSchema = new Schema({
 
 export const categoryProductModels = model(
   "categoryProduct",
-  categoryProductSchema,
+  CategoryProductSchema,
   "categoryProduct"
 );

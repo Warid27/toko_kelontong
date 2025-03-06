@@ -2,11 +2,22 @@ import React, { useEffect, useState } from "react";
 import client from "@/libs/axios";
 import Select from "react-select";
 
+import { fetchCompanyList } from "@/libs/fetching/company";
+import { fetchStoreList } from "@/libs/fetching/store";
+
 const CompanySelector = () => {
   const [companyList, setCompanyList] = useState([]);
   const [storeList, setStoreList] = useState([]);
-  const [companySelect, setCompanySelect] = useState("");
-  const [storeSelect, setStoreSelect] = useState("");
+  const [companySelect, setCompanySelect] = useState(
+    localStorage.getItem("id_company") == "undefined"
+      ? null
+      : localStorage.getItem("id_company")
+  );
+  const [storeSelect, setStoreSelect] = useState(
+    localStorage.getItem("id_store") == "undefined"
+      ? null
+      : localStorage.getItem("id_store")
+  );
   const [isCompany, setIsCompany] = useState(false);
 
   useEffect(() => {
@@ -28,8 +39,7 @@ const CompanySelector = () => {
   useEffect(() => {
     const fetchCompany = async () => {
       try {
-        const response = await client.post("/company/listcompany", {});
-        const data = response.data;
+        const data = await fetchCompanyList();
 
         if (Array.isArray(data)) {
           setCompanyList(data);
@@ -45,14 +55,19 @@ const CompanySelector = () => {
     fetchCompany();
   }, []);
 
+  const HandleBersih = async () => {
+    localStorage.removeItem("id_store");
+    localStorage.removeItem("id_company");
+    setCompanySelect("");
+    setStoreSelect("");
+    setIsCompany(false);
+  };
+
   useEffect(() => {
     if (companySelect) {
       const fetchStore = async () => {
         try {
-          const response = await client.post("/store/liststore", {
-            id_company: companySelect,
-          });
-          const data = response.data;
+          const data = await fetchStoreList();
 
           if (Array.isArray(data)) {
             setStoreList(data);
@@ -90,33 +105,36 @@ const CompanySelector = () => {
         required
         placeholder={
           companyList.find((d) => d._id === companySelect)?.name ||
-          "Company masih kosong"
+          "Select a company"
         }
         noOptionsMessage={() => "No Company available"}
       />
 
       {isCompany && (
-        <Select
-          id="store"
-          className="basic-single"
-          options={storeList.map((s) => ({
-            value: s._id,
-            label: s.name,
-          }))}
-          value={
-            storeList
-              .map((s) => ({ value: s._id, label: s.name }))
-              .find((opt) => opt.value === storeSelect) || null
-          }
-          onChange={(selectedOption) => setStoreSelect(selectedOption?.value)}
-          isSearchable
-          required
-          placeholder={
-            storeList.find((d) => d._id === storeSelect)?.name ||
-            "Select a store"
-          }
-          noOptionsMessage={() => "No Store available"}
-        />
+        <>
+          <Select
+            id="store"
+            className="basic-single"
+            options={storeList.map((s) => ({
+              value: s._id,
+              label: s.name,
+            }))}
+            value={
+              storeList
+                .map((s) => ({ value: s._id, label: s.name }))
+                .find((opt) => opt.value === storeSelect) || null
+            }
+            onChange={(selectedOption) => setStoreSelect(selectedOption?.value)}
+            isSearchable
+            required
+            placeholder={
+              storeList.find((d) => d._id === storeSelect)?.name ||
+              "Select a store"
+            }
+            noOptionsMessage={() => "No Store available"}
+          />
+          <button onClick={HandleBersih}>bersihkan company</button>
+        </>
       )}
     </div>
   );

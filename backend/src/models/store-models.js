@@ -1,99 +1,59 @@
 import { Schema, model } from "mongoose";
-import { fileMetadataModels } from "@models/fileMetadata-models"; // Import the fileMetadata model
+import { resolveImage } from "@utils/imageResolver"; // Import the utility function
 
-const storeSchema = new Schema({
-  name: { type: String, required: true },
-  address: { type: String, required: true },
-  status: {
-    type: Number,
-    enum: [0, 1, 2], // (Active, Inactive, Bankrupt)
-    default: 1,
-  },
-  // Color -> String (bg: rgbcode, text: rgb code)
-  icon: {
+// Define the decorationDetails schema
+const decorationDetailsSchema = new Schema({
+  primary: { type: String, default: "#24d164" },
+  secondary: { type: String, default: "#3b82f6" },
+  tertiary: { type: String, default: "#6b7280" },
+  danger: { type: String, default: "#ef4444" },
+  motive: {
     type: String,
-    default: "https://placehold.co/500x500",
+    default: "http://localhost:8080/uploads/store/motive/default-motive.png",
   },
-  header: {
+  footer_motive: {
     type: String,
-    default: "https://placehold.co/500x500",
-  },
-  banner: {
-    type: String,
-    default: "https://placehold.co/500x500",
-  },
-  id_company: {
-    type: Schema.Types.ObjectId,
-    ref: "company",
-    required: true,
+    default:
+      "http://localhost:8080/uploads/store/motive/default-footer-motive.png",
   },
   created_at: { type: Date, default: Date.now },
 });
 
-// Virtual field for resolving the icon URL dynamically
+// Virtuals for resolving decoration motive images
+decorationDetailsSchema.virtual("resolvedMotive").get(async function () {
+  return await resolveImage(this.motive);
+});
+decorationDetailsSchema.virtual("resolvedFooterMotive").get(async function () {
+  return await resolveImage(this.footer_motive);
+});
+
+// Enable virtuals for decorationDetailsSchema
+decorationDetailsSchema.set("toJSON", { virtuals: true });
+decorationDetailsSchema.set("toObject", { virtuals: true });
+
+// Define the store schema
+const storeSchema = new Schema({
+  name: { type: String, required: true },
+  address: { type: String, required: true },
+  status: { type: Number, enum: [0, 1, 2], default: 1 },
+  icon: { type: String, default: "https://placehold.co/500x500" },
+  banner: { type: String, default: "https://placehold.co/500x500" },
+  id_company: { type: Schema.Types.ObjectId, ref: "company", required: true },
+  decorationDetails: { type: decorationDetailsSchema, default: {} },
+  created_at: { type: Date, default: Date.now },
+});
+
+// Virtual fields for resolving store images
 storeSchema.virtual("resolvedIcon").get(async function () {
-  const shortKey = this.icon;
-  if (!shortKey) {
-    return "https://placehold.co/500x500"; // Fallback image
-  }
-  try {
-    // Look up the file metadata using the shortKey
-    const fileMetadata = await fileMetadataModels.findOne({
-      shortkey: shortKey,
-    });
-    if (!fileMetadata) {
-      return "https://placehold.co/500x500"; // Fallback image
-    }
-    // Return the fileUrl
-    return fileMetadata.fileUrl;
-  } catch (error) {
-    console.error("Error resolving icon:", error);
-    return "https://placehold.co/500x500"; // Fallback image
-  }
+  return await resolveImage(this.icon);
 });
 
-// Virtual field for resolving the banner URL dynamically
 storeSchema.virtual("resolvedBanner").get(async function () {
-  const shortKey = this.banner;
-  if (!shortKey) {
-    return "https://placehold.co/500x500"; // Fallback image
-  }
-  try {
-    // Look up the file metadata using the shortKey
-    const fileMetadata = await fileMetadataModels.findOne({
-      shortkey: shortKey,
-    });
-    if (!fileMetadata) {
-      return "https://placehold.co/500x500"; // Fallback image
-    }
-    // Return the fileUrl
-    return fileMetadata.fileUrl;
-  } catch (error) {
-    console.error("Error resolving banner:", error);
-    return "https://placehold.co/500x500"; // Fallback image
-  }
+  return await resolveImage(this.banner);
 });
 
-// Virtual field for resolving the header URL dynamically
-storeSchema.virtual("resolvedHeader").get(async function () {
-  const shortKey = this.header;
-  if (!shortKey) {
-    return "https://placehold.co/500x500"; // Fallback image
-  }
-  try {
-    // Look up the file metadata using the shortKey
-    const fileMetadata = await fileMetadataModels.findOne({
-      shortkey: shortKey,
-    });
-    if (!fileMetadata) {
-      return "https://placehold.co/500x500"; // Fallback image
-    }
-    // Return the fileUrl
-    return fileMetadata.fileUrl;
-  } catch (error) {
-    console.error("Error resolving header:", error);
-    return "https://placehold.co/500x500"; // Fallback image
-  }
-});
+// Enable virtuals for storeSchema
+storeSchema.set("toJSON", { virtuals: true });
+storeSchema.set("toObject", { virtuals: true });
 
 export const StoreModels = model("store", storeSchema, "store");

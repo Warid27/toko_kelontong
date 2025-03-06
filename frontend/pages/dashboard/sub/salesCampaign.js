@@ -29,6 +29,7 @@ const SalesCampaign = () => {
   const [userList, setUserList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10;
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetching_requirement = async () => {
@@ -262,8 +263,12 @@ const SalesCampaign = () => {
     }
   };
 
+  const filteredSalesCampaignList = salesCampaign.filter((sales) =>
+    sales.campaign_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const startIndex = currentPage * itemsPerPage;
-  const selectedData = salesCampaign.slice(startIndex, startIndex + itemsPerPage);
+  const selectedData = filteredSalesCampaignList.slice(startIndex, startIndex + itemsPerPage);
 
   if (isLoading) {
     return (
@@ -283,11 +288,13 @@ const SalesCampaign = () => {
           </div>
           <div className="relative mt-2 flex flex-row space-x-4">
             <div className="relative">
-              <input
-                type="text"
-                placeholder="Search anything here"
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs"
-              />
+            <input
+              type="text"
+              placeholder="Cari diskon..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
+          />
               <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
             </div>
             <div className="avatar">
@@ -327,7 +334,7 @@ const SalesCampaign = () => {
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div className="overflow-x-auto">
-            {salesCampaign.length === 0 ? (
+            {filteredSalesCampaignList.length === 0 ? (
               <h1>Data promo sales tidak ditemukan!</h1>
             ) : (
               <>

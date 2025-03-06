@@ -9,6 +9,8 @@ import { useRouter } from "next/router";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import Link from "next/link";
 
+import { categoryProductList } from "@/libs/fetching/category";
+
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -22,9 +24,12 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [itemCampaignList, setItemCampaignList] = useState([]);
+  const [companyList, setCompanyList] = useState([]);
   const [categoryProductList, setCategoryProductList] = useState([]);
   const router = useRouter();
   const [stores, setStores] = useState([]);
+
+  const motiveLength = 5;
 
   useEffect(() => {
     if (router.isReady) {
@@ -37,116 +42,274 @@ export default function Home() {
 
     const { id_store, id_company, id_category_product } = router.query;
 
-    const fetchProducts = async () => {
-      setIsLoading(true);
-
-      try {
-        const response = await client.post("/product/listproduct", {
-          id_store: id_store,
-          id_company: id_company,
-          id_category_product: id_category_product,
-          status: 0, // 0 = Active, 1 = Inactive
-          params: "order",
-        });
-        console.log("RESP", response.data);
-        setProducts(response.data);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      } finally {
-        setIsLoading(false);
+    const login = async () => {
+      if (!localStorage.getItem("token")) {
+        try {
+          const response = await client.post(
+            "/login",
+            {
+              username: "customer",
+              password: "customer",
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          localStorage.setItem("token", response.data.token);
+          localStorage.setItem("id", response.data.user.id);
+          localStorage.setItem("username", response.data.user.username);
+          localStorage.setItem("id_store", response.data.user.id_store);
+          localStorage.setItem("id_company", response.data.user.id_company);
+        } catch (error) {
+          console.error("Login error:", error);
+        }
       }
     };
 
-    if (id_store && id_company) {
-      fetchProducts();
-    } else {
-      console.warn("Missing one or more query parameters!");
-      setIsLoading(false);
-    }
-  }, [queryReady, router.query]);
+    const fetchCategoryProduct = async () => {
+      try {
+        const response = await client.post("/category/listcategories", {});
+        setCategoryProductList(response.data);
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        return [];
+      }
+    };
 
-  useEffect(() => {
     const fetchItemCampaign = async () => {
       try {
         const response = await client.post(
           "/itemcampaign/listitemcampaigns",
           {}
         );
-        const data = response.data;
-
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /itemcampaign/listitemcampaign:",
-            data
-          );
-          setItemCampaignList([]);
-        } else {
-          setItemCampaignList(data);
-        }
+        setItemCampaignList(response.data);
+        return response.data;
       } catch (error) {
         console.error("Error fetching item campaign:", error);
-        setItemCampaignList([]);
+        return [];
       }
     };
-    fetchItemCampaign();
-  }, []);
-  useEffect(() => {
-    const fetchCategoryProduct = async () => {
-      try {
-        const response = await client.post("/category/listcategories", {});
-        const data = response.data;
 
-        // Validate that the response is an array
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /category/listcategories:",
-            data
-          );
-          setCategoryProductList([]);
-        } else {
-          setCategoryProductList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching item campaign:", error);
-        setCategoryProductList([]);
-      }
-    };
-    fetchCategoryProduct();
-  }, []);
-
-  useEffect(() => {
-    const getStores = async () => {
+    const fetchProducts = async () => {
       try {
         const token = localStorage.getItem("token");
-        const { id_store, id_company, id_category_product } = router.query;
+        const response = await client.post(
+          "/product/listproduct",
+          {
+            id_store,
+            id_company,
+            id_category_product,
+            status: 0,
+            params: "order",
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setProducts(response.data);
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        return [];
+      }
+    };
 
+    const getStores = async () => {
+      try {
         if (!id_store) {
           console.error("id_store is missing in query");
-          setIsLoading(false);
-          return;
+          return [];
         }
+
+        const token = localStorage.getItem("token");
         const response = await client.post(
           "/store/getstore",
           { id: id_store },
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        // Set the fetched stores into state
-        setStores(response.data);
-        setIsLoading(false);
+        const storeData = response.data;
+
+        // If decoration details exist, update global CSS variables
+        if (storeData.decorationDetails) {
+          const { primary, secondary, tertiary, danger } =
+            storeData.decorationDetails;
+
+          document.documentElement.style.setProperty("--bg-primary", primary);
+          document.documentElement.style.setProperty(
+            "--bg-secondary",
+            secondary
+          );
+          document.documentElement.style.setProperty("--bg-tertiary", tertiary);
+          document.documentElement.style.setProperty("--bg-danger", danger);
+        }
+
+        setStores(storeData); //warod warod warod warod warod warod awrod awrods
+        return storeData;
       } catch (error) {
         console.error("Error fetching stores:", error);
+        return [];
+      }
+    };
+
+    const cek_product = async () => {
+      await login();
+      if (id_store && id_company && id_category_product) {
+        // fetchProducts_category();
+        fetchProducts();
+      }
+      if (id_store && id_company) {
+        try {
+          // Open the cache
+          const cache = await caches.open("product-data");
+
+          // Check if cached data exists
+          // const response_product = await cache.match("product");
+          const response_product = await cache.match(`product_list${id_store}`); // YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUDY YUD YUD
+          const response_category = await cache.match(
+            `category_product${id_store}`
+          );
+          const response_item_campaign = await cache.match(
+            `item_campaign${id_store}`
+          );
+          const response_store = await cache.match(`store${id_store}`);
+          // const response_company_image = await cache.match("company_image");
+          const response_timestamp = await cache.match(
+            `cache_timestamp${id_store}`
+          );
+
+          let shouldRevalidate = false;
+
+          // Check if we need to revalidate based on cache age
+          if (
+            response_product &&
+            response_category &&
+            response_item_campaign &&
+            response_store &&
+            // response_company_image &&
+            response_timestamp
+          ) {
+            const timestampData = await response_timestamp.json();
+            const cacheAge = Date.now() - timestampData.timestamp;
+            // Revalidate if cache is older than 1 hour
+            shouldRevalidate = cacheAge > 3600000;
+            // 1 jam
+          }
+
+          // Use cached data if available
+          if (
+            response_product &&
+            response_category &&
+            response_item_campaign &&
+            response_store
+          ) {
+            const data_product = await response_product.json();
+            const data_category = await response_category.json();
+            const data_item_campaign = await response_item_campaign.json();
+            const data_store = await response_store.json();
+            // For image, we need to get the text content
+            // const data_company_image = await response_company_image.text();
+
+            setProducts(data_product);
+            setCategoryProductList(data_category);
+            setItemCampaignList(data_item_campaign);
+            setStores(data_store);
+            // setImageHeader(data_company_image);
+            setIsLoading(false);
+            console.log("Data fetched from cache");
+            const keys = await cache.keys();
+            console.log("Cache keys:", keys);
+
+            console.log("product", products);
+            console.log("category", categoryProductList);
+            console.log("item campaign", itemCampaignList);
+            console.log("store", stores);
+          }
+
+          // Fetch fresh data if no cache or cache needs revalidation
+          if (
+            !response_product ||
+            !response_category ||
+            !response_item_campaign ||
+            !response_store ||
+            // !response_company_image ||
+            shouldRevalidate
+          ) {
+            console.log("Fetching fresh data...");
+
+            const data_product = await fetchProducts();
+            const data_category_product = await fetchCategoryProduct();
+            const data_item_campaign = await fetchItemCampaign();
+            const data_store = await getStores();
+            // const data_company_image = await fetchCompany();
+
+            // Store fresh data in cache
+            const cache_product = new Response(JSON.stringify(data_product));
+            const cache_category = new Response(
+              JSON.stringify(data_category_product)
+            );
+            const cache_item_campaign = new Response(
+              JSON.stringify(data_item_campaign)
+            );
+            const cache_store = new Response(JSON.stringify(data_store));
+            // const cache_image = new Response(data_company_image);
+            const cache_timestamp = new Response(
+              JSON.stringify({ timestamp: Date.now() })
+            );
+
+            // await cache.put("product", cache_product);
+            await cache.put(
+              `product_list${id_store}`,
+              new Response(JSON.stringify(data_product))
+            );
+
+            await cache.put(`category_product${id_store}`, cache_category);
+            await cache.put(`item_campaign${id_store}`, cache_item_campaign);
+            await cache.put(`store${id_store}`, cache_store);
+            // await cache.put("company_image", cache_image);
+            await cache.put(`cache_timestamp${id_store}`, cache_timestamp);
+            setIsLoading(false);
+
+            // Update UI only if we didn't already load from cache
+            if (
+              !response_product ||
+              !response_category ||
+              !response_item_campaign ||
+              !response_store
+              // !response_company_image
+            ) {
+              setProducts(data_product);
+              setCategoryProductList(data_category_product);
+              setItemCampaignList(data_item_campaign);
+              setStores(data_store);
+              // setImageHeader(data_company_image);
+              setIsLoading(false);
+            }
+
+            console.log("Fresh data fetched and cached");
+            console.log("product", products);
+            console.log("category", categoryProductList);
+            console.log("item campaign", itemCampaignList);
+            console.log("store", stores);
+          }
+        } catch (error) {
+          console.error("Error in cek_product:", error);
+          setIsLoading(false);
+          // setError(true);
+        }
+      } else {
+        console.warn("Missing one or more query parameters!");
         setIsLoading(false);
       }
     };
 
-    getStores();
-  }, []);
+    cek_product();
+  }, [queryReady, router.query]);
 
   const handleCardClick = (product) => {
     try {
@@ -218,28 +381,55 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-[#F7F7F7] min-h-screen">
-      <Topbar onCartUpdate={handleCartUpdate} />
-      <div className="p-10">
-        <div className="flex justify-center max-h-[55vh] overflow-hidden relative">
+    <div className="bg-[#F7F7F7] min-h-screen relative overflow-hidden">
+      {stores && <Topbar onCartUpdate={handleCartUpdate} />}
+      <div className="absolute w-full h-full flex flex-col items-center z-10">
+        {Array.from({ length: motiveLength }).map((_, index) => (
+          <div
+            key={index}
+            className={`flex min-h-[50vh] max-h-[50vh] min-w-[33vh] max-w-[33vh] z-10 ${
+              index % 2 === 0
+                ? "self-start -translate-x-1/2"
+                : "self-end translate-x-1/2"
+            }`}
+          >
+            <Image
+              src={
+                stores?.decorationDetails?.motive ||
+                "http://localhost:8080/uploads/store/motive/default-motive.png"
+              }
+              width={50}
+              height={50}
+              className="w-full h-full object-cover"
+              alt="MOTIVE"
+            />
+          </div>
+        ))}
+      </div>
+      <div className="p-10 z-30">
+        <div className="flex justify-center max-h-[55vh] overflow-hidden relative  z-30">
           <Image
-            src={stores.header}
-            alt="header"
+            src={stores.banner || "https://placehold.co/500x500"}
+            alt="banner"
             layout="responsive"
             width={100}
             height={100}
             className="w-full  object-fill"
           />
         </div>
-        <div className="justify-items-start mt-10 space-x-4 flex">
-          {categoryProductList.map((cpl) => {
-            const { id_store, id_company } = router.query;
+        <div className="justify-items-start mt-10 space-x-4 flex z-30">
+          {categoryProductList?.map((cpl) => {
+            const { id_store, id_company, id_category_product } = router.query;
 
             return (
               <Link
                 key={cpl._id}
                 href={`/product/${id_store}?id_company=${id_company}&id_category_product=${cpl._id}`}
-                className="bg-[#FEE66B] hover:bg-[#ebd35c] p-3 rounded-md flex-1 font-semibold"
+                className={`hover:brightness-75 p-3 text-white rounded-md flex-1 font-semibold z-30 ${
+                  cpl._id == id_category_product
+                    ? "bg-[var(--bg-primary)] "
+                    : "bg-[var(--bg-tertiary)] "
+                }`}
               >
                 <button className="flex items-center justify-center w-full h-full">
                   {cpl.name_category}
@@ -248,66 +438,79 @@ export default function Home() {
             );
           })}
         </div>
-        {/* <button className="bg-[#FFA461] hover:bg-[#e68e4f] p-3 rounded-md font-semibold flex-1">
-            Promo
-          </button> */}
 
-        <div className="mt-10 space-y-6">
+        <div className="mt-10 space-y-6 relative min-h-[200vh] z-30">
           <h2 className="font-bold text-4xl mb-4">Products</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => {
-              const today = new Date().toISOString().split("T")[0];
-              const campaign = itemCampaignList.find(
-                (icl) =>
-                  icl._id === product.id_item_campaign &&
-                  icl.start_date <= today &&
-                  icl.end_date >= today
-              );
+            {products.length === 0 ? (
+              <p>Produk Tidak Ada</p>
+            ) : (
+              products.map((product) => {
+                const today = new Date().toISOString().split("T")[0];
+                const campaign = itemCampaignList.find(
+                  (icl) =>
+                    icl._id === product.id_item_campaign &&
+                    icl.start_date <= today &&
+                    icl.end_date >= today
+                );
 
-              const discountValue = campaign?.value || 0;
-              const discountedPrice = Math.max(
-                product.sell_price * (1 - discountValue),
-                0
-              );
-              const originalPrice = product.sell_price;
+                const discountValue = campaign?.value || 0;
+                const discountedPrice = Math.max(
+                  product.sell_price * (1 - discountValue),
+                  0
+                );
+                const originalPrice = product.sell_price;
 
-              return (
-                <div
-                  className="flex justify-center max-h-[55vh] relative"
-                  key={product._id}
-                  onClick={
-                    product?.id_stock
-                      ? product.id_stock.amount - (product.orderQty || 0) > 0
-                        ? () => handleCardClick(product)
+                return (
+                  <div
+                    className="flex justify-center max-h-[55vh] relative"
+                    key={product._id}
+                    onClick={
+                      product?.id_stock
+                        ? product.id_stock.amount - (product.orderQty || 0) > 0
+                          ? () => handleCardClick(product)
+                          : () => {}
                         : () => {}
-                      : () => {}
-                  }
-                >
-                  <Card
-                    className="w-full object-cover"
-                    image={product.image || "https://placehold.co/100x100"}
-                    nama={product.name_product}
-                    stock={Math.max(
-                      product?.id_stock?.amount - product?.orderQty,
-                      0
-                    )}
-                    diskon={discountValue}
-                    harga={`Rp ${new Intl.NumberFormat("id-ID").format(
-                      discountedPrice
-                    )}`}
-                    hargaDiskon={
-                      discountValue
-                        ? `Rp ${new Intl.NumberFormat("id-ID").format(
-                            originalPrice
-                          )}`
-                        : null
                     }
-                  />
-                </div>
-              );
-            })}
+                  >
+                    <Card
+                      className="w-full object-cover"
+                      image={product.image || "https://placehold.co/500x500"}
+                      nama={product.name_product}
+                      stock={Math.max(
+                        product?.id_stock?.amount - product?.orderQty,
+                        0
+                      )}
+                      diskon={discountValue}
+                      harga={`Rp ${new Intl.NumberFormat("id-ID").format(
+                        discountedPrice
+                      )}`}
+                      hargaDiskon={
+                        discountValue
+                          ? `Rp ${new Intl.NumberFormat("id-ID").format(
+                              originalPrice
+                            )}`
+                          : null
+                      }
+                    />
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
+      </div>
+      <div className="flex justify-center max-h-[30vh] min-h-[30vh] overflow-hidden relative w-full">
+        <Image
+          src={
+            stores.decorationDetails.footer_motive ||
+            "http://localhost:8080/uploads/store/motive/default-footer-motive.png"
+          }
+          width={400}
+          height={100}
+          className="absolute rounded-md w-full"
+          alt="FOOTER MOTIVE"
+        />
       </div>
       <Footer />
 

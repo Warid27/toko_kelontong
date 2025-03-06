@@ -26,6 +26,7 @@ export const rolePermissions = {
     "profile",
     "analytics",
     "payment",
+    "store",
     "sales",
     "sales_campaign",
     "product",
@@ -38,6 +39,7 @@ export const rolePermissions = {
     "pembelian",
     "pembelian_list",
     "report",
+    "category_product",
   ],
   manajer: [
     "profile",

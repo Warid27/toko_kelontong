@@ -27,13 +27,22 @@ export const Report = () => {
   useEffect(() => {
     const fetchTransaksiHistory = async () => {
       try {
+        const token = localStorage.getItem("token");
         const id_store = localStorage.getItem("id_store");
         const id_company = localStorage.getItem("id_company");
-        const response = await client.post("/sales/transaksi-history", {
-          id_store,
-          id_company,
-          filterBy,
-        });
+        const response = await client.post(
+          "/sales/transaksi-history",
+          {
+            id_store,
+            id_company,
+            filterBy,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         const data = response.data.data;
 
         // Validate that the response is an array
@@ -56,12 +65,18 @@ export const Report = () => {
   useEffect(() => {
     const fetchTransaksiHistory = async () => {
       try {
+        const token = localStorage.getItem('token')
         const id_store = localStorage.getItem("id_store");
         const id_company = localStorage.getItem("id_company");
         const response = await client.post("/order/transaksi-history", {
           id_store,
           id_company,
           filterBy,
+        }, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
         const data = response.data.data;
 

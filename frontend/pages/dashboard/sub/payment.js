@@ -21,6 +21,7 @@ const Payment = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10;
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [paymentDataAdd, setPaymentDataAdd] = useState({
     payment_method: "",
@@ -265,8 +266,12 @@ const Payment = () => {
     });
   };
 
+  const filteredPaymentList = payments.filter((payment) =>
+    payment.payment_method.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const startIndex = currentPage * itemsPerPage;
-  const selectedData = payments.slice(startIndex, startIndex + itemsPerPage);
+  const selectedData = filteredPaymentList.slice(startIndex, startIndex + itemsPerPage);
   return (
     <div className="w-full h-screen pt-16">
       <div className="justify-between w-full bg-white shadow-lg p-4">
@@ -277,11 +282,13 @@ const Payment = () => {
           </div>
           <div className="relative mt-2 flex flex-row space-x-4">
             <div className="relative">
-              <input
-                type="text"
-                placeholder="Search anything here"
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs"
-              />
+            <input
+              type="text"
+              placeholder="Cari metode pembayaran..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
+          />
               <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
             </div>
             <div className="avatar">
@@ -321,7 +328,7 @@ const Payment = () => {
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div className="overflow-x-auto">
-            {payments.length === 0 ? (
+            {filteredPaymentList.length === 0 ? (
               <h1>Data Pembayaran tidak ditemukan!</h1>
             ) : (
               <>

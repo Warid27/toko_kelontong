@@ -5,6 +5,7 @@
       "@config/*": ["./src/config/*"],
       "@models/*": ["./src/models/*"],
       "@middleware/*": ["./src/middleware/*"],
+      "@utils/*": ["./src/utils/*"],
       "@routes/*": ["./src/routes/*"],
       "@validation/*": ["./src/validation/*"],
       "@views/*": ["pages/*"],

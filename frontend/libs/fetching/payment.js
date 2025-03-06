@@ -4,7 +4,7 @@ export const fetchPaymentList = async () => {
     try {
       const token = localStorage.getItem("token");
 
-      const response = await client.post("/payment/listpayment", {
+      const response = await client.post("/payment/listpayment",{}, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

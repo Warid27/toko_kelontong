@@ -6,7 +6,7 @@ import { authenticate } from "@middleware/authMiddleware";
 const router = new Hono();
 
 // Get all item campaigns
-router.post("/listitemcampaigns", async (c) => {
+router.post("/listitemcampaigns", authenticate, async (c) => {
   try {
     const itemCampaigns = await itemCampaignModels.find();
     return c.json(itemCampaigns, 200);

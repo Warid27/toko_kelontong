@@ -20,7 +20,7 @@ const Topbar = ({ onCartUpdate }) => {
   }, [onCartUpdate]);
 
   return (
-    <div className="bg-[#24D164] px-8 py-3 shadow-lg flex flex-row justify-between">
+    <div className="bg-[var(--bg-primary)] px-8 py-3 shadow-lg flex flex-row justify-between">
       <button
         className="btn btn-ghost rounded-lg btn-sm relative"
         onClick={() => router.push("/")}
