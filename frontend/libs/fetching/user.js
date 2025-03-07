@@ -39,3 +39,24 @@ export const fetchUserGet = async () => {
     console.error("Error fetching users:", error);
   }
 };
+
+export const getAvatar = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const id_user = localStorage.getItem("id");
+    if (!id_user) {
+      console.error("user_id is missing in localStorage");
+      return;
+    }
+    const response = await client.post(
+      "/user/getavatar",
+      { id: id_user },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    console.log("RESP O AV", response);
+    const data = response.data;
+    return data;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+  }
+};

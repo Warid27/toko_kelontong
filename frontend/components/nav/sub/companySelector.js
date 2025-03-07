@@ -1,46 +1,28 @@
 import React, { useEffect, useState } from "react";
-import client from "@/libs/axios";
 import Select from "react-select";
-
+import StoreIcon from "@/components/nav/sub/storeIcon";
 import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchStoreList } from "@/libs/fetching/store";
 
 const CompanySelector = () => {
   const [companyList, setCompanyList] = useState([]);
   const [storeList, setStoreList] = useState([]);
-  const [companySelect, setCompanySelect] = useState(
-    localStorage.getItem("id_company") == "undefined"
-      ? null
-      : localStorage.getItem("id_company")
-  );
-  const [storeSelect, setStoreSelect] = useState(
-    localStorage.getItem("id_store") == "undefined"
-      ? null
-      : localStorage.getItem("id_store")
-  );
+  const [companySelect, setCompanySelect] = useState(() => {
+    const storedCompany = localStorage.getItem("id_company");
+    return storedCompany && storedCompany != "undefined" ? storedCompany : null;
+  });
+  const [storeSelect, setStoreSelect] = useState(() => {
+    const storedStore = localStorage.getItem("id_store");
+    return storedStore && storedStore != "undefined" ? storedStore : null;
+  });
   const [isCompany, setIsCompany] = useState(false);
+  const [isStore, setIsStore] = useState(false);
 
-  useEffect(() => {
-    if (companySelect) {
-      localStorage.setItem("id_company", companySelect);
-      localStorage.removeItem("id_store");
-      setIsCompany(true);
-    } else {
-      setIsCompany(false);
-    }
-  }, [companySelect]);
-
-  useEffect(() => {
-    if (storeSelect) {
-      localStorage.setItem("id_store", storeSelect);
-    }
-  }, [storeSelect]);
-
+  // Fetch companies on mount
   useEffect(() => {
     const fetchCompany = async () => {
       try {
         const data = await fetchCompanyList();
-
         if (Array.isArray(data)) {
           setCompanyList(data);
         } else {
@@ -55,22 +37,32 @@ const CompanySelector = () => {
     fetchCompany();
   }, []);
 
-  const HandleBersih = async () => {
-    localStorage.removeItem("id_store");
-    localStorage.removeItem("id_company");
-    setCompanySelect("");
-    setStoreSelect("");
-    setIsCompany(false);
-  };
-
+  // Handle company selection and fetch stores
   useEffect(() => {
-    if (companySelect) {
-      const fetchStore = async () => {
+    const fetchAndSetStores = async () => {
+      if (companySelect && companySelect !== "undefined") {
         try {
           const data = await fetchStoreList();
-
           if (Array.isArray(data)) {
-            setStoreList(data);
+            const filteredStores = data.filter(
+              (store) => store.id_company === companySelect
+            );
+            setStoreList(filteredStores);
+
+            // Check if stored store ID exists in the filtered list
+            const storedStore = localStorage.getItem("id_store");
+            if (storedStore && storedStore !== "undefined") {
+              const storeExists = filteredStores.some(
+                (store) => store._id === storedStore
+              );
+              if (storeExists) {
+                setStoreSelect(storedStore);
+                setIsStore(true);
+              } else {
+                setStoreSelect(null);
+                localStorage.removeItem("id_store");
+              }
+            }
           } else {
             console.error("Unexpected response:", data);
             setStoreList([]);
@@ -79,15 +71,56 @@ const CompanySelector = () => {
           console.error("Error fetching stores:", error);
           setStoreList([]);
         }
-      };
-      fetchStore();
+        setIsCompany(true);
+      } else {
+        setStoreList([]);
+        setIsCompany(false);
+        setStoreSelect(null);
+        setIsStore(false);
+      }
+    };
+
+    fetchAndSetStores();
+  }, [companySelect]);
+
+  // Update localStorage when selections change
+  useEffect(() => {
+    if (companySelect && companySelect !== "undefined") {
+      localStorage.setItem("id_company", companySelect);
     } else {
-      setStoreList([]);
+      localStorage.removeItem("id_company");
     }
   }, [companySelect]);
 
+  useEffect(() => {
+    if (storeSelect && storeSelect !== "undefined") {
+      localStorage.setItem("id_store", storeSelect);
+      setIsStore(true);
+    } else {
+      localStorage.removeItem("id_store");
+      setIsStore(false);
+    }
+  }, [storeSelect]);
+
+  const handleChangeStore = (store) => {
+    setStoreSelect(store);
+  };
+
+  const handleBersih = () => {
+    localStorage.removeItem("id_store");
+    localStorage.removeItem("id_company");
+    setCompanySelect(null);
+    setStoreSelect(null);
+    setIsCompany(false);
+    setIsStore(false);
+  };
+
   return (
-    <div className="flex flex-row gap-2">
+    <div className="flex flex-row gap-2 items-center">
+      {isStore && (
+        <StoreIcon key={storeSelect} role={1} store_id={storeSelect} />
+      )}
+
       <Select
         id="company"
         className="basic-single"
@@ -102,11 +135,7 @@ const CompanySelector = () => {
         }
         onChange={(selectedOption) => setCompanySelect(selectedOption?.value)}
         isSearchable
-        required
-        placeholder={
-          companyList.find((d) => d._id === companySelect)?.name ||
-          "Select a company"
-        }
+        placeholder="Select a company"
         noOptionsMessage={() => "No Company available"}
       />
 
@@ -124,16 +153,14 @@ const CompanySelector = () => {
                 .map((s) => ({ value: s._id, label: s.name }))
                 .find((opt) => opt.value === storeSelect) || null
             }
-            onChange={(selectedOption) => setStoreSelect(selectedOption?.value)}
-            isSearchable
-            required
-            placeholder={
-              storeList.find((d) => d._id === storeSelect)?.name ||
-              "Select a store"
+            onChange={(selectedOption) =>
+              handleChangeStore(selectedOption?.value)
             }
+            isSearchable
+            placeholder="Select a store"
             noOptionsMessage={() => "No Store available"}
           />
-          <button onClick={HandleBersih}>bersihkan company</button>
+          <button onClick={handleBersih}>Bersihkan company</button>
         </>
       )}
     </div>

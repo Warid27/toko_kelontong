@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
+
+// Icons
 import { IoSearchOutline } from "react-icons/io5";
 import { FaUserEdit, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { MdOutlineChangeCircle } from "react-icons/md";
+
+// Package
 import Image from "next/image";
-import { MdKeyboardArrowDown } from "react-icons/md";
 import client from "@/libs/axios";
 import Swal from "sweetalert2";
+
+// Components
 import { fetchUserGet } from "@/libs/fetching/user";
 import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchStoreList } from "@/libs/fetching/store";
+import { uploadImageCompress } from "@/libs/fetching/upload-service";
 
 const Profile = () => {
   const [storeList, setStoreList] = useState([]); // State for list of companies
@@ -24,11 +31,11 @@ const Profile = () => {
     status: "",
     id_company: "",
     id_store: "",
+    avatar: "",
   });
 
   useEffect(() => {
     const fetching_requirement = async () => {
-      const id_store = localStorage.getItem("id_store");
       const get_store_list = async () => {
         const data_store = await fetchStoreList();
         setStoreList(data_store);
@@ -55,6 +62,7 @@ const Profile = () => {
       setUserDataUpdate({
         id: userToUpdate._id,
         username: userToUpdate.username,
+        avatar: userToUpdate.avatar,
         password: "",
         rule: userToUpdate.rule,
         status: userToUpdate.status !== undefined ? userToUpdate.status : 1, // Default to 1
@@ -70,6 +78,44 @@ const Profile = () => {
       ...prevState,
       [name]: value,
     }));
+  };
+
+  // UPLOADS
+  const handleImageChange = async (e, params) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      // 🔹 Set correct upload path
+      let pathPrefix = "";
+      switch (params) {
+        case "avatar":
+          pathPrefix = "user/avatar";
+          break;
+        default:
+          console.error(`Invalid params value: ${params}`);
+          return;
+      }
+
+      const response = await uploadImageCompress(file, params, pathPrefix);
+
+      const uploadedImageUrl = response.data.metadata.shortenedUrl;
+      if (response.status == 201) {
+        // 🔹 Update state based on `params`
+        if (params === "avatar") {
+          setUserDataUpdate((prevState) => ({
+            ...prevState,
+            avatar: uploadedImageUrl,
+          }));
+        }
+
+        console.log(`✅ Image uploaded successfully: ${uploadedImageUrl}`);
+      } else {
+        console.log(`❌ Upload Failed: ${response.error}`);
+      }
+    } catch (error) {
+      console.error("❌ Compression or upload failed:", error);
+    }
   };
 
   const handleSubmitUpdate = async (e) => {
@@ -154,13 +200,52 @@ const Profile = () => {
         {/* Profile Header */}
         <div className="flex items-center w-full max-w-4xl justify-between">
           <div className="flex items-center space-x-4">
-            <Image
-              src="/User-avatar.png"
-              alt="avatar"
-              width={20}
-              height={20}
-              className="w-20 h-20 rounded-full object-cover border-2 border-primary"
-            />
+            <div className="upload-container">
+              <label className="upload-label">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageChange(e, "avatar")}
+                  style={{ display: "none" }}
+                  disabled={!isEditMode}
+                />
+                <div
+                  className={`relative upload-content flex overflow-hidden w-20 h-20 rounded-full border-2 border-primary ${
+                    isEditMode ? "cursor-pointer group" : ""
+                  }`}
+                >
+                  {/* Overlay appears only when isEditMode is true */}
+                  <div
+                    className={`absolute top-0 left-0 w-full h-full rounded-full bg-slate-500/50 flex items-center justify-center transition-opacity duration-300 ${
+                      isEditMode
+                        ? "opacity-0 group-hover:opacity-100"
+                        : "hidden"
+                    }`}
+                  >
+                    <MdOutlineChangeCircle className="w-3/4 h-3/4 text-black" />
+                  </div>
+
+                  {/* Avatar Image */}
+                  {userDataUpdate.avatar ? (
+                    <Image
+                      src={userDataUpdate.avatar}
+                      alt="Uploaded"
+                      className="uploaded-image object-cover"
+                      width={80}
+                      height={80}
+                    />
+                  ) : (
+                    <Image
+                      src="/User-avatar.png"
+                      alt="avatar"
+                      width={80} // Fix size to match the container
+                      height={80}
+                      className="object-cover"
+                    />
+                  )}
+                </div>
+              </label>
+            </div>
             <h1 className="text-2xl font-bold">
               {userDataUpdate.username || "NAMA USER"}
             </h1>

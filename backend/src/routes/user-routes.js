@@ -46,6 +46,33 @@ router.post("/getuser", authenticate, async (c) => {
   }
 });
 
+// Get Avatar by user ID
+router.post("/getavatar", authenticate, async (c) => {
+  try {
+    const { id } = await c.req.json();
+
+    if (!id) {
+      return c.json({ message: "ID perusahaan diperlukan." }, 400);
+    }
+
+    const user = await UserModels.findById(id);
+
+    if (!user) {
+      return c.json({ message: "Perusahaan tidak ditemukan." }, 404);
+    }
+    const avatar = user.avatar;
+    return c.json(avatar, 200);
+  } catch (error) {
+    return c.json(
+      {
+        message: "Terjadi kesalahan saat mengambil perusahaan.",
+        error: error.message,
+      },
+      500
+    );
+  }
+});
+
 // AddUser from Admin
 router.post("/adduser", authenticate, async (c) => {
   try {

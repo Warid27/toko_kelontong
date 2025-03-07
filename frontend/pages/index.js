@@ -1,105 +1,121 @@
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import React from "react";
 import Footer from "@/components/Footer";
 import Topbar from "@/components/Topbar";
 import Image from "next/image";
-import Card from "@/components/Card";
-import { loginServices } from "@/libs/fetching/auth";
-import { fetchStoreList } from "@/libs/fetching/store";
+import { useRouter } from "next/router";
 
 export default function Home() {
-  const [stores, setStores] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const motiveLength = 5;
+  const baseURL = "http://localhost:8080";
 
-  useEffect(() => {
-    const loginAndFetchStores = async () => {
-      try {
-        let token = localStorage.getItem("token");
-        if (!token) {
-          const reqBody = {
-            username: "customer",
-            password: "customer",
-          };
-          const response = await loginServices(reqBody);
-          token = response;
-          if (token) {
-            localStorage.setItem("token", token);
-          } else {
-            throw new Error("Failed to retrieve token");
-          }
-        }
-
-        // Now fetch stores using the valid token
-        const fetchStores = async () => {
-          try {
-            const data = await fetchStoreList();
-
-            const filteredStores = data.filter(
-              (store) => store.status === 0 // Active stores
-            );
-
-            setStores(filteredStores);
-          } catch (error) {
-            console.error("Error fetching stores:", error);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-
-        await fetchStores();
-      } catch (error) {
-        console.error("Login error:", error);
-        setIsLoading(false);
-      }
-    };
-
-    loginAndFetchStores();
-  }, []);
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  const toProducts = (id_store, id_company) => {
-    router.push({
-      pathname: `/home/${id_store}`,
-      query: { id_company },
-    });
+  const scrollToMain = () => {
+    const mainSection = document.getElementById("main");
+    if (mainSection) {
+      mainSection.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   return (
-    <div className="bg-[#F7F7F7] min-h-screen">
-      <Topbar />
-      <div className="p-10">
-        <div className="flex justify-center">
-          <Image
-            src="/banner kelontong.png"
-            alt="header"
-            layout="responsive"
-            width={200}
-            height={200}
-            className="w-full"
-          />
-        </div>
-        <div className="mt-10 space-y-6">
-          <h2 className="font-bold text-4xl mb-4">Stores</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stores.map((store) => (
-              <Card
-                key={store._id}
-                onClick={() => toProducts(store._id, store.id_company)}
-                image={
-                  store.icon ||
-                  "https://png.pngtree.com/png-clipart/20230824/original/pngtree-shop-building-icon-picture-image_8324710.png"
-                }
-                nama={`${store.name}`}
-              />
-            ))}
+    <div className="bg-[#F7F7F7] min-h-screen flex flex-col relative">
+      <header className="w-full fixed z-50">
+        <Topbar homePage={true} />
+      </header>
+
+      {/* Floating Elements Wrapper (Move Before Content) */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-40">
+        <Image
+          src={`${baseURL}/uploads/store/motive/default-motive.png`}
+          width={150}
+          height={150}
+          className="absolute top-16 left-0 -translate-x-1/2 -translate-y-1/2"
+          alt="MOTIVE"
+        />
+        <Image
+          src={`/header-motive-tokel.png`}
+          width={150}
+          height={150}
+          className="absolute top-20 right-0 translate-x-1/2"
+          alt="MOTIVE"
+        />
+        {Array.from({ length: motiveLength }).map((_, index) => {
+          const topValue = `${(index + 1) * 20 + 5}rem`;
+
+          return (
+            <Image
+              key={index}
+              src={`${baseURL}/uploads/store/motive/default-motive.png`}
+              width={150}
+              height={150}
+              style={{ top: topValue }}
+              className={`absolute ${
+                index % 2 === 0
+                  ? "left-0 -translate-x-1/2"
+                  : "right-0 translate-x-1/2"
+              }`}
+              alt="MOTIVE"
+            />
+          );
+        })}
+      </div>
+
+      {/* Banner Section */}
+      <div className="h-16"></div>
+      <div className="flex justify-center max-h-[70vh] overflow-hidden relative z-30">
+        <Image
+          src="/toko-kelontong-header.png"
+          alt="header"
+          width={500}
+          height={300}
+          className="w-full object-cover z-20"
+        />
+        <div className="z-30 justify-between w-full h-full absolute flex flex-col items-start text-white bg-black bg-opacity-50 px-32 py-12 rounded-md">
+          <div className="flex flex-col">
+            <p className="text-4xl font-bold">Selamat Datang</p>
+            <p className="text-lg">Di Website Toko Kelontong</p>
           </div>
+          <button
+            onClick={scrollToMain}
+            className="mt-4 px-6 py-3 cursor-pointer bg-[#ff6600] text-white font-semibold rounded-full shadow-lg hover:bg-[#e65c00] transition"
+          >
+            Selengkapnya
+          </button>
         </div>
       </div>
-      <Footer />
+
+      {/* Main Content */}
+      <div id="main"></div>
+      <section className="p-10 pt-20 z-50 flex flex-col items-center gap-2 relative">
+        <h1 className="text-5xl text-center max-w-[45vw]">
+          Enjoy Your Favorite <br /> Product with Toko Kelontong
+        </h1>
+        <p className="text-xl text-center max-w-[45vw]">
+          Discover tranquility at Ngopi, a sanctuary for unwinding, where your
+          evenings are perfected with relaxation and rich flavors.
+        </p>
+        <button
+          onClick={() => router.push("/features")}
+          className="mt-4 px-6 py-3 cursor-pointer bg-[#ff6600] text-white font-semibold rounded-full shadow-lg hover:bg-[#e65c00] transition"
+        >
+          Explore Features
+        </button>
+      </section>
+
+      {/* Footer Motive */}
+      <div className="flex justify-center max-h-[30vh] min-h-[30vh] overflow-hidden relative w-full z-40">
+        <Image
+          src={`${baseURL}/uploads/store/motive/default-footer-motive.png`}
+          width={400}
+          height={100}
+          className="absolute rounded-md w-full object-cover z-10"
+          alt="FOOTER MOTIVE"
+        />
+      </div>
+
+      {/* Footer (Now Flexible & Always at Bottom) */}
+      <footer className="w-full mt-auto z-50">
+        <Footer />
+      </footer>
     </div>
   );
 }

@@ -44,7 +44,7 @@ const Footer = () => {
         </div>
       </div>
       <p className="mt-4 text-center w-full">
-        Copyright © 2024 Carakan. All rights reserved
+        Copyright © 2025 Carakan. All rights reserved
       </p>
     </div>
   );

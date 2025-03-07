@@ -25,6 +25,7 @@ import imageCompression from "browser-image-compression";
 import Select from "react-select";
 import Swal from "sweetalert2";
 import Image from "next/image";
+import MapPicker from "@/components/MapPicker";
 
 const CompanyData = () => {
   const [companies, setCompanies] = useState([]);
@@ -156,6 +157,7 @@ const CompanyData = () => {
 
     try {
       // Ensure all required fields are filled
+      console.log("ini data adede", companiesDataAdd)
       if (
         !companiesDataAdd.name ||
         !companiesDataAdd.address ||
@@ -183,6 +185,16 @@ const CompanyData = () => {
       if (response.status == 201) {
         modalOpen("add", false);
         Swal.fire("Berhasil", "Company berhasil ditambahkan!", "success");
+        setCompaniesDataAdd({
+          name: "",
+          address: "",
+          id_type: "",
+          status: "",
+          phone: "",
+          email: "",
+          logo: "",
+          header: "",
+        })
         setCompanies((prevCompanies) => [...prevCompanies, response.data]);
       } else {
         Swal.fire("Gagal", response.error, "error");
@@ -519,13 +531,9 @@ const CompanyData = () => {
               required
             />
             <p className="font-semibold mt-4">Address</p>
-            <textarea
-              name="address"
-              value={companiesDataAdd.address}
-              onChange={handleChangeAdd}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
+            <MapPicker 
+              name="address" 
+              onChange={handleChangeAdd} />
             <p className="font-semibold mt-4 mb-2">Type</p>
             <Select
               id="type"
@@ -659,14 +667,18 @@ const CompanyData = () => {
                     <p className="font-semibold mt-4 mb-2">
                       Address Perusahaan
                     </p>
-                    <input
+                    {/* <input
                       type="text"
                       name="stock"
                       value={companiesDataUpdate.address}
                       onChange={handleChangeUpdate}
                       className="border rounded-md p-2 w-full bg-white"
                       required
-                    />
+                    /> */}
+                    <MapPicker 
+                      name="address" 
+                      value={companiesDataUpdate.address}
+                      onChange={handleChangeUpdate} />
                     <p className="font-semibold mt-4 mb-2">Type</p>
                     <Select
                       id="type"

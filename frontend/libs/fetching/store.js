@@ -47,3 +47,22 @@ export const addStore = async (id_store, reqBody) => {
     console.error("Error fetching store:", error);
   }
 };
+
+export const getStoreImage = async (id_store, params) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!id_store) {
+      console.error("id_store is missing");
+      return;
+    }
+    const response = await client.post(
+      `/store/getStoreImage`,
+      { id: id_store, params: params },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = response.data;
+    return data;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+  }
+};

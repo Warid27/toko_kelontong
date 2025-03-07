@@ -107,7 +107,7 @@ router.post("/liststore", authenticate, async (c) => {
     return c.json({ error: "An unexpected error occurred" }, 500);
   }
 });
-router.post("/getstore",authenticate, async (c) => {
+router.post("/getstore", authenticate, async (c) => {
   try {
     const { id } = await c.req.json();
 
@@ -122,6 +122,39 @@ router.post("/getstore",authenticate, async (c) => {
     }
 
     return c.json(store, 200);
+  } catch (error) {
+    return c.json(
+      {
+        message: "Terjadi kesalahan saat mengambil Store.",
+        error: error.message,
+      },
+      500
+    );
+  }
+});
+router.post("/getStoreImage", authenticate, async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = body.id;
+    const params = body.params;
+    if (!id) {
+      return c.json({ message: "ID Store diperlukan." }, 400);
+    }
+
+    const store = await StoreModels.findById(id);
+
+    if (!store) {
+      return c.json({ message: "Store tidak ditemukan." }, 404);
+    }
+    let result;
+    if (params == "icon") {
+      result = store.icon;
+    } else if (params == "banner") {
+      result = store.banner;
+    } else {
+      return c.json({ message: "Params tidak ditemukan." }, 400);
+    }
+    return c.json(result, 200);
   } catch (error) {
     return c.json(
       {
