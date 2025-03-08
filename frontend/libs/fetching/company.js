@@ -20,6 +20,16 @@ export const fetchCompanyList = async () => {
   }
 };
 
+export const fetchCompanyListLogo = async () => {
+  try {
+    const response = await client.post("/company/listcompanylogo", {});
+
+    return response;
+  } catch (error) {
+    console.error("Error fetching companies:", error);
+  }
+};
+
 export const getCompanyData = async (id) => {
   try {
     const token = localStorage.getItem("token");

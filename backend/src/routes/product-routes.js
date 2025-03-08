@@ -227,6 +227,7 @@ router.post("/listproduct", authenticate, async (c) => {
 
     // Build query based on request body
     const query = {};
+    query.status = 0;
     if (body.id_store) query.id_store = body.id_store;
     if (body.id_company) query.id_company = body.id_company;
     if (body.id_category_product)
@@ -445,6 +446,23 @@ router.post("/addproduct", authenticate, async (c) => {
       { error: "Failed to add product", details: error.message },
       500
     );
+  }
+});
+
+router.post("/liststatus", async (c) => {
+  try {
+    // Fetch only name and logo fields from the database where status = 0
+    const products = await ProductModels.find({ status: 0 }, "status");
+
+    // Map result to use resolvedLogo if available
+    const response = products.map((product) => ({
+      status: product.status,
+    }));
+
+    return c.json(response, 200);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return c.json({ error: "An unexpected error occurred" }, 500);
   }
 });
 

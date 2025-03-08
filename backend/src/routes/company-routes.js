@@ -9,7 +9,7 @@ import { authenticate } from "@middleware/authMiddleware"; // Import the middlew
 const router = new Hono();
 
 // Get all company
-router.post("/listcompany",authenticate, async (c) => {
+router.post("/listcompany", authenticate, async (c) => {
   try {
     // Fetch all companies from the database
     const companies = await CompanyModels.find().lean(); // Use `.lean()` for better performance
@@ -65,5 +65,28 @@ router.post("/addcompany", authenticate, async (c) => {
     return c.json({ message: error.message }, 400);
   }
 });
+
+router.post("/listcompanylogo", async (c) => {
+  try {
+    // Fetch only name and logo fields from the database where status = 0
+    const companies = await CompanyModels.find({ status: 0 }, "name logo").lean(
+      {
+        virtuals: true,
+      }
+    );
+
+    // Map result to use resolvedLogo if available
+    const response = companies.map((company) => ({
+      name: company.name,
+      logo: company.resolvedLogo || company.logo, // Prefer resolvedLogo if available
+    }));
+
+    return c.json(response, 200);
+  } catch (error) {
+    console.error("Error fetching companies:", error);
+    return c.json({ error: "An unexpected error occurred" }, 500);
+  }
+});
+
 
 export default router;

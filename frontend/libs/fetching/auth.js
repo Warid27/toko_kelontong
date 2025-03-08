@@ -13,6 +13,7 @@ export const loginServices = async (reqBody) => {
       localStorage.setItem("username", user.username);
       localStorage.setItem("id_store", user.id_store);
       localStorage.setItem("id_company", user.id_company);
+      return token;
     } else {
       Swal.fire("Gagal", response.data.message || "Login gagal", "error");
       throw new Error(response.data.message || "Login failed");

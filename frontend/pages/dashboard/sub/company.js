@@ -2,15 +2,13 @@ import React, { useEffect, useState } from "react";
 
 // Icon
 import { IoSearchOutline } from "react-icons/io5";
-import { MdKeyboardArrowDown } from "react-icons/md";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit, FaInfoCircle, FaImage } from "react-icons/fa";
 // Components
-import { compressionSettings } from "@/utils/imageCompression";
 import { Modal } from "@/components/Modal";
 import { fetchTypeList } from "@/libs/fetching/type";
-import { uploadImage } from "@/libs/fetching/upload-service";
+import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import {
   fetchCompanyList,
   updateCompany,
@@ -21,7 +19,6 @@ import { validatePhoneNumber } from "@/utils/validatePhoneNumber";
 
 // Package
 import ReactPaginate from "react-paginate";
-import imageCompression from "browser-image-compression";
 import Select from "react-select";
 import Swal from "sweetalert2";
 import Image from "next/image";
@@ -157,7 +154,7 @@ const CompanyData = () => {
 
     try {
       // Ensure all required fields are filled
-      console.log("ini data adede", companiesDataAdd)
+      console.log("ini data adede", companiesDataAdd);
       if (
         !companiesDataAdd.name ||
         !companiesDataAdd.address ||
@@ -194,7 +191,7 @@ const CompanyData = () => {
           email: "",
           logo: "",
           header: "",
-        })
+        });
         setCompanies((prevCompanies) => [...prevCompanies, response.data]);
       } else {
         Swal.fire("Gagal", response.error, "error");
@@ -297,23 +294,7 @@ const CompanyData = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const options = {
-      ...compressionSettings[params], // Pick settings based on `params`
-      useWebWorker: true, // Improve performance
-      fileType: "image/webp", // Convert to WebP for best quality
-    };
-
     try {
-      // 🔹 Compress the file
-      const compressedFile = await imageCompression(file, options);
-
-      // 🔹 Prepare FormData for upload
-      const id_user = localStorage.getItem("id_user");
-      const formData = new FormData();
-      formData.append("file", compressedFile, "compressed-image.webp"); // Use WebP
-      formData.append("id_user", id_user);
-
-      // 🔹 Set correct upload path
       let pathPrefix = "";
       switch (params) {
         case "add":
@@ -327,11 +308,8 @@ const CompanyData = () => {
           console.error(`Invalid params value: ${params}`);
           return;
       }
-      formData.append("pathPrefix", pathPrefix);
 
-      const response = await uploadImage(formData);
-
-      console.log("RESP", response);
+      const response = await uploadImageCompress(file, params, pathPrefix);
       const uploadedImageUrl = response.data.metadata.shortenedUrl;
       if (response.status == 201) {
         // 🔹 Update state based on `params`
@@ -385,19 +363,6 @@ const CompanyData = () => {
               />
               <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
             </div>
-            <div className="avatar">
-              <div className="w-10 h-10 rounded-full">
-                <Image
-                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                />
-              </div>
-            </div>
-            <button className="button btn-ghost btn-sm rounded-lg">
-              <MdKeyboardArrowDown className="text-2xl mt-1" />
-            </button>
           </div>
         </div>
         <div className="flex flex-row justify-end mt-8">
@@ -451,13 +416,13 @@ const CompanyData = () => {
                         </td>
                         <td>
                           <button
-                            className=" p-3 rounded-lg text-2xl "
+                            className="iconBtn iconDangerBtn"
                             onClick={() => deleteCompanyById(company._id)}
                           >
                             <MdDelete />
                           </button>
                           <button
-                            className=" p-3 rounded-lg text-2xl "
+                            className="iconBtn iconInfoBtn"
                             onClick={() =>
                               handleUpdateCompany(company, "update")
                             }
@@ -531,9 +496,7 @@ const CompanyData = () => {
               required
             />
             <p className="font-semibold mt-4">Address</p>
-            <MapPicker 
-              name="address" 
-              onChange={handleChangeAdd} />
+            <MapPicker name="address" onChange={handleChangeAdd} />
             <p className="font-semibold mt-4 mb-2">Type</p>
             <Select
               id="type"
@@ -580,15 +543,12 @@ const CompanyData = () => {
             <div className="flex justify-end mt-5">
               <button
                 type="button"
-                className="bg-gray-500 text-white p-2 rounded-lg mr-2"
+                className="closeBtn"
                 onClick={() => modalOpen("add", false)}
               >
                 Batal
               </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
+              <button type="submit" className="submitBtn">
                 Tambah
               </button>
             </div>
@@ -604,15 +564,15 @@ const CompanyData = () => {
             <button
               className={`${
                 openMenu == "Info" ? "addBtn mr-2" : "closeBtn"
-              } w-10 h-10 flex items-center justify-center`}
+              } w-12 h-12 flex items-center justify-center`}
               onClick={() => setOpenMenu("Info")}
             >
-              <FaRegEdit />
+              <FaRegEdit className="text-2xl" />
             </button>
             <button
               className={`${
                 openMenu == "Header" ? "addBtn mr-2" : "closeBtn"
-              } w-10 h-10 flex items-center justify-center`}
+              } w-12 h-12 flex items-center justify-center`}
               onClick={() => setOpenMenu("Header")}
             >
               <FaImage />
@@ -675,10 +635,11 @@ const CompanyData = () => {
                       className="border rounded-md p-2 w-full bg-white"
                       required
                     /> */}
-                    <MapPicker 
-                      name="address" 
+                    <MapPicker
+                      name="address"
                       value={companiesDataUpdate.address}
-                      onChange={handleChangeUpdate} />
+                      onChange={handleChangeUpdate}
+                    />
                     <p className="font-semibold mt-4 mb-2">Type</p>
                     <Select
                       id="type"

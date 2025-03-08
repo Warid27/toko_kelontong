@@ -8,6 +8,8 @@ import { Modal } from "@/components/Modal";
 import { useRouter } from "next/router";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import Link from "next/link";
+import fetchCategoryList from "@/libs/fetching/category"
+import fetchItemCampaignList from "@/libs/fetching/itemCampaign"
 
 import { categoryProductList } from "@/libs/fetching/category";
 
@@ -27,7 +29,7 @@ export default function Home() {
   const [companyList, setCompanyList] = useState([]);
   const [categoryProductList, setCategoryProductList] = useState([]);
   const router = useRouter();
-  const [stores, setStores] = useState([]);
+  const [stores, setStores] = useState({});
 
   const motiveLength = 5;
 
@@ -70,9 +72,10 @@ export default function Home() {
 
     const fetchCategoryProduct = async () => {
       try {
-        const response = await client.post("/category/listcategories", {});
-        setCategoryProductList(response.data);
-        return response.data;
+        // const {id_store} = router.query
+        const response = await fetchCategoryList(id_store);
+        setCategoryProductList(response);
+        return response;
       } catch (error) {
         console.error("Error fetching categories:", error);
         return [];
@@ -81,12 +84,9 @@ export default function Home() {
 
     const fetchItemCampaign = async () => {
       try {
-        const response = await client.post(
-          "/itemcampaign/listitemcampaigns",
-          {}
-        );
-        setItemCampaignList(response.data);
-        return response.data;
+        const response = await fetchItemCampaignList();
+        setItemCampaignList(response);
+        return response;
       } catch (error) {
         console.error("Error fetching item campaign:", error);
         return [];
@@ -134,20 +134,6 @@ export default function Home() {
         );
 
         const storeData = response.data;
-
-        // If decoration details exist, update global CSS variables
-        if (storeData.decorationDetails) {
-          const { primary, secondary, tertiary, danger } =
-            storeData.decorationDetails;
-
-          document.documentElement.style.setProperty("--bg-primary", primary);
-          document.documentElement.style.setProperty(
-            "--bg-secondary",
-            secondary
-          );
-          document.documentElement.style.setProperty("--bg-tertiary", tertiary);
-          document.documentElement.style.setProperty("--bg-danger", danger);
-        }
 
         setStores(storeData); //warod warod warod warod warod warod awrod awrods
         return storeData;
@@ -219,16 +205,12 @@ export default function Home() {
             setCategoryProductList(data_category);
             setItemCampaignList(data_item_campaign);
             setStores(data_store);
+            // if (stores.decorationDetails) {
+              
+            // }
             // setImageHeader(data_company_image);
             setIsLoading(false);
             console.log("Data fetched from cache");
-            const keys = await cache.keys();
-            console.log("Cache keys:", keys);
-
-            console.log("product", products);
-            console.log("category", categoryProductList);
-            console.log("item campaign", itemCampaignList);
-            console.log("store", stores);
           }
 
           // Fetch fresh data if no cache or cache needs revalidation
@@ -289,13 +271,19 @@ export default function Home() {
               setStores(data_store);
               // setImageHeader(data_company_image);
               setIsLoading(false);
+              // if (stores.decorationDetails) {
+              //   const { primary, secondary, tertiary, danger } =
+              //     stores.decorationDetails;
+      
+              //   document.documentElement.style.setProperty("--bg-primary", primary);
+              //   document.documentElement.style.setProperty(
+              //     "--bg-secondary",
+              //     secondary
+              //   );
+              //   document.documentElement.style.setProperty("--bg-tertiary", tertiary);
+              //   document.documentElement.style.setProperty("--bg-danger", danger);
+              // }
             }
-
-            console.log("Fresh data fetched and cached");
-            console.log("product", products);
-            console.log("category", categoryProductList);
-            console.log("item campaign", itemCampaignList);
-            console.log("store", stores);
           }
         } catch (error) {
           console.error("Error in cek_product:", error);
@@ -329,6 +317,19 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (!stores?.decorationDetails) return;
+  
+    const { primary, secondary, tertiary, danger } = stores.decorationDetails;
+    document.documentElement.style.setProperty("--bg-primary", primary);
+    document.documentElement.style.setProperty("--bg-secondary", secondary);
+    document.documentElement.style.setProperty("--bg-tertiary", tertiary);
+    document.documentElement.style.setProperty("--bg-danger", danger);
+  }, [stores]);
+  useEffect(() => {
+    console.log("Stores data:", stores);
+  }, [stores]);
+
   const addToCart = async () => {
     const cartItems = JSON.parse(localStorage.getItem("cartItems") || "[]");
     const existingIndex = cartItems.findIndex(
@@ -357,6 +358,12 @@ export default function Home() {
     closeModal();
     handleCartUpdate();
   };
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredProductList = products.filter(
+    (product) =>
+      product.name_product.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -440,12 +447,19 @@ export default function Home() {
         </div>
 
         <div className="mt-10 space-y-6 relative min-h-[200vh] z-30">
+        <input
+                type="text"
+                placeholder="Cari Product..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
+              />
           <h2 className="font-bold text-4xl mb-4">Products</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.length === 0 ? (
+            {filteredProductList.length === 0 ? (
               <p>Produk Tidak Ada</p>
             ) : (
-              products.map((product) => {
+              filteredProductList.map((product) => {
                 const today = new Date().toISOString().split("T")[0];
                 const campaign = itemCampaignList.find(
                   (icl) =>

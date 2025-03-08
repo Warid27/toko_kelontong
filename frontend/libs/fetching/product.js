@@ -43,15 +43,13 @@ export const fetchGetProducts = async (id_product, params = undefined) => {
     if (params) {
       requestBody.params = params;
     }
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token");
 
-    const response = await client.post("/product/getproduct", requestBody,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await client.post("/product/getproduct", requestBody, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (response.status !== 200) {
       throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -80,6 +78,16 @@ export const fetchProductsAdd = async (data) => {
 
     const data = renponse.data;
     return data;
+  } catch (error) {
+    console.error("Error fetching products:", error);
+  }
+};
+
+export const listProductStatus = async () => {
+  try {
+    const response = await client.post("/product/liststatus", {});
+
+    return response;
   } catch (error) {
     console.error("Error fetching products:", error);
   }

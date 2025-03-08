@@ -1,6 +1,20 @@
 "use client";
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import { useState, useEffect } from "react";
+import L from "leaflet";
+
+const customIcon = L.icon({
+  iconUrl: "/map-marker.png", // Path to your marker image
+  iconSize: [32, 32], // Size of the icon
+  iconAnchor: [16, 32], // Positioning of the icon anchor
+  popupAnchor: [0, -32], // Adjust popup position if needed
+});
 
 const RecenterMap = ({ position }) => {
   const map = useMap();
@@ -28,7 +42,10 @@ const ActualMapComponent = ({ value, onChange, name }) => {
     if (value) {
       if (typeof value === "string") {
         const parsedValue = value.split(",").map(Number);
-        if (parsedValue.length === 2 && parsedValue.every((num) => !isNaN(num))) {
+        if (
+          parsedValue.length === 2 &&
+          parsedValue.every((num) => !isNaN(num))
+        ) {
           setPosition(parsedValue);
         }
       } else if (Array.isArray(value)) {
@@ -47,11 +64,19 @@ const ActualMapComponent = ({ value, onChange, name }) => {
         required
         readOnly
       />
-      <MapContainer center={position} zoom={15} style={{ height: "200px", width: "100%" }}>
+      <MapContainer
+        center={position}
+        zoom={15}
+        style={{ height: "200px", width: "100%" }}
+      >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <RecenterMap position={position} />
-        <MapClickHandler setPosition={setPosition} onChange={onChange} name={name} />
-        <Marker position={position} />
+        <MapClickHandler
+          setPosition={setPosition}
+          onChange={onChange}
+          name={name}
+        />
+        <Marker position={position} icon={customIcon} />
       </MapContainer>
     </>
   );

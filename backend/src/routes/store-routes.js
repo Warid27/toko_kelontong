@@ -77,7 +77,6 @@ router.post("/addstore", authenticate, async (c) => {
 });
 
 // Get all store
-
 router.post("/liststore", authenticate, async (c) => {
   try {
     const body = await c.req.json();
@@ -107,6 +106,7 @@ router.post("/liststore", authenticate, async (c) => {
     return c.json({ error: "An unexpected error occurred" }, 500);
   }
 });
+
 router.post("/getstore", authenticate, async (c) => {
   try {
     const { id } = await c.req.json();
@@ -132,6 +132,7 @@ router.post("/getstore", authenticate, async (c) => {
     );
   }
 });
+
 router.post("/getStoreImage", authenticate, async (c) => {
   try {
     const body = await c.req.json();
@@ -165,4 +166,22 @@ router.post("/getStoreImage", authenticate, async (c) => {
     );
   }
 });
+
+router.post("/liststatus", async (c) => {
+  try {
+    // Fetch only name and logo fields from the database where status = 0
+    const stores = await StoreModels.find({ status: 0 }, "status");
+
+    // Map result to use resolvedLogo if available
+    const response = stores.map((store) => ({
+      status: store.status,
+    }));
+
+    return c.json(response, 200);
+  } catch (error) {
+    console.error("Error fetching stores:", error);
+    return c.json({ error: "An unexpected error occurred" }, 500);
+  }
+});
+
 export default router;

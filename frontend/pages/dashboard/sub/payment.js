@@ -9,7 +9,7 @@ import { MdDelete } from "react-icons/md";
 import { FaInfoCircle } from "react-icons/fa";
 import { Modal } from "@/components/Modal";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
-import {fetchPaymentList, fetchPaymentAdd} from "@/libs/fetching/payment"
+import { fetchPaymentList, fetchPaymentAdd } from "@/libs/fetching/payment";
 import ReactPaginate from "react-paginate";
 
 const Payment = () => {
@@ -51,13 +51,12 @@ const Payment = () => {
     setIsUpdateModalOpen(false);
   };
 
-
   useEffect(() => {
     const fetching_requirement = async () => {
       const get_payment_list = async () => {
         const data_payment = await fetchPaymentList();
         setPayments(data_payment);
-        setIsLoading(false)
+        setIsLoading(false);
       };
       get_payment_list();
     };
@@ -122,7 +121,10 @@ const Payment = () => {
         return;
       }
 
-      const response = await fetchPaymentAdd(paymentDataAdd.payment_method, paymentDataAdd.keterangan)
+      const response = await fetchPaymentAdd(
+        paymentDataAdd.payment_method,
+        paymentDataAdd.keterangan
+      );
 
       console.log("Payment added:", response);
       Swal.fire("Berhasil", "Pembayaran berhasil ditambahkan!", "success");
@@ -271,7 +273,10 @@ const Payment = () => {
   );
 
   const startIndex = currentPage * itemsPerPage;
-  const selectedData = filteredPaymentList.slice(startIndex, startIndex + itemsPerPage);
+  const selectedData = filteredPaymentList.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
   return (
     <div className="w-full h-screen pt-16">
       <div className="justify-between w-full bg-white shadow-lg p-4">
@@ -282,28 +287,15 @@ const Payment = () => {
           </div>
           <div className="relative mt-2 flex flex-row space-x-4">
             <div className="relative">
-            <input
-              type="text"
-              placeholder="Cari metode pembayaran..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
-          />
+              <input
+                type="text"
+                placeholder="Cari metode pembayaran..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
+              />
               <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
             </div>
-            <div className="avatar">
-              <div className="w-10 h-10 rounded-full">
-                <Image
-                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                />
-              </div>
-            </div>
-            <button className="button btn-ghost btn-sm rounded-lg">
-              <MdKeyboardArrowDown className="text-2xl mt-1" />
-            </button>
           </div>
         </div>
         <div className="flex flex-row justify-between mt-8">
@@ -332,52 +324,52 @@ const Payment = () => {
               <h1>Data Pembayaran tidak ditemukan!</h1>
             ) : (
               <>
-              <table className="table w-full border border-gray-300">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Pembayaran</th>
-                    <th>Keterangan</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedData.map((payment, index) => (
-                    <tr key={payment._id}>
-                      <td>{index + 1}</td>
-                      <td>
-                        <b>{payment.payment_method}</b>
-                      </td>
-                      <td>{payment.keterangan}</td>
-                      <td>
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => deletePaymentById(payment._id)}
-                        >
-                          <MdDelete />
-                        </button>
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdatePayment(payment)}
-                        >
-                          <FaInfoCircle />
-                        </button>
-                      </td>
+                <table className="table w-full border border-gray-300">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Nama Pembayaran</th>
+                      <th>Keterangan</th>
+                      <th>Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <ReactPaginate
-                previousLabel={"← Prev"}
-                nextLabel={"Next →"}
-                pageCount={Math.ceil(payments.length / itemsPerPage)}
-                onPageChange={({ selected }) => setCurrentPage(selected)}
-                containerClassName={"flex gap-2 justify-center mt-4"}
-                pageLinkClassName={"border px-3 py-1"}
-                previousLinkClassName={"border px-3 py-1"}
-                nextLinkClassName={"border px-3 py-1"}
-                activeClassName={"bg-blue-500 text-white"}
-              />
+                  </thead>
+                  <tbody>
+                    {selectedData.map((payment, index) => (
+                      <tr key={payment._id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <b>{payment.payment_method}</b>
+                        </td>
+                        <td>{payment.keterangan}</td>
+                        <td>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() => deletePaymentById(payment._id)}
+                          >
+                            <MdDelete />
+                          </button>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() => handleUpdatePayment(payment)}
+                          >
+                            <FaInfoCircle />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <ReactPaginate
+                  previousLabel={"← Prev"}
+                  nextLabel={"Next →"}
+                  pageCount={Math.ceil(payments.length / itemsPerPage)}
+                  onPageChange={({ selected }) => setCurrentPage(selected)}
+                  containerClassName={"flex gap-2 justify-center mt-4"}
+                  pageLinkClassName={"border px-3 py-1"}
+                  previousLinkClassName={"border px-3 py-1"}
+                  nextLinkClassName={"border px-3 py-1"}
+                  activeClassName={"bg-blue-500 text-white"}
+                />
               </>
             )}
           </div>

@@ -1,9 +1,17 @@
 import client from "@/libs/axios";
 
-export const fetchStoreList = async () => {
+export const fetchStoreList = async (id_company = null) => {
   try {
     const token = localStorage.getItem("token");
-    const id_company = localStorage.getItem("id_company");
+
+    if (!id_company) {
+      id_company = localStorage.getItem("id_company");
+    }
+
+    if (!id_company) {
+      return []; // Ensure it always returns an array
+    }
+
     const response = await client.post(
       "/store/liststore",
       { id_company },
@@ -13,13 +21,24 @@ export const fetchStoreList = async () => {
         },
       }
     );
-    const data = response.data;
 
-    return data;
+    return response.data || []; // Ensure we return an array
   } catch (error) {
     console.error("Error fetching store:", error);
+    return []; // Return empty array to prevent crashes
   }
 };
+
+export const listStoreStatus = async () => {
+  try {
+    const response = await client.post("/store/liststatus", {});
+
+    return response;
+  } catch (error) {
+    console.error("Error fetching stores:", error);
+  }
+};
+
 export const updateStore = async (id_store, reqBody) => {
   try {
     const token = localStorage.getItem("token");

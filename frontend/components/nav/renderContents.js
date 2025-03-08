@@ -28,8 +28,6 @@ const ContentRenderer = ({
   setSelectedLink,
   handleLogout,
   userRole,
-  id_company,
-  id_store,
 }) => {
   // Check if the user has permission to access the selectedLink
   const hasPermission = rolePermissions[userRole]?.includes(selectedLink);

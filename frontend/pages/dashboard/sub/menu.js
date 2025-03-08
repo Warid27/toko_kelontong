@@ -22,6 +22,8 @@ import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
 import { fetchProductsList } from "@/libs/fetching/product";
 import { fetchSizeList } from "@/libs/fetching/size";
 import ReactPaginate from "react-paginate";
+import BarcodeGenerator from "@/components/BarcodeGenerator";
+import { IoBarcodeOutline } from "react-icons/io5";
 
 const Menu = () => {
   const [products, setProducts] = useState([]);
@@ -30,10 +32,11 @@ const Menu = () => {
   const [productToUpdate, setProductToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
   // const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Untuk mengontrol tampilan modal update
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
-
+  // const [barcodeValue, setBarcodeValue] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isExampleModalOpen, setIsExampleModalOpen] = useState(false);
+  const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
   const [extrasList, setExtrasList] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [itemCampaignList, setItemCampaignList] = useState([]);
@@ -42,6 +45,7 @@ const Menu = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10;
   const [searchQuery, setSearchQuery] = useState("");
+  const [barcode, setBarcode] = useState("");
 
   const token = localStorage.getItem("token");
 
@@ -90,6 +94,14 @@ const Menu = () => {
     link.click();
     document.body.removeChild(link);
   };
+
+  function generateRandomBarcode() {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
+  }
+
+  function handleGenerateBarcode() {
+    setProductDataAdd({barcode :generateRandomBarcode()});
+  }
 
   const handleUpload = async () => {
     if (!file) return setMessage("Pilih file");
@@ -184,6 +196,7 @@ const Menu = () => {
       add: setIsModalOpen,
       update: setIsUpdateModalOpen,
       example: setIsExampleModalOpen,
+      barcode: setIsBarcodeModalOpen
     };
     if (setters[param]) {
       setters[param](bool);
@@ -575,6 +588,16 @@ const Menu = () => {
                           >
                             <FaRegEdit />
                           </button>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() => {
+                              setBarcode(product.barcode)
+                              modalOpen("barcode", true)
+                            }
+                            }
+                          >
+                            <IoBarcodeOutline />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -614,6 +637,19 @@ const Menu = () => {
             <button onClick={handleDownload} className="p-2 bg-green-500 text-white rounded">
               Download Template
             </button>
+          </div>
+
+        </Modal>
+      )}
+      {isBarcodeModalOpen && (
+        <Modal
+          onClose={() => {
+            modalOpen("barcode", false);
+          }}
+          title={"Barcode Product"}
+        >
+          <div className="flex justify-center items-center">
+            <BarcodeGenerator barcode={barcode} />
           </div>
 
         </Modal>
@@ -703,14 +739,23 @@ const Menu = () => {
                       required
                     />
                     <p className="font-semibold mt-4 mb-2">Barcode</p>
-                    <input
-                      type="text"
-                      name="barcode"
-                      value={productDataAdd.barcode}
-                      onChange={handleChangeAdd}
-                      className="border rounded-md p-2 w-full bg-white"
-                      required
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        name="barcode"
+                        value={productDataAdd.barcode}
+                        onChange={handleChangeAdd}
+                        className="border rounded-md p-2 w-full bg-white"
+                        required
+                      />
+                      <button
+                        onClick={handleGenerateBarcode}
+                        className="px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      >
+                        Generate Barcode
+                      </button>
+                    </div>
+
                     <div className="flex gap-2 w-full justify-between">
                       <div className="w-full">
                         <p className="font-semibold mt-4 mb-2">Harga Beli</p>

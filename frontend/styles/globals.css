@@ -5,11 +5,12 @@
 :root {
   --bg-primary: #24d164;
   --bg-secondary: #3b82f6;
-  --bg-tertiary: #6b7280;
+  --bg-tertiary: #9ca3af;
   --bg-danger: #ef4444;
   --tw-text-opacity: 1;
   --color-white: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
+
 body {
   color: black;
   @apply bg-[#F7F7F7];
@@ -21,8 +22,8 @@ body {
 }
 
 .toggle:checked {
-  border-color: #24d164;
-  background-color: #24d164; /* Kuning */
+  border-color: var(--bg-primary);
+  background-color: var(--bg-primary);
 }
 
 table * {
@@ -33,33 +34,122 @@ table * {
 .navbar {
   background: var(--bg-primary);
 }
+
 /* === BUTTON === */
+.addBtn,
+.submitBtn,
+.closeBtn,
+.dangerBtn {
+  color: var(--color-white);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease, transform 0.1s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
+  outline: none;
+}
+
 .addBtn {
   background: var(--bg-primary);
-  color: var(--color-white);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
 }
+.addBtn:hover {
+  background: #1fb653;
+  box-shadow: 0 4px 6px rgba(31, 182, 83, 0.3);
+}
+.addBtn:active {
+  background: #199c45;
+  transform: scale(0.95);
+}
+.addBtn:focus {
+  outline: none;
+  ring: 2px solid #199c45;
+}
+
 .submitBtn {
   background: var(--bg-secondary);
-  color: var(--color-white);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
 }
+.submitBtn:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+}
+.submitBtn:active {
+  background: #1e4ed8;
+  transform: scale(0.95);
+}
+.submitBtn:focus {
+  outline: none;
+  ring: 2px solid #1e4ed8;
+}
+
 .closeBtn {
   background: var(--bg-tertiary);
-  color: var(--color-white);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
   margin-right: 0.5rem;
 }
+.closeBtn:hover {
+  background: #8b9099;
+  box-shadow: 0 4px 6px rgba(139, 144, 153, 0.3);
+}
+.closeBtn:active {
+  background: #757b84;
+  transform: scale(0.95);
+}
+.closeBtn:focus {
+  outline: none;
+  ring: 2px solid #757b84;
+}
+
 .dangerBtn {
   background: var(--bg-danger);
-  color: var(--color-white);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
   margin-right: 0.5rem;
 }
+.dangerBtn:hover {
+  background: #dc2626;
+  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);
+}
+.dangerBtn:active {
+  background: #b91c1c;
+  transform: scale(0.95);
+}
+.dangerBtn:focus {
+  outline: none;
+  ring: 2px solid #b91c1c;
+}
+
+/* Icon */
+.iconBtn {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  transition: color 0.3s ease, transform 0.1s ease;
+}
+
+.iconInfoBtn {
+  color: var(--bg-secondary);
+}
+
+.iconInfoBtn:hover {
+  color: color-mix(in srgb, var(--bg-secondary) 80%, black 20%);
+}
+
+.iconInfoBtn:active {
+  color: color-mix(in srgb, var(--bg-secondary) 70%, black 30%);
+  transform: scale(0.95);
+}
+
+.iconDangerBtn {
+  color: var(--bg-danger);
+}
+
+.iconDangerBtn:hover {
+  color: color-mix(in srgb, var(--bg-danger) 80%, black 20%);
+}
+
+.iconDangerBtn:active {
+  color: color-mix(in srgb, var(--bg-danger) 70%, black 30%);
+  transform: scale(0.95);
+}
+
 /* === BUTTON === */
 
 /* Remove spinners for WebKit browsers (Chrome, Safari, Edge) */
@@ -68,8 +158,3 @@ input[type="number"].spinner-none::-webkit-outer-spin-button {
   -webkit-appearance: none !important;
   margin: 0;
 }
-
-/* Remove spinners for Firefox
-input[type="number"].spinner-none {
-  -moz-appearance: textfield !important;
-} */

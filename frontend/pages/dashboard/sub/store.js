@@ -2,8 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { IoSearchOutline } from "react-icons/io5";
 import Image from "next/image";
 import { MdKeyboardArrowDown } from "react-icons/md";
-import client from "@/libs/axios";
-import { HiDotsHorizontal } from "react-icons/hi";
+
 import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import {
@@ -28,12 +27,11 @@ import {
   addStore,
   deleteStore,
 } from "@/libs/fetching/store";
-import { uploadImage } from "@/libs/fetching/upload-service";
+import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import QRCodeGenerator from "@/components/QRCodeGenerator";
 // package
 import Select from "react-select";
 import ReactPaginate from "react-paginate";
-import imageCompression from "browser-image-compression";
 import domtoimage from "dom-to-image";
 
 const StoreData = () => {
@@ -150,32 +148,7 @@ const StoreData = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // 🔹 Define compression settings based on `params`
-    const compressionSettings = {
-      add: { maxSizeMB: 0.5, maxWidthOrHeight: 512 }, // Icons (smallest)
-      update: { maxSizeMB: 0.5, maxWidthOrHeight: 512 }, // Icons
-      header: { maxSizeMB: 1, maxWidthOrHeight: 1280 }, // Headers
-      banner: { maxSizeMB: 1, maxWidthOrHeight: 1920 }, // Banners (larger)
-      motive: { maxSizeMB: 0.8, maxWidthOrHeight: 1080 }, // Decorative motives
-      footer_motive: { maxSizeMB: 0.8, maxWidthOrHeight: 1080 }, // Footer motives
-    };
-
-    const options = {
-      ...compressionSettings[params], // Pick settings based on `params`
-      useWebWorker: true,
-      fileType: "image/webp", // Convert to WebP for best quality
-    };
-
     try {
-      // 🔹 Compress the file
-      const compressedFile = await imageCompression(file, options);
-
-      // 🔹 Prepare FormData for upload
-      const id_user = localStorage.getItem("id_user");
-      const formData = new FormData();
-      formData.append("file", compressedFile, "compressed-image.webp"); // Use WebP
-      formData.append("id_user", id_user);
-
       // 🔹 Set correct upload path
       let pathPrefix = "";
       switch (params) {
@@ -194,10 +167,8 @@ const StoreData = () => {
           console.error(`Invalid params value: ${params}`);
           return;
       }
-      formData.append("pathPrefix", pathPrefix);
 
-      const response = await uploadImage(formData);
-      console.log("RESP", response);
+      const response = await uploadImageCompress(file, params, pathPrefix);
       const uploadedImageUrl = response.data.metadata.shortenedUrl;
 
       // 🔹 Update state based on `params`
@@ -804,7 +775,7 @@ const StoreData = () => {
                     </div>
                   </form>
                 );
-            
+
               case "QR Code":
                 return (
                   <div className="flex flex-col items-center justify-center">
