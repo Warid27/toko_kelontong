@@ -4,7 +4,7 @@ import Avatar from "@/components/nav/sub/avatar";
 import { tokenDecoded } from "@/utils/tokenDecoded";
 import StoreIcon from "@/components/nav/sub/storeIcon";
 
-export default function Navbar() {
+export default function Navbar({ handleLogout, setSelectedLink }) {
   const [userRole, setUserRole] = useState(4);
 
   useEffect(() => {
@@ -22,11 +22,14 @@ export default function Navbar() {
             {userRole == 1 ? (
               <CompanySelector />
             ) : (
-              <StoreIcon role={userRole} store_id={null} />//rid warid
+              <StoreIcon role={userRole} store_id={null} /> //rid warid
             )}
           </div>
 
-          <Avatar />
+          <Avatar
+            setSelectedLink={setSelectedLink}
+            handleLogout={handleLogout}
+          />
         </div>
       </div>
     </div>

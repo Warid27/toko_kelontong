@@ -192,7 +192,7 @@ const ItemCampaign = () => {
 
       // Auto Reload
       modalOpen("add", false);
-      Swal.fire("Berhasil", "Kategori Produk berhasil ditambahkan!", "success");
+      Swal.fire("Berhasil", "Item Campaign berhasil ditambahkan!", "success");
       setItemCampaign((prevItemCampaigns) => [
         ...prevItemCampaigns,
         response.data,
@@ -261,7 +261,7 @@ const ItemCampaign = () => {
 
       // Auto Reload
       modalOpen("update", false);
-      Swal.fire("Berhasil", "Produk berhasil diupdate!", "success");
+      Swal.fire("Berhasil", "item campaign berhasil diupdate!", "success");
       setItemCampaign((prevItemCampaigns) =>
         prevItemCampaigns.map((itemCampaign) =>
           itemCampaign._id === itemCampaignDataUpdate.id

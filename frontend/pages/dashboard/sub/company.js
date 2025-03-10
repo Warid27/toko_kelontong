@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 
 // Icon
 import { IoSearchOutline } from "react-icons/io5";
@@ -6,6 +8,9 @@ import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit, FaInfoCircle, FaImage } from "react-icons/fa";
 // Components
+const ExportData = dynamic(() => import("@/components/ExportData"), {
+  ssr: false,
+});
 import { Modal } from "@/components/Modal";
 import { fetchTypeList } from "@/libs/fetching/type";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
@@ -21,7 +26,6 @@ import { validatePhoneNumber } from "@/utils/validatePhoneNumber";
 import ReactPaginate from "react-paginate";
 import Select from "react-select";
 import Swal from "sweetalert2";
-import Image from "next/image";
 import MapPicker from "@/components/MapPicker";
 
 const CompanyData = () => {
@@ -59,6 +63,13 @@ const CompanyData = () => {
     logo: "",
     header: "",
   });
+
+  const columns = [
+    { label: "No", key: "no" },
+    { label: "Nama Perusahaan", key: "name" },
+    { label: "Alamat", key: "address" },
+    { label: "Status", key: "status" },
+  ];
 
   // --- Function
   const modalOpen = (param, bool) => {
@@ -284,10 +295,23 @@ const CompanyData = () => {
   );
 
   const startIndex = currentPage * itemsPerPage;
+
   const selectedData = filteredCompanyList.slice(
     startIndex,
     startIndex + itemsPerPage
   );
+
+  const dataForExport = selectedData.map((company, index) => ({
+    no: index + 1,
+    name: company.name,
+    address: company.address,
+    status:
+      company.status === 0
+        ? "Active"
+        : company.status === 1
+        ? "Inactive"
+        : "Bankrupt",
+  }));
 
   // UPLOADS
   const handleImageChange = async (e, params) => {
@@ -381,6 +405,11 @@ const CompanyData = () => {
               <h1>Data produk tidak ditemukan!</h1>
             ) : (
               <>
+                <ExportData
+                  data={dataForExport}
+                  columns={columns}
+                  fileName="Perusahaan"
+                />
                 <table className="table w-full border border-gray-300">
                   <thead>
                     <tr>

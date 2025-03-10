@@ -33,12 +33,15 @@ router.post("/listcategories", authenticate, async (c) => {
         return c.json({ error: "name_category must be a string" }, 400);
       }
       // Fetch data by name_category
-      const data = await CategoryProductModels.find({ name_category, id_store });
+      const data = await CategoryProductModels.find({
+        name_category,
+        id_store,
+      });
       return c.json(data, 200);
     }
 
     // If name_category does not exist, fetch all data
-    const data = await CategoryProductModels.find({id_store});
+    const data = await CategoryProductModels.find({ id_store });
     return c.json(data, 200);
   } catch (error) {
     console.error("Error fetching categories:", error);
@@ -65,6 +68,49 @@ router.post("/getcategory", authenticate, async (c) => {
     return c.json(
       {
         message: "Terjadi kesalahan saat mengambil category.",
+        error: error.message,
+      },
+      500
+    );
+  }
+});
+
+// Get category by name_category
+router.post("/name", authenticate, async (c) => {
+  try {
+    // Extract and validate the request body
+    const { id_store, category } = await c.req.json();
+
+    // Validate required fields
+    if (!id_store) {
+      return c.json({ message: "ID toko diperlukan." }, 400);
+    }
+    if (!category) {
+      return c.json({ message: "Nama kategori diperlukan." }, 400);
+    }
+
+    // Trim input values to avoid whitespace issues
+    const trimmedCategory = category.trim();
+    const trimmedIdStore = id_store.trim();
+
+    // Query the database to find the category by name_category and id_store
+    const response = await CategoryProductModels.findOne({
+      name_category: { $regex: new RegExp(`^${trimmedCategory}$`, "i") },
+      id_store: trimmedIdStore,
+    });
+
+    // If no category is found, return a 404 error
+    if (!response) {
+      return c.json({ message: "Kategori tidak ditemukan." }, 404);
+    }
+
+    // Return the found category
+    return c.json(response, 200);
+  } catch (error) {
+    // Handle any unexpected errors
+    return c.json(
+      {
+        message: "Terjadi kesalahan saat mengambil kategori.",
         error: error.message,
       },
       500

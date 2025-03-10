@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaRegEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa6";
-import Swal from "sweetalert2"; // Import SweetAlert2
+import Swal from "sweetalert2";
 import { useRouter } from "next/router";
 import { loginServices } from "@/libs/fetching/auth";
 import { tokenDecoded } from "@/utils/tokenDecoded";
@@ -11,6 +11,18 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false); // State for showing password
   const [errorMessage, setErrorMessage] = useState(""); // State for error message
   const router = useRouter();
+
+  useEffect(() => {
+    if (localStorage.getItem("unauthorized") === "true") {
+      Swal.fire({
+        icon: "warning",
+        title: "Unauthorized Access",
+        text: "You need to log in first!",
+        confirmButtonText: "OK",
+      });
+      localStorage.removeItem("unauthorized"); // Remove flag after showing alert
+    }
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();

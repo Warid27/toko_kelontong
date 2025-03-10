@@ -26,7 +26,6 @@ import { rolePermissions } from "@/utils/permission";
 const ContentRenderer = ({
   selectedLink,
   setSelectedLink,
-  handleLogout,
   userRole,
 }) => {
   // Check if the user has permission to access the selectedLink
@@ -79,9 +78,6 @@ const ContentRenderer = ({
       return <SalesMain />;
     case "kasir":
       return <Kasir />;
-    case "logout":
-      handleLogout();
-      return null;
     default:
       return <Analytics />;
   }

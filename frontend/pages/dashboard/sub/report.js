@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { IoSearchOutline } from "react-icons/io5";
 import Image from "next/image";
 import { MdKeyboardArrowDown } from "react-icons/md";
-import DateTimePicker from "@/components/DateTimePicker";
+// import DateTimePicker from "@/components/DateTimePicker";
+import DatePickers from "@/components/DatePicker";
 import client from "@/libs/axios";
 import SalesChart from "@/components/SalesChart";
 import { Modal } from "@/components/Modal";
@@ -12,6 +13,7 @@ export const Report = () => {
   const [salesReportList, setSalesReportList] = useState([]);
   const [orderReportList, setOrderReportList] = useState([]);
   const [filterBy, setFilterBy] = useState("daily");
+  const [selectedDate, setSelectedDate] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [orderDetailsList, setOrderDetailsList] = useState([]);
 
@@ -36,6 +38,7 @@ export const Report = () => {
             id_store,
             id_company,
             filterBy,
+            selectedDate : selectedDate ? selectedDate.toISOString().split("T")[0] : null
           },
           {
             headers: {
@@ -61,7 +64,7 @@ export const Report = () => {
       }
     };
     fetchTransaksiHistory();
-  }, [filterBy]);
+  }, [filterBy, selectedDate]);
   useEffect(() => {
     const fetchTransaksiHistory = async () => {
       try {
@@ -72,6 +75,7 @@ export const Report = () => {
           id_store,
           id_company,
           filterBy,
+          selectedDate : selectedDate ? selectedDate.toISOString().split("T")[0] : null
         }, 
         {
           headers: {
@@ -96,7 +100,7 @@ export const Report = () => {
       }
     };
     fetchTransaksiHistory();
-  }, [filterBy]);
+  }, [filterBy, selectedDate]);
 
   return (
     <div className="w-full h-screen pt-16">
@@ -142,9 +146,10 @@ export const Report = () => {
             onChange={(e) => setFilterBy(e.target.value)}
           >
             <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
           </select>
+          <DatePickers filterBy={filterBy} value={selectedDate} onChange={setSelectedDate} />
         </div>
         <div className="flex items-center">
           <i className="fas fa-th-large text-gray-500 mr-4"></i>

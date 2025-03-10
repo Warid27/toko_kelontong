@@ -7,204 +7,277 @@ import { itemCampaignModels } from "@models/itemCampaign";
 
 // import { SizeModels } from "@models/size-models";
 // import { ExtrasModels } from "@models/extras-models";
-import { join, extname } from "path";
-import { mkdir, readFile, writeFile } from "fs/promises";
-import { createReadStream as fsStream } from "fs";
-import csv from "csv-parser";
-import * as XLSX from "xlsx";
+// import { join, extname } from "path";
+// import { mkdir, readFile, writeFile } from "fs/promises";
+// import { createReadStream as fsStream } from "fs";
+// import csv from "csv-parser";
+// import * as XLSX from "xlsx";
 
 import { ObjectId, mongoose } from "mongoose";
 import fs from "fs/promises";
 import { StockModels } from "@models/stock-models";
 
-// Middleware
+// // Middleware
+// import { authenticate } from "@middleware/authMiddleware"; // Import the middleware
+// import { join, extname } from "path";
+// import { mkdir, writeFile, readFile } from "fs/promises";
+// import XLSX from "xlsx";
+// import {
+//   minioClient,
+//   BACKEND_URI,
+//   MINIO_BUCKET_NAME,
+//   minioUrl,
+// } from "@config/config";
+// export const router = new Hono();
+
+// router.post("/file", authenticate, async (c) => {
+//   try {
+//     console.log("📥 [INFO] Upload request received...");
+
+//     // 📌 1. Get form data
+//     const formData = await c.req.formData();
+//     const excelFile = formData.get("file");
+//     const images = formData.getAll("images"); // Multiple images
+//     const id_store = formData.get("id_store");
+//     const id_company = formData.get("id_company");
+
+//     console.log("🔍 [DEBUG] Form Data Extracted:", {
+//       excelFileName: excelFile?.name,
+//       totalImages: images.length,
+//       id_store,
+//       id_company,
+//     });
+
+//     if (!excelFile) {
+//       console.error("❌ [ERROR] Excel file is missing!");
+//       return c.json({ message: "Excel file is required!" }, 400);
+//     }
+
+//     // 📌 2. Create necessary folders
+//     const uploadDir = join(process.cwd(), "public/uploads");
+//     const excelDir = join(uploadDir, "excels");
+
+//     console.log("📂 [INFO] Upload directory paths:", { uploadDir, excelDir });
+
+//     await mkdir(excelDir, { recursive: true });
+
+//     // 📌 3. Save the Excel file locally
+//     const excelPath = join(excelDir, excelFile.name);
+//     const excelBuffer = await excelFile.arrayBuffer();
+//     await writeFile(excelPath, Buffer.from(excelBuffer));
+
+//     console.log("✅ [INFO] Excel file saved at:", excelPath);
+
+//     // 📌 4. Read Excel File
+//     const workbook = XLSX.readFile(excelPath);
+//     const sheetName = workbook.SheetNames[0];
+//     let data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+//     console.log("📊 [INFO] Excel data loaded:", data);
+
+//     // 📌 5. Upload Images to MinIO and Get Public URLs
+//     const imageURLs = {};
+//     for (const image of images) {
+//       const buffer = await image.arrayBuffer();
+
+//       // ✅ Generate a unique filename
+//       const ext = extname(image.name); // Get file extension
+//       const uniqueFileName = `${crypto.randomUUID()}${ext}`; // Unique filename
+//       const objectKey = `uploads/images/${uniqueFileName}`; // MinIO object key
+
+//       console.log(
+//         `📷 [INFO] Uploading image to MinIO: ${image.name} -> ${objectKey}`
+//       );
+
+//       // ✅ Upload to MinIO
+//       await minioClient.putObject(
+//         MINIO_BUCKET_NAME,
+//         objectKey,
+//         Buffer.from(buffer),
+//         image.size,
+//         { "Content-Type": image.type }
+//       );
+
+//       // ✅ Generate public URL
+//       const imageUrl = `${minioUrl}/${objectKey}`;
+//       imageURLs[image.name.trim().toLowerCase()] = imageUrl;
+
+//       console.log("🖼️ [INFO] Image URLs mapped:", imageURLs);
+//     }
+
+//     // 📌 6. Create a new Excel file with updated image URLs
+//     const newExcelData = data.map((row) => ({
+//       ...row,
+//       image_url:
+//         imageURLs[row.image?.trim().toLowerCase()] ||
+//         "https://placehold.co/600x400",
+//       id_store,
+//       id_company,
+//     }));
+
+//     console.log("📊 [INFO] New Excel Data:", newExcelData);
+
+//     const newSheet = XLSX.utils.json_to_sheet(newExcelData);
+//     const newWorkbook = XLSX.utils.book_new();
+//     XLSX.utils.book_append_sheet(newWorkbook, newSheet, sheetName);
+
+//     const newExcelName = `updated_${excelFile.name}`;
+//     const newExcelPath = join(excelDir, newExcelName);
+//     XLSX.writeFile(newWorkbook, newExcelPath);
+
+//     console.log("✅ [INFO] New Excel file created:", newExcelPath);
+
+//     return c.json({
+//       message: "Upload successful! New Excel file created.",
+//       download_link: `/uploads/excels/${newExcelName}`,
+//       images: imageURLs,
+//     });
+//   } catch (error) {
+//     console.error("❌ [ERROR] Upload failed:", error);
+//     return c.json({ message: "Upload failed!", error: error.message }, 500);
+//   }
+// });
+import { fileMetadataModels } from "@models/fileMetadata-models";
 import { authenticate } from "@middleware/authMiddleware"; // Import the middleware
+import { join, extname } from "path";
+import { mkdir, writeFile } from "fs/promises";
+import XLSX from "xlsx";
+import {
+  minioClient,
+  BACKEND_URI,
+  MINIO_BUCKET_NAME,
+  minioUrl,
+} from "@config/config";
+import crypto from "crypto";
 
 export const router = new Hono();
 
-// const upload = multer({ dest: "uploads/" });
+// Function to generate a short key
+function generateShortKey(length = 8) {
+  return crypto
+    .randomBytes(Math.ceil(length / 2))
+    .toString("hex") // Convert to hexadecimal
+    .slice(0, length); // Truncate to desired length
+}
 
-router.post("/upload", authenticate, async (c) => {
-  const formData = await c.req.formData();
-  const file = formData.get("file");
-  const id_store = formData.get("id_store");
-  const id_company = formData.get("id_company");
-
-  if (!file) {
-    return c.json({ message: "File tidak ditemukan!" }, 400);
-  }
-
-  // Pastikan folder uploads ada
-  const uploadDir = join(process.cwd(), "uploads");
-  await mkdir(uploadDir, { recursive: true });
-
-  // Simpan file sementara
-  const buffer = await file.arrayBuffer();
-  let filePath = join(uploadDir, file.name);
-  await writeFile(filePath, Buffer.from(buffer));
-
-  // Tentukan ekstensi file
-  const ext = extname(filePath).toLowerCase();
-  let results = [];
-
+router.post("/file", authenticate, async (c) => {
   try {
-    if (ext === ".csv") {
-      // Jika file CSV, gunakan csv-parser
-      // await new Promise((resolve, reject) => {
-      //   fsStream(filePath)
-      //     .pipe(csv())
-      //     .on("data", (data) => results.push(data))
-      //     .on("end", resolve)
-      //     .on("error", reject);
-      // });
-      // results = await new Promise((resolve, reject) => {
-      //   const tempResults = [];
-      //   fsStream(filePath)
-      //     .pipe(csv({ skipEmptyLines: true, trim: true })) // Skip baris kosong & trim spasi
-      //     .on("data", (data) => tempResults.push(data))
-      //     .on("end", () => resolve(tempResults))
-      //     .on("error", reject);
-      // });
-      filePath = filePath.replace(".csv", ".xlsx");
-      const excelBuffer = await readFile(filePath);
-      const workbook = XLSX.read(excelBuffer, { type: "buffer" });
+    console.log("📥 [INFO] Upload request received...");
 
-      // Ambil sheet pertama
-      const sheetName = workbook.SheetNames[0];
-      results = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-    } else if (ext === ".xlsx" || ext === ".xls") {
-      // Jika file Excel, gunakan XLSX
-      const excelBuffer = await readFile(filePath);
-      const workbook = XLSX.read(excelBuffer, { type: "buffer" });
+    // 📌 1. Get form data
+    const formData = await c.req.formData();
+    const excelFile = formData.get("file");
+    const images = formData.getAll("images");
+    const id_store = formData.get("id_store");
+    const id_company = formData.get("id_company");
 
-      // Ambil sheet pertama
-      const sheetName = workbook.SheetNames[0];
-      results = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-    } else {
-      return c.json({ message: "Format file tidak didukung!" }, 400);
+    console.log("🔍 [DEBUG] Form Data Extracted:", {
+      excelFileName: excelFile?.name,
+      totalImages: images.length,
+      id_store,
+      id_company,
+    });
+
+    if (!excelFile) {
+      console.error("❌ [ERROR] Excel file is missing!");
+      return c.json({ message: "Excel file is required!" }, 400);
     }
 
-    // Proses mapping data ke format yang sesuai
-    const formatData = await Promise.all(
-      results.map(async (d) => {
-        const category = await CategoryProductModels.findOne({
-          name_category: d.category,
-        });
+    // 📌 2. Create necessary folders
+    const uploadDir = join(process.cwd(), "public/uploads");
+    const excelDir = join(uploadDir, "excels");
 
-        return {
-          ...d,
-          id_store: id_store,
-          id_company: id_company,
-          id_category_product: category ? category._id : null,
-        };
-      })
-    );
+    console.log("📂 [INFO] Upload directory paths:", { uploadDir, excelDir });
 
-    // Simpan data ke MongoDB
-    const result = await ProductModels.insertMany(formatData);
+    await mkdir(excelDir, { recursive: true });
 
-    return c.json({ message: "Upload berhasil! Data disimpan.", result });
+    // 📌 3. Save the Excel file locally
+    const excelPath = join(excelDir, excelFile.name);
+    const excelBuffer = await excelFile.arrayBuffer();
+    await writeFile(excelPath, Buffer.from(excelBuffer));
+
+    console.log("✅ [INFO] Excel file saved at:", excelPath);
+
+    // 📌 4. Read Excel File
+    const workbook = XLSX.readFile(excelPath);
+    const sheetName = workbook.SheetNames[0];
+    let data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    console.log("📊 [INFO] Excel data loaded:", data);
+
+    // 📌 5. Upload Images to MinIO and Get Public URLs
+    const imageURLs = {};
+    for (const image of images) {
+      const buffer = await image.arrayBuffer();
+      const ext = extname(image.name);
+      const uniqueFileName = `${crypto.randomUUID()}${ext}`;
+      const objectKey = `product/${uniqueFileName}`;
+
+      console.log(
+        `📷 [INFO] Uploading image to MinIO: ${image.name} -> ${objectKey}`
+      );
+
+      await minioClient.putObject(
+        MINIO_BUCKET_NAME,
+        objectKey,
+        Buffer.from(buffer),
+        image.size,
+        { "Content-Type": image.type }
+      );
+
+      const publicUrl = `${minioUrl}/${objectKey}`;
+      const shortKey = generateShortKey();
+      const shortenedUrl = `${BACKEND_URI}/api/image/${shortKey}`;
+
+      // Save file metadata
+      const fileMetadata = new fileMetadataModels({
+        bucketName: MINIO_BUCKET_NAME,
+        objectName: objectKey,
+        fileUrl: publicUrl,
+        shortenedUrl,
+        shortkey: shortKey,
+      });
+      await fileMetadata.save();
+
+      imageURLs[image.name.split("/").pop().trim().toLowerCase()] =
+        shortenedUrl;
+      console.log("🖼️ [INFO] Image URLs mapped:", imageURLs);
+    }
+
+    // 📌 6. Create a new Excel file with updated image URLs
+    const newExcelData = data.map((row) => ({
+      ...row,
+      image_url:
+        imageURLs[row.image?.split("/").pop().trim().toLowerCase()] ||
+        "https://placehold.co/600x400",
+      id_store,
+      id_company,
+    }));
+
+    console.log("📊 [INFO] New Excel Data:", newExcelData);
+
+    const newSheet = XLSX.utils.json_to_sheet(newExcelData);
+    const newWorkbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(newWorkbook, newSheet, sheetName);
+
+    const newExcelName = `updated_${excelFile.name}`;
+    const newExcelPath = join(excelDir, newExcelName);
+    XLSX.writeFile(newWorkbook, newExcelPath);
+
+    console.log("✅ [INFO] New Excel file created:", newExcelPath);
+
+    // return c.json({
+    //   data: newExcelData,
+    //   message: "Upload successful! New Excel file created.",
+    //   download_link: `/uploads/excels/${newExcelName}`,
+    //   images: imageURLs,
+    // });
+    return c.json(newExcelData, 200);
   } catch (error) {
-    console.error("Gagal membaca atau menyimpan file:", error);
-    return c.json(
-      { message: "Gagal membaca atau menyimpan file!", error: error.message },
-      500
-    );
+    console.error("❌ [ERROR] Upload failed:", error);
+    return c.json({ message: "Upload failed!", error: error.message }, 500);
   }
 });
-
-// router.post("/upload", authenticate, async (c) => {
-//   const formData = await c.req.formData();
-//   const file = formData.get("file");
-//   const id_store = formData.get("id_store");
-//   const id_company = formData.get("id_company");
-
-//   if (!file) {
-//     return c.json({ message: "File tidak ditemukan!" }, 400);
-//   }
-
-//   // Pastikan folder uploads ada
-//   const uploadDir = join(process.cwd(), "uploads");
-//   await mkdir(uploadDir, { recursive: true });
-
-//   // Simpan file sementara
-//   const buffer = await file.arrayBuffer();
-//   const filePath = join(uploadDir, file.name);
-//   await writeFile(filePath, Buffer.from(buffer));
-
-//   try {
-//     // Baca file Excel
-//     const excelBuffer = await readFile(filePath);
-//     const workbook = XLSX.read(excelBuffer, { type: "buffer" });
-
-//     // Ambil nama sheet pertama
-//     const sheetName = workbook.SheetNames[0];
-//     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-//     // Hapus __rowNum__ dari setiap data
-//     const cleanedData = data.map(({ __rowNum__, ...rest }) => rest);
-
-//     // Perbaikan: Gunakan Promise.all agar bisa await findOne
-//     const formatData = await Promise.all(
-//       cleanedData.map(async (d) => {
-//         const category = await CategoryProductModels.findOne({
-//           name_category: d.category,
-//         });
-
-//         return {
-//           ...d,
-//           id_store: id_store,
-//           id_company: id_company,
-//           id_category_product: category ? category._id : null,
-//         };
-//       })
-//     );
-
-//     // Simpan ke MongoDB
-//     const result = await ProductModels.insertMany(formatData);
-
-//     return c.json({ message: "Upload berhasil! Data disimpan.", result });
-//   } catch (error) {
-//     console.error("Gagal membaca atau menyimpan file:", error);
-//     return c.json(
-//       { message: "Gagal membaca atau menyimpan file!", error: error.message },
-//       500
-//     );
-//   }
-// });
-
-// router.post("/upload", async (c) => {
-//     const req = c.req.raw;
-
-//     // Gunakan middleware multer untuk upload file
-//     await new Promise((resolve, reject) => {
-//         upload.single("file")(req, {}, (err) => {
-//             if (err) reject(err);
-//             resolve();
-//         });
-//     });
-
-//     // Ambil file yang diupload
-//     const file = req.file;
-//     if (!file) return c.json({ error: "No file uploaded" }, 400);
-
-//     // Baca file Excel
-//     const workbook = xlsx.readFile(file.path);
-//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-//     const data = xlsx.utils.sheet_to_json(sheet);
-
-//     console.log("data excel= ", data)
-
-//     // Simpan ke MongoDB
-//     // await ProductModels.insertMany(data);
-
-//     // Hapus file setelah diproses
-//     // fs.unlinkSync(file.path);
-
-//     return c.json({ message: "Upload success", data });
-// });
-
-// Get all product
 
 router.post("/listproduct", authenticate, async (c) => {
   try {
@@ -227,9 +300,9 @@ router.post("/listproduct", authenticate, async (c) => {
 
     // Build query based on request body
     const query = {};
-    query.status = 0;
     if (body.id_store) query.id_store = body.id_store;
     if (body.id_company) query.id_company = body.id_company;
+    if (body.status) query.status = body.status;
     if (body.id_category_product)
       query.id_category_product = body.id_category_product;
 
@@ -444,6 +517,131 @@ router.post("/addproduct", authenticate, async (c) => {
     console.error("Error adding product:", error);
     return c.json(
       { error: "Failed to add product", details: error.message },
+      500
+    );
+  }
+});
+
+// Add Product by Batch
+router.post("/addbatch", authenticate, async (c) => {
+  try {
+    const body = await c.req.json(); // Expect an array of products
+    console.log("Received request body:", body);
+
+    if (!Array.isArray(body) || body.length === 0) {
+      console.log("Invalid data format. Expecting an array.");
+      return c.json({ error: "Invalid data format. Expecting an array." }, 400);
+    }
+
+    const insertedProducts = [];
+
+    for (const item of body) {
+      const {
+        name_product,
+        sell_price,
+        buy_price,
+        product_code,
+        barcode,
+        deskripsi,
+        id_store,
+        id_company,
+        id_extras,
+        id_size,
+        category,
+        image_url,
+      } = item;
+
+      // Validate required fields
+      if (
+        !name_product ||
+        !sell_price ||
+        !buy_price ||
+        !category ||
+        !id_store ||
+        !id_company
+      ) {
+        console.log("Missing required fields in item:", item);
+        return c.json(
+          { error: "Missing required fields in one or more items" },
+          400
+        );
+      }
+
+      // Get the id_category_product by category and id_store
+      const trimmedCategory = category.trim();
+      const trimmedIdStore = id_store.trim();
+
+      const categoryData = await CategoryProductModels.findOne({
+        name_category: { $regex: new RegExp(`^${trimmedCategory}$`, "i") },
+        id_store: trimmedIdStore,
+      });
+
+      if (!categoryData) {
+        console.log(`Category not found: ${category} for store ${id_store}`);
+        return c.json(
+          { error: `Category '${category}' not found for store ${id_store}` },
+          400
+        );
+      }
+
+      let productImage = image_url || "https://placehold.co/500x500";
+
+      const productData = {
+        name_product,
+        id_category_product: categoryData._id, // Pastikan kategori ditemukan
+        sell_price,
+        buy_price,
+        product_code,
+        barcode,
+        deskripsi,
+        id_store,
+        id_company,
+        id_extras,
+        id_size,
+        image: productImage,
+      };
+
+      console.log("Processing product data:", productData);
+
+      const product = new ProductModels(productData);
+      const productDataSaved = await product.save();
+      console.log("Product saved:", productDataSaved);
+
+      const stockData = {
+        id_product: productDataSaved._id,
+        amount: 0,
+      };
+
+      console.log("Stock data before saving:", stockData);
+
+      const stok = new StockModels(stockData);
+      const savedStock = await stok.save();
+      console.log("Stock saved:", savedStock);
+
+      if (savedStock) {
+        await ProductModels.findByIdAndUpdate(
+          productDataSaved._id,
+          { id_stock: savedStock._id },
+          { new: true, runValidators: true }
+        );
+        console.log(
+          `Stock ID ${savedStock._id} linked to product ${productDataSaved._id}`
+        );
+      }
+
+      insertedProducts.push({
+        product: productDataSaved,
+        stock: savedStock,
+      });
+    }
+
+    console.log("All products inserted successfully:", insertedProducts);
+
+    return c.json({ success: true, products: insertedProducts }, 201);
+  } catch (error) {
+    console.error("Error adding batch products:", error);
+    return c.json(
+      { error: "Failed to add products", details: error.message },
       500
     );
   }

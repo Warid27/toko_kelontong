@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { IoSearchOutline } from "react-icons/io5";
 import Image from "next/image";
 import { MdKeyboardArrowDown } from "react-icons/md";
-import DateTimePicker from "@/components/DateTimePicker";
+// import DateTimePicker from "@/components/DateTimePicker";
+import DatePickers from "@/components/DatePicker";
 import client from "@/libs/axios";
 import SalesChart from "@/components/SalesChart";
 import { formatNumber } from "@/utils/formatNumber";
@@ -13,6 +14,7 @@ export const Analytics = () => {
   const [productList, setProductList] = useState([]);
   const [userList, setUserList] = useState([]);
   const [filterBy, setFilterBy] = useState("daily");
+  const [selectedDate, setSelectedDate] = useState(null);
   const [filterRekapBy, setFilterRekapBy] = useState("aktif");
 
   const [startDate, setStartDate] = useState(new Date());
@@ -36,6 +38,7 @@ export const Analytics = () => {
           id_company,
           filterRekapBy,
           filterBy,
+          selectedDate : selectedDate ? selectedDate.toISOString().split("T")[0] : null
         },
         {
           headers: {
@@ -64,7 +67,7 @@ export const Analytics = () => {
     };
 
     fetchSalesTodayData();
-  }, [filterRekapBy, filterBy]);
+  }, [filterRekapBy, filterBy, selectedDate]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -225,6 +228,7 @@ export const Analytics = () => {
           id_company,
           filterRekapBy,
           filterBy,
+          selectedDate : selectedDate ? selectedDate.toISOString().split("T")[0] : null
         },
         {
           headers: {
@@ -247,7 +251,7 @@ export const Analytics = () => {
       }
     };
     fetchSalesCount();
-  }, [filterRekapBy, filterBy]);
+  }, [filterRekapBy, filterBy, selectedDate]);
   useEffect(() => {
     const fetchProfit = async () => {
       try {
@@ -258,6 +262,7 @@ export const Analytics = () => {
           id_company,
           filterRekapBy,
           filterBy,
+          selectedDate : selectedDate ? selectedDate.toISOString().split("T")[0] : null
         },
         {
           headers: {
@@ -280,7 +285,7 @@ export const Analytics = () => {
       }
     };
     fetchProfit();
-  }, [filterRekapBy, filterBy]);
+  }, [filterRekapBy, filterBy, selectedDate]);
   return (
     <div className="w-full h-screen pt-16">
       {/* Header */}
@@ -324,9 +329,10 @@ export const Analytics = () => {
           onChange={(e) => setFilterBy(e.target.value)}
         >
           <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
           <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
         </select>
+        <DatePickers filterBy={filterBy} value={selectedDate} onChange={setSelectedDate} />
         <main className="flex-1 p-6">
           <select
             className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -340,7 +346,7 @@ export const Analytics = () => {
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow-md text-center">
               <p className="text-gray-500">Sales</p>
-              <h2 className="text-lg font-bold">{salesCountData ? salesCountData : ""}</h2>
+              <h2 className="text-lg font-bold">{salesCountData ? salesCountData : "0"}</h2>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-md text-center">
               <p className="text-gray-500">Total Revenue</p>

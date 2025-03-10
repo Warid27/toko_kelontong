@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/router";
 import ExpandableMenu from "@/components/menu/expendableMenu";
 import MenuItem from "@/components/menu/menuItem";
 import { tokenDecoded } from "@/utils/tokenDecoded";
@@ -25,21 +24,14 @@ import {
   TbUserSquare,
 } from "react-icons/tb";
 
-const Sidebar = () => {
-  const [selectedLink, setSelectedLink] = useState("profile");
+const Sidebar = ({ setSelectedLink, selectedLink }) => {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [userRole, setUserRole] = useState("kasir");
   const [idCompany, setIdCompany] = useState(null);
   const [idStore, setIdStore] = useState(null);
-  const router = useRouter();
 
   const toggleMenu = (menuKey) =>
     setExpandedMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
-
-  const handleLogout = () => {
-    localStorage.clear(); // Removes all localStorage data
-    router.push("/login");
-  };
 
   const roleMapping = {
     1: "superadmin",
@@ -80,7 +72,6 @@ const Sidebar = () => {
   }, []); // Run only once on component mount
 
   const menuConfig = [
-    { label: "Profile", icon: <TbUser />, key: "profile" },
     { label: "Analisis", icon: <TbReportAnalytics />, key: "analytics" },
     { label: "Report", icon: <TbReportAnalytics />, key: "report" },
     { label: "Pembayaran", icon: <TbCash />, key: "payment" },
@@ -180,7 +171,6 @@ const Sidebar = () => {
         <ContentRenderer
           selectedLink={selectedLink}
           setSelectedLink={setSelectedLink}
-          handleLogout={handleLogout}
           userRole={userRole}
         />
       </div>
@@ -229,15 +219,6 @@ const Sidebar = () => {
               </li>
             );
           })}
-          <li>
-            <a
-              onClick={handleLogout}
-              className="text-red-500 flex items-center"
-            >
-              <TbLogout className="mr-2" />
-              Log Out
-            </a>
-          </li>
         </ul>
       </div>
     </div>

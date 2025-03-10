@@ -19,7 +19,11 @@ import Select from "react-select";
 import { fetchExtrasList } from "@/libs/fetching/extras";
 import { fetchCategoryList } from "@/libs/fetching/category";
 import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
-import { fetchProductsList } from "@/libs/fetching/product";
+import {
+  fetchProductsList,
+  AddBatchProducts,
+  fetchProductsAdd,
+} from "@/libs/fetching/product";
 import { fetchSizeList } from "@/libs/fetching/size";
 import ReactPaginate from "react-paginate";
 import BarcodeGenerator from "@/components/BarcodeGenerator";
@@ -60,36 +64,12 @@ const Menu = () => {
   const id_user = localStorage.getItem("id_user");
 
   const [file, setFile] = useState(null);
-  const [message, setMessage] = useState("");
-
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
-
-  //   const handleUpload = async () => {
-  //     if (!file) return setMessage("Pilih file terlebih dahulu");
-
-  //     const formData = new FormData();
-  //     formData.append("file", file);
-
-  //     console.log("File yang dikirim:", file); // Debugging
-
-  //     try {
-  //         const res = await client.post("product/upload", formData, {
-  //             headers: { "Content-Type": "multipart/form-data" },
-  //         });
-  //         console.log("Response dari server:", res.data);
-  //         setMessage(res.data.message);
-  //     } catch (err) {
-  //         console.error("Error Upload:", err.response?.data || err.message);
-  //         setMessage("Upload gagal!");
-  //     }
-  // };
+  const [folder, setFolder] = useState(null);
 
   const handleDownload = () => {
     const link = document.createElement("a");
-    link.href = "/Template_Upload.xlsx"; 
-    link.download = "Template.xlsx"; 
+    link.href = "/Template_Upload.xlsx";
+    link.download = "Template.xlsx";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -100,27 +80,60 @@ const Menu = () => {
   }
 
   function handleGenerateBarcode() {
-    setProductDataAdd({barcode :generateRandomBarcode()});
+    setProductDataAdd({ barcode: generateRandomBarcode() });
   }
 
-  const handleUpload = async () => {
-    if (!file) return setMessage("Pilih file");
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleFolderChange = async (e) => {
+    const selectedFolder = e.target.files;
+    if (selectedFolder.length > 0) {
+      setFolder(selectedFolder);
+    }
+  };
+
+  const handleProductBatch = async () => {
+    if (!file || !folder) return console.log("Pilih file dan folder gambar!");
 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("id_store", id_store);
     formData.append("id_company", id_company);
 
+    // Append images to FormData
+    Array.from(folder).forEach((img) => {
+      formData.append("images", img);
+    });
+
     try {
-      const res = await client.post("/product/upload", formData, {
+      const response = await client.post("/product/file", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });
-      setMessage(res.data.message);
+
+      if (response.status === 200) {
+        const data = response.data;
+        const responseProduct = await AddBatchProducts(data);
+
+        if (responseProduct.status === 201) {
+          modalOpen("add", false);
+          Swal.fire("Berhasil", "Produk berhasil ditambahkan!", "success");
+
+          // **Ambil hanya objek produk dari respons API**
+          const newProducts = responseProduct.data.products.map(
+            (item) => item.product
+          );
+
+          // **Update state produk dengan produk baru dari batch**
+          setProducts((prevProducts) => [...prevProducts, ...newProducts]);
+        }
+      }
     } catch (err) {
-      setMessage("Upload gagal");
+      console.log("ERROR", err);
     }
   };
 
@@ -196,7 +209,7 @@ const Menu = () => {
       add: setIsModalOpen,
       update: setIsUpdateModalOpen,
       example: setIsExampleModalOpen,
-      barcode: setIsBarcodeModalOpen
+      barcode: setIsBarcodeModalOpen,
     };
     if (setters[param]) {
       setters[param](bool);
@@ -309,33 +322,30 @@ const Menu = () => {
         Swal.fire("Gagal", "Harga tidak boleh lebih rendah dari 1!");
         return;
       }
+      const reqBody = {
+        name_product: productDataAdd.name_product,
+        sell_price: productDataAdd.sell_price,
+        buy_price: productDataAdd.buy_price,
+        product_code: productDataAdd.product_code,
+        barcode: productDataAdd.barcode,
+        deskripsi: productDataAdd.deskripsi,
+        id_store: id_store,
+        id_company: id_company,
+        id_extras: null,
+        id_size: null,
+        id_category_product: productDataAdd.id_category_product,
+        id_item_campaign: productDataAdd.id_item_campaign,
+        image: productDataAdd.image,
+      };
       // Send product data to the backend
-      const response = await client.post(
-        "/product/addproduct",
-        {
-          name_product: productDataAdd.name_product,
-          sell_price: productDataAdd.sell_price,
-          buy_price: productDataAdd.buy_price,
-          product_code: productDataAdd.product_code,
-          barcode: productDataAdd.barcode,
-          deskripsi: productDataAdd.deskripsi,
-          id_store: id_store,
-          id_company: id_company,
-          id_extras: null,
-          id_size: null,
-          id_category_product: productDataAdd.id_category_product,
-          id_item_campaign: productDataAdd.id_item_campaign,
-          image: productDataAdd.image,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetchProductsAdd(reqBody);
 
-      // Auto Reload
-      modalOpen("add", false);
-      Swal.fire("Berhasil", "Produk berhasil ditambahkan!", "success");
-      setProducts((prevProducts) => [...prevProducts, response.data]);
+      if (response.status == 201) {
+        // Auto Reload
+        modalOpen("add", false);
+        Swal.fire("Berhasil", "Produk berhasil ditambahkan!", "success");
+        setProducts((prevProducts) => [...prevProducts, response.data]);
+      }
     } catch (error) {
       console.error("Error adding product:", error);
     }
@@ -591,10 +601,9 @@ const Menu = () => {
                           <button
                             className=" p-3 rounded-lg text-2xl "
                             onClick={() => {
-                              setBarcode(product.barcode)
-                              modalOpen("barcode", true)
-                            }
-                            }
+                              setBarcode(product.barcode);
+                              modalOpen("barcode", true);
+                            }}
                           >
                             <IoBarcodeOutline />
                           </button>
@@ -634,11 +643,13 @@ const Menu = () => {
             height={200}
           />
           <div className="flex justify-center items-center">
-            <button onClick={handleDownload} className="p-2 bg-green-500 text-white rounded">
+            <button
+              onClick={handleDownload}
+              className="p-2 bg-green-500 text-white rounded"
+            >
               Download Template
             </button>
           </div>
-
         </Modal>
       )}
       {isBarcodeModalOpen && (
@@ -651,7 +662,6 @@ const Menu = () => {
           <div className="flex justify-center items-center">
             <BarcodeGenerator barcode={barcode} />
           </div>
-
         </Modal>
       )}
 
@@ -873,18 +883,11 @@ const Menu = () => {
               case "excel":
                 return (
                   <div>
-                    <button
-                      className="addBtn"
-                      onClick={() => {
-                        modalOpen("add", false);
-                        modalOpen("example", true);
-                      }}
-                    >
-                      Example
-                    </button>
                     <h1 className="text-lg font-semibold text-gray-800 text-center mb-2">
-                      Upload Excel
+                      Upload Excel & Folder Gambar
                     </h1>
+
+                    {/* Upload Excel File */}
                     <div className="upload-container">
                       <label className="upload-label">
                         <input
@@ -911,14 +914,30 @@ const Menu = () => {
                         </div>
                       </label>
                     </div>
-                    <button onClick={handleUpload} className="addBtn">
+
+                    {/* Upload Folder */}
+                    <div className="upload-container mt-4">
+                      <label className="upload-label">
+                        <input
+                          type="file"
+                          webkitdirectory="" // Allows selecting a folder
+                          directory=""
+                          multiple
+                          onChange={handleFolderChange}
+                          style={{ display: "none" }}
+                        />
+                        {folder ? (
+                          <p>{folder.length} file gambar dipilih</p>
+                        ) : (
+                          <p>Pilih folder gambar</p>
+                        )}
+                      </label>
+                    </div>
+
+                    {/* Upload Button */}
+                    <button onClick={handleProductBatch} className="addBtn">
                       Upload
                     </button>
-                    {message && (
-                      <p className="mt-2 text-center text-sm text-gray-600">
-                        {message}
-                      </p>
-                    )}
                   </div>
                 );
               default:

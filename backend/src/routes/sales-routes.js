@@ -308,7 +308,7 @@ router.post("/sales-chart", authenticate, async (c) => {
 
 router.post("/totalsales", authenticate, async (c) => {
   try {
-    const { id_store, id_company, filterRekapBy, filterBy } =
+    const { id_store, id_company, filterRekapBy, filterBy, selectedDate} =
       await c.req.json();
 
     if (
@@ -328,24 +328,23 @@ router.post("/totalsales", authenticate, async (c) => {
     const now = new Date();
 
     if (filterBy === "daily") {
-      start_date = new Date(now.setHours(0, 0, 0, 0));
-      end_date = new Date(now.setHours(23, 59, 59, 999));
-    } else if (filterBy === "weekly") {
-      const firstDayOfWeek = now.getDate() - now.getDay();
-      start_date = new Date(now.setDate(firstDayOfWeek));
+      start_date = new Date(selectedDate || now);
       start_date.setHours(0, 0, 0, 0);
-      end_date = new Date();
+      end_date = new Date(start_date);
       end_date.setHours(23, 59, 59, 999);
     } else if (filterBy === "monthly") {
-      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
-      end_date = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), date.getMonth(), 1);
+      end_date = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "yearly") {
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), 0, 1);
+      end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
+    } else {
+      return c.json(
+        { success: false, message: "Invalid filterBy value" },
+        400
       );
     }
 
@@ -372,14 +371,6 @@ router.post("/totalsales", authenticate, async (c) => {
         },
       },
       {
-        // $group: {
-        //   _id: { $dateToString: { format: "%Y-%m-%d", date: "$created_at" } },
-        //   total_sales: {
-        //     $sum: {
-        //       $multiply: ["$salesDetails.item_price", "$salesDetails.item_quantity"],
-        //     },
-        //   },
-        // },
         $project: {
           id_product: "$salesDetails.id_product",
           item_quantity: "$salesDetails.item_quantity",
@@ -388,12 +379,10 @@ router.post("/totalsales", authenticate, async (c) => {
       },
     ]);
 
-    let totalSales = 0;
-
-    for (const sale of salesSummary) {
-      let sales = sale.item_quantity * sale.item_price;
-      totalSales += sales;
-    }
+    let totalSales = salesSummary.reduce(
+      (total, sale) => total + sale.item_quantity * sale.item_price,
+      0
+    );
 
     return c.json({ success: true, data: totalSales }, 200);
   } catch (error) {
@@ -402,9 +391,106 @@ router.post("/totalsales", authenticate, async (c) => {
   }
 });
 
+
+// router.post("/totalsales", authenticate, async (c) => {
+//   try {
+//     const { id_store, id_company, filterRekapBy, filterBy, selectedDate, end } =
+//       await c.req.json();
+
+//     if (
+//       !mongoose.isValidObjectId(id_company) ||
+//       !mongoose.isValidObjectId(id_store)
+//     ) {
+//       return c.json(
+//         { success: false, message: "Invalid id_company or id_store" },
+//         400
+//       );
+//     }
+
+//     const objectIdCompany = new mongoose.Types.ObjectId(id_company);
+//     const objectIdStore = new mongoose.Types.ObjectId(id_store);
+
+//     let start_date, end_date;
+//     const now = new Date();
+
+//     if (filterBy === "daily") {
+//       start_date = new Date(now.setHours(0, 0, 0, 0));
+//       end_date = new Date(now.setHours(23, 59, 59, 999));
+//     } else if (filterBy === "weekly") {
+//       const firstDayOfWeek = now.getDate() - now.getDay();
+//       start_date = new Date(now.setDate(firstDayOfWeek));
+//       start_date.setHours(0, 0, 0, 0);
+//       end_date = new Date();
+//       end_date.setHours(23, 59, 59, 999);
+//     } else if (filterBy === "monthly") {
+//       start_date = new Date(now.getFullYear(), now.getMonth(), 1);
+//       end_date = new Date(
+//         now.getFullYear(),
+//         now.getMonth() + 1,
+//         0,
+//         23,
+//         59,
+//         59,
+//         999
+//       );
+//     }
+
+//     let filter = {};
+//     if (filterRekapBy === "aktif") {
+//       filter.status = 1;
+//     }
+//     if (filterRekapBy === "pending") {
+//       filter.status = 2;
+//     }
+
+//     const salesSummary = await SalesModels.aggregate([
+//       {
+//         $match: {
+//           ...filter,
+//         },
+//       },
+//       { $unwind: "$salesDetails" },
+//       {
+//         $match: {
+//           "salesDetails.id_company": objectIdCompany,
+//           "salesDetails.id_store": objectIdStore,
+//           "salesDetails.created_at": { $gte: start_date, $lte: end_date },
+//         },
+//       },
+//       {
+//         // $group: {
+//         //   _id: { $dateToString: { format: "%Y-%m-%d", date: "$created_at" } },
+//         //   total_sales: {
+//         //     $sum: {
+//         //       $multiply: ["$salesDetails.item_price", "$salesDetails.item_quantity"],
+//         //     },
+//         //   },
+//         // },
+//         $project: {
+//           id_product: "$salesDetails.id_product",
+//           item_quantity: "$salesDetails.item_quantity",
+//           item_price: "$salesDetails.item_price",
+//         },
+//       },
+//     ]);
+
+//     let totalSales = 0;
+
+//     for (const sale of salesSummary) {
+//       let sales = sale.item_quantity * sale.item_price;
+//       totalSales += sales;
+//     }
+
+//     return c.json({ success: true, data: totalSales }, 200);
+//   } catch (error) {
+//     console.error("Error:", error);
+//     return c.json({ success: false, message: error.message }, 500);
+//   }
+// });
+
 router.post("/transaksi-history", authenticate, async (c) => {
   try {
-    const { id_company, id_store, filterBy } = await c.req.json();
+    const { id_company, id_store, filterBy, selectedDate } = await c.req.json();
 
     if (
       !mongoose.Types.ObjectId.isValid(id_company) ||
@@ -423,21 +509,24 @@ router.post("/transaksi-history", authenticate, async (c) => {
     const now = new Date();
 
     if (filterBy === "daily") {
-      start_date = new Date(now);
+      start_date = new Date(selectedDate || now);
       start_date.setHours(0, 0, 0, 0);
-      end_date = new Date(now);
-      end_date.setHours(23, 59, 59, 999);
-    } else if (filterBy === "weekly") {
-      const firstDayOfWeek = now.getDate() - now.getDay();
-      start_date = new Date(now);
-      start_date.setDate(firstDayOfWeek);
-      start_date.setHours(0, 0, 0, 0);
-      end_date = new Date();
+      end_date = new Date(start_date);
       end_date.setHours(23, 59, 59, 999);
     } else if (filterBy === "monthly") {
-      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
-      end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), date.getMonth(), 1);
+      end_date = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "yearly") {
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), 0, 1);
+      end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
+    } else {
+      return c.json(
+        { success: false, message: "Invalid filterBy value" },
+        400
+      );
     }
 
     const matchQuery = {
@@ -552,7 +641,7 @@ router.post("/transaksi-history", authenticate, async (c) => {
 
 router.post("/sales-count", authenticate, async (c) => {
   try {
-    const { id_store, id_company, filterRekapBy, filterBy } =
+    const { id_store, id_company, filterRekapBy, filterBy, selectedDate } =
       await c.req.json();
 
     if (
@@ -584,24 +673,23 @@ router.post("/sales-count", authenticate, async (c) => {
     const now = new Date();
 
     if (filterBy === "daily") {
-      start_date = new Date(now.setHours(0, 0, 0, 0));
-      end_date = new Date(now.setHours(23, 59, 59, 999));
-    } else if (filterBy === "weekly") {
-      const firstDayOfWeek = now.getDate() - now.getDay();
-      start_date = new Date(now.setDate(firstDayOfWeek));
+      start_date = new Date(selectedDate || now);
       start_date.setHours(0, 0, 0, 0);
-      end_date = new Date();
+      end_date = new Date(start_date);
       end_date.setHours(23, 59, 59, 999);
     } else if (filterBy === "monthly") {
-      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
-      end_date = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), date.getMonth(), 1);
+      end_date = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "yearly") {
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), 0, 1);
+      end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
+    } else {
+      return c.json(
+        { success: false, message: "Invalid filterBy value" },
+        400
       );
     }
 
@@ -675,7 +763,7 @@ router.post("/sales-count", authenticate, async (c) => {
 
 router.post("/profitsales", authenticate, async (c) => {
   try {
-    const { id_store, id_company, filterRekapBy, filterBy } =
+    const { id_store, id_company, filterRekapBy, filterBy, selectedDate } =
       await c.req.json();
 
     if (
@@ -702,29 +790,27 @@ router.post("/profitsales", authenticate, async (c) => {
     if (filterRekapBy === "pending") {
       filter.status = 2;
     }
-
     let start_date, end_date;
     const now = new Date();
 
     if (filterBy === "daily") {
-      start_date = new Date(now.setHours(0, 0, 0, 0));
-      end_date = new Date(now.setHours(23, 59, 59, 999));
-    } else if (filterBy === "weekly") {
-      const firstDayOfWeek = now.getDate() - now.getDay();
-      start_date = new Date(now.setDate(firstDayOfWeek));
+      start_date = new Date(selectedDate || now);
       start_date.setHours(0, 0, 0, 0);
-      end_date = new Date();
+      end_date = new Date(start_date);
       end_date.setHours(23, 59, 59, 999);
     } else if (filterBy === "monthly") {
-      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
-      end_date = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), date.getMonth(), 1);
+      end_date = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "yearly") {
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), 0, 1);
+      end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
+    } else {
+      return c.json(
+        { success: false, message: "Invalid filterBy value" },
+        400
       );
     }
 

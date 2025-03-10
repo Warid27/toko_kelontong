@@ -62,13 +62,13 @@ export const fetchGetProducts = async (id_product, params = undefined) => {
   }
 };
 
-export const fetchProductsAdd = async (data) => {
+export const fetchProductsAdd = async (reqBody) => {
   try {
     const token = localStorage.getItem("token");
 
     const response = await client.post(
       "/product/addproduct",
-      { data }, // Pass id_store in the request body
+      reqBody, // Pass id_store in the request body
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -76,8 +76,27 @@ export const fetchProductsAdd = async (data) => {
       }
     );
 
-    const data = renponse.data;
-    return data;
+    return response;
+  } catch (error) {
+    console.error("Error fetching products:", error);
+  }
+};
+
+export const AddBatchProducts = async (reqBody) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await client.post(
+      "/product/addbatch",
+      reqBody, // Pass id_store in the request body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response;
   } catch (error) {
     console.error("Error fetching products:", error);
   }

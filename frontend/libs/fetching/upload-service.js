@@ -35,12 +35,12 @@ export const uploadImageCompress = async (file, params, pathPrefix) => {
 
     const userData = tokenDecoded();
     const id_user = userData.id;
-    console.log("USERDAT", userData);
+
     // 🔹 Prepare FormData for upload
     const formData = new FormData();
     formData.append("file", compressedFile, "compressed-image.webp"); // Use WebP
     formData.append("id_user", id_user);
-    formData.append("pathPrefix", pathPrefix);
+    formData.append("pathPrefix", pathPrefix); 
 
     const response = await client.post("/api/upload", formData, {
       headers: {

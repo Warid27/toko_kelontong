@@ -99,8 +99,8 @@ const Profile = () => {
 
       const response = await uploadImageCompress(file, params, pathPrefix);
 
-      const uploadedImageUrl = response.data.metadata.shortenedUrl;
       if (response.status == 201) {
+        const uploadedImageUrl = response.data.metadata.shortenedUrl;
         // 🔹 Update state based on `params`
         if (params === "avatar") {
           setUserDataUpdate((prevState) => ({
@@ -182,16 +182,6 @@ const Profile = () => {
           <div className="flex flex-col">
             <p className="text-2xl font-bold">Daftar Profile</p>
             <p>Detail Daftar Profile</p>
-          </div>
-          <div className="relative mt-2 flex flex-row space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search anything here"
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
-              />
-              <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
-            </div>
           </div>
         </div>
       </div>

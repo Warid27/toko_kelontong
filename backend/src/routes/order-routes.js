@@ -123,7 +123,7 @@ router.post("/addorder", async (c) => {
 
 router.post("/transaksi-history", authenticate, async (c) => {
   try {
-    const { id_company, id_store, filterBy } = await c.req.json();
+    const { id_company, id_store, filterBy, selectedDate } = await c.req.json();
 
     if (
       !mongoose.Types.ObjectId.isValid(id_company) ||
@@ -142,21 +142,24 @@ router.post("/transaksi-history", authenticate, async (c) => {
     const now = new Date();
 
     if (filterBy === "daily") {
-      start_date = new Date(now);
+      start_date = new Date(selectedDate || now);
       start_date.setHours(0, 0, 0, 0);
-      end_date = new Date(now);
-      end_date.setHours(23, 59, 59, 999);
-    } else if (filterBy === "weekly") {
-      const firstDayOfWeek = now.getDate() - now.getDay();
-      start_date = new Date(now);
-      start_date.setDate(firstDayOfWeek);
-      start_date.setHours(0, 0, 0, 0);
-      end_date = new Date();
+      end_date = new Date(start_date);
       end_date.setHours(23, 59, 59, 999);
     } else if (filterBy === "monthly") {
-      start_date = new Date(now.getFullYear(), now.getMonth(), 1);
-      end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), date.getMonth(), 1);
+      end_date = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       end_date.setHours(23, 59, 59, 999);
+    } else if (filterBy === "yearly") {
+      const date = new Date(selectedDate || now);
+      start_date = new Date(date.getFullYear(), 0, 1);
+      end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
+    } else {
+      return c.json(
+        { success: false, message: "Invalid filterBy value" },
+        400
+      );
     }
 
     const matchQuery = {

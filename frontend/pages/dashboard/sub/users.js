@@ -26,7 +26,7 @@ const User = () => {
   const [userToUpdate, setUserToUpdate] = useState(null); // Untuk menyimpan Pengguna yang akan diupdate
   const [loading, setLoading] = useState(false); // Untuk loading saat update status
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 10; 
+  const itemsPerPage = 10;
   const [searchQuery, setSearchQuery] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,7 +67,7 @@ const User = () => {
         setStoreList(data_store);
         setIsLoading(false);
       };
-      
+
       get_user_list();
       get_company_list();
       get_store_list();
@@ -239,11 +239,18 @@ const User = () => {
   );
 
   const startIndex = currentPage * itemsPerPage;
-  const selectedData = filteredUserList.slice(startIndex, startIndex + itemsPerPage);
+  const selectedData = filteredUserList.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
-  // const closeModal = () => {
-  //   setIsModalOpen(false);
-  // };
+  const roleLabels = {
+    1: "Superadmin",
+    2: "Admin",
+    3: "Manajer",
+    4: "Kasir",
+    5: "Pelanggan",
+  };
 
   if (isLoading) {
     return (
@@ -262,13 +269,13 @@ const User = () => {
           </div>
           <div className="relative mt-2 flex flex-row space-x-4">
             <div className="relative">
-            <input
-              type="text"
-              placeholder="Cari user..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
-          />
+              <input
+                type="text"
+                placeholder="Cari user..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
+              />
               <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
             </div>
             <div className="avatar">
@@ -312,66 +319,70 @@ const User = () => {
               <h1>Data Pengguna tidak ditemukan!</h1>
             ) : (
               <>
-              <table className="table w-full border border-gray-300">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Username</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedData.map((user, index) => (
-                    <tr key={user._id}>
-                      <td>{startIndex + index + 1}</td>
-                      <td>
-                        <b>{user.username}</b>
-                      </td>
-                      <td>
-                        <select
-                          className="select bg-white"
-                          value={user.status}
-                          onChange={(e) =>
-                            handleStatusSelect(user._id, Number(e.target.value))
-                          }
-                        >
-                          <option value={0}>Active</option>
-                          <option value={1}>Inactive</option>
-                          {/* Tambahkan opsi lain jika diperlukan di masa depan */}
-                        </select>
-                      </td>
-                      <td>
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => deleteUserById(user._id)}
-                        >
-                          <MdDelete />
-                        </button>
-                        <button
-                          className=" p-3 rounded-lg text-2xl "
-                          onClick={() => handleUpdateUser(user)}
-                        >
-                          <FaRegEdit />
-                        </button>
-                      </td>
+                <table className="table w-full border border-gray-300">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Username</th>
+                      <th>Rule</th>
+                      <th>Status</th>
+                      <th>Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <ReactPaginate
-                previousLabel={"← Prev"}
-                nextLabel={"Next →"}
-                pageCount={Math.ceil(users.length / itemsPerPage)}
-                onPageChange={({ selected }) => setCurrentPage(selected)}
-                containerClassName={"flex gap-2 justify-center mt-4"}
-                pageLinkClassName={"border px-3 py-1"}
-                previousLinkClassName={"border px-3 py-1"}
-                nextLinkClassName={"border px-3 py-1"}
-                activeClassName={"bg-blue-500 text-white"}
-              />
+                  </thead>
+                  <tbody>
+                    {selectedData.map((user, index) => (
+                      <tr key={user._id}>
+                        <td>{startIndex + index + 1}</td>
+                        <td>
+                          <b>{user.username}</b>
+                        </td>
+                        <td>{roleLabels[user.rule] || "-"}</td>
+                        <td>
+                          <select
+                            className="select bg-white"
+                            value={user.status}
+                            onChange={(e) =>
+                              handleStatusSelect(
+                                user._id,
+                                Number(e.target.value)
+                              )
+                            }
+                          >
+                            <option value={0}>Active</option>
+                            <option value={1}>Inactive</option>
+                            {/* Tambahkan opsi lain jika diperlukan di masa depan */}
+                          </select>
+                        </td>
+                        <td>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() => deleteUserById(user._id)}
+                          >
+                            <MdDelete />
+                          </button>
+                          <button
+                            className=" p-3 rounded-lg text-2xl "
+                            onClick={() => handleUpdateUser(user)}
+                          >
+                            <FaRegEdit />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <ReactPaginate
+                  previousLabel={"← Prev"}
+                  nextLabel={"Next →"}
+                  pageCount={Math.ceil(users.length / itemsPerPage)}
+                  onPageChange={({ selected }) => setCurrentPage(selected)}
+                  containerClassName={"flex gap-2 justify-center mt-4"}
+                  pageLinkClassName={"border px-3 py-1"}
+                  previousLinkClassName={"border px-3 py-1"}
+                  nextLinkClassName={"border px-3 py-1"}
+                  activeClassName={"bg-blue-500 text-white"}
+                />
               </>
-
             )}
           </div>
         </div>
@@ -437,6 +448,9 @@ const User = () => {
               </option>
               <option key={4} value={4}>
                 Kasir
+              </option>
+              <option key={5} value={5}>
+                Pelanggan
               </option>
             </select>
             <p className="font-semibold mt-4 mb-2">Company</p>
