@@ -8,10 +8,8 @@ import { Modal } from "@/components/Modal";
 import { useRouter } from "next/router";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import Link from "next/link";
-import fetchCategoryList from "@/libs/fetching/category"
-import fetchItemCampaignList from "@/libs/fetching/itemCampaign"
-
-import { categoryProductList } from "@/libs/fetching/category";
+import { fetchCategoryList } from "@/libs/fetching/category";
+import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -85,6 +83,8 @@ export default function Home() {
     const fetchItemCampaign = async () => {
       try {
         const response = await fetchItemCampaignList();
+        console.log("MUTU");
+        console.log("RESPO", response);
         setItemCampaignList(response);
         return response;
       } catch (error) {
@@ -206,7 +206,7 @@ export default function Home() {
             setItemCampaignList(data_item_campaign);
             setStores(data_store);
             // if (stores.decorationDetails) {
-              
+
             // }
             // setImageHeader(data_company_image);
             setIsLoading(false);
@@ -274,7 +274,7 @@ export default function Home() {
               // if (stores.decorationDetails) {
               //   const { primary, secondary, tertiary, danger } =
               //     stores.decorationDetails;
-      
+
               //   document.documentElement.style.setProperty("--bg-primary", primary);
               //   document.documentElement.style.setProperty(
               //     "--bg-secondary",
@@ -319,15 +319,12 @@ export default function Home() {
 
   useEffect(() => {
     if (!stores?.decorationDetails) return;
-  
+
     const { primary, secondary, tertiary, danger } = stores.decorationDetails;
     document.documentElement.style.setProperty("--bg-primary", primary);
     document.documentElement.style.setProperty("--bg-secondary", secondary);
     document.documentElement.style.setProperty("--bg-tertiary", tertiary);
     document.documentElement.style.setProperty("--bg-danger", danger);
-  }, [stores]);
-  useEffect(() => {
-    console.log("Stores data:", stores);
   }, [stores]);
 
   const addToCart = async () => {
@@ -360,9 +357,8 @@ export default function Home() {
   };
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredProductList = products.filter(
-    (product) =>
-      product.name_product.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProductList = products.filter((product) =>
+    product.name_product.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const closeModal = () => {
@@ -447,13 +443,13 @@ export default function Home() {
         </div>
 
         <div className="mt-10 space-y-6 relative min-h-[200vh] z-30">
-        <input
-                type="text"
-                placeholder="Cari Product..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
-              />
+          <input
+            type="text"
+            placeholder="Cari Product..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
+          />
           <h2 className="font-bold text-4xl mb-4">Products</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredProductList.length === 0 ? (
@@ -526,130 +522,216 @@ export default function Home() {
           alt="FOOTER MOTIVE"
         />
       </div>
-      <Footer />
-
-      {isModalOpen && (
-        <Modal onClose={closeModal} title={selectedProduct?.name_product}>
-          <div>
-            <Image
-              src={selectedProduct?.image || "https://placehold.co/100x100"}
-              alt={selectedProduct?.name_product}
-              width={100}
-              height={100}
-              className="w-[500px] h-[550px] mb-4"
-            />
-            <p className="text-xl font-bold">{selectedProduct?.name_product}</p>
-            <p>{selectedProduct?.deskripsi}</p>
-            <p className="hidden">{selectedProduct?.product_code}</p>
-
-            <p className="font-semibold mt-4 mb-2">Extras</p>
-            <div className="flex flex-wrap space-x-2">
-              {selectedProduct?.id_extras?.extrasDetails.map((extra) => (
-                <button
-                  key={extra._id}
-                  className={`p-2 rounded-md ${
-                    selectedExtra === extra._id
-                      ? "bg-[#FDDC05] text-black font-semibold"
-                      : "bg-white border-[#FDDC05] border-2"
-                  }`}
-                  onClick={() => setSelectedExtra(extra._id)}
-                >
-                  {extra.name}
-                </button>
-              ))}
-            </div>
-
-            <p className="font-semibold mt-4 mb-2">Size</p>
-            <div className="flex flex-wrap space-x-2">
-              {selectedProduct?.id_size?.sizeDetails.map((size) => (
-                <button
-                  key={size._id}
-                  className={`p-2 rounded-md ${
-                    selectedSize === size._id
-                      ? "bg-[#FDDC05] text-black font-semibold"
-                      : "bg-white border-[#FDDC05] border-2"
-                  }`}
-                  onClick={() => setSelectedSize(size._id)}
-                >
-                  {size.name}
-                </button>
-              ))}
-            </div>
-
-            {/* Kontrol jumlah produk */}
-            <div className="flex items-center place-content-center mt-4">
-              <button
-                onClick={() => setQuantity(Math.max(0, quantity - 1))}
-                className="py-2 px-3 border border-black rounded-md"
-              >
-                <FaMinus />
-              </button>
-              {/* Styled input with no spinners */}
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={quantity}
-                onChange={(e) => {
-                  const newQuantity = Number(e.target.value);
-                  setQuantity(newQuantity);
-                }}
-                className="mx-4 w-16 text-center appearance-none bg-transparent border-none focus:outline-none focus:border-b focus:border-black spinner-none"
+      <footer className="w-full mt-auto z-40">
+        <Footer
+          logo={"/icon_kelontong.svg"}
+          keterangan="Experience the epitome of dependable and secure shopping through Toko Kelontong, a premier marketplace for daily necessities that sets new benchmarks in reliability and quality standards."
+          address="Jl. Palagan Tentara Pelajar Blok B No.6 Sariharjo, Ngaglik, Tambak Rejo, Sariharjo, Kec. Ngaglik, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55581"
+          phone="+62 822-2506-8682"
+        />
+      </footer>
+      <Modal
+        width="large"
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={"PRODUK"}
+      >
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-4xl w-full relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-64 max-h-64">
+            <div className="w-full max-h-64 rounded-xl flex justify-center p-3 border border-slate-300">
+              <Image
+                src={selectedProduct?.image}
+                alt={selectedProduct?.name_product}
+                width={100}
+                height={100}
+                className="object-cover w-full"
               />
-              <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="py-2 px-3 border border-black rounded-md"
-                disabled={quantity >= selectedProduct?.id_stock?.amount} // Prevent exceeding stock
-              >
-                <FaPlus />
-              </button>
             </div>
 
-            {/* Show stock warning message when quantity exceeds available stock */}
-            {quantity >
-              (selectedProduct?.id_stock?.amount || 0) -
-                (selectedProduct?.orderQty || 0) && (
-              <p className="text-red-500 mt-2">
-                Stok produk ini hanya{" "}
-                {(selectedProduct?.id_stock?.amount || 0) -
-                  (selectedProduct?.orderQty || 0)}
+            {/* Product Details */}
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold text-gray-900">
+                {selectedProduct?.name_product}
+              </h2>
+              <p className="text-gray-600 text-lg">
+                {selectedProduct?.deskripsi}
               </p>
-            )}
-            <style jsx>{`
-              /* Remove spinners for WebKit browsers (Chrome, Safari, etc.) */
-              .spinner-none::-webkit-inner-spin-button,
-              .spinner-none::-webkit-outer-spin-button {
-                -webkit-appearance: none;
-                margin: 0;
-              }
 
-              /* Remove spinners for Firefox */
-              .spinner-none {
-                -moz-appearance: textfield;
-              }
-            `}</style>
+              {/* Category & Stock */}
+              <div className="flex flex-wrap gap-3 text-sm">
+                {console.log("SELEKTED", selectedProduct)}
+                <span
+                  className={`px-4 py-1 rounded-full font-medium ${
+                    selectedProduct?.id_stock?.amount -
+                      selectedProduct?.orderQty >
+                    0
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  Stok:{" "}
+                  {selectedProduct?.id_stock?.amount -
+                    selectedProduct?.orderQty}
+                </span>
+                <span
+                  className={`px-4 py-1 rounded-full font-medium ${
+                    selectedProduct?.id_stock?.amount -
+                      selectedProduct?.orderQty >
+                    0
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {selectedProduct?.id_stock?.amount -
+                    selectedProduct?.orderQty >
+                  0
+                    ? "TERSEDIA"
+                    : "HABIS"}
+                </span>
+              </div>
+
+              {/* Pricing */}
+              <div className="flex items-center gap-4">
+                <p className="relative text-xl font-semibold text-gray-800">
+                  {selectedProduct?.discount > 0 && (
+                    <span className="absolute text-red-500 text-sm line-through -top-4 -left-3">
+                      Rp{" "}
+                      {Number(
+                        (
+                          selectedProduct?.sell_price *
+                          (1 - selectedProduct?.discount)
+                        ).toFixed(0)
+                      ).toLocaleString("id-ID")}
+                    </span>
+                  )}
+                  <span className="text-2xl font-bold">
+                    Rp {selectedProduct?.sell_price.toLocaleString("id-ID")}
+                  </span>
+                </p>
+                {selectedProduct?.discount > 0 && (
+                  <span className="text-sm font-medium text-red-600 bg-red-100 px-3 py-1 rounded-full">
+                    Diskon: {selectedProduct?.discount * 100}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Extras & Sizes - Two Column Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            {/* Extras */}
+            <div className="bg-gray-50 p-4 rounded-lg shadow-sm border">
+              <h3 className="font-semibold text-lg text-gray-900 mb-2">
+                Varian
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedProduct?.id_extras &&
+                selectedProduct?.id_extras.extrasDetails.length > 0 ? (
+                  selectedProduct?.id_extras?.extrasDetails.map((extra) => (
+                    <button
+                      key={extra._id}
+                      className={`p-2 rounded-md ${
+                        selectedExtra === extra._id
+                          ? "bg-[#FDDC05] text-black font-semibold"
+                          : "bg-white border-[#FDDC05] border-2"
+                      }`}
+                      onClick={() => setSelectedExtra(extra._id)}
+                    >
+                      {extra.name}
+                    </button>
+                  ))
+                ) : (
+                  <span className="text-gray-700">Belum Tersedia</span>
+                )}
+              </div>
+            </div>
+
+            {/* Sizes */}
+            <div className="bg-gray-50 p-4 rounded-lg shadow-sm border">
+              <h3 className="font-semibold text-lg text-gray-900 mb-2">
+                Sizes
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedProduct?.id_size &&
+                selectedProduct?.id_size.sizeDetails.length > 0 ? (
+                  selectedProduct?.id_size?.sizeDetails.map((size) => (
+                    <button
+                      key={size._id}
+                      className={`p-2 rounded-md ${
+                        selectedSize === size._id
+                          ? "bg-[#FDDC05] text-black font-semibold"
+                          : "bg-white border-[#FDDC05] border-2"
+                      }`}
+                      onClick={() => setSelectedSize(size._id)}
+                    >
+                      {size.name}
+                    </button>
+                  ))
+                ) : (
+                  <span className="text-gray-700">Belum Tersedia</span>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Kontrol Jumlah Produk */}
+          <div className="flex items-center justify-center mt-4">
             <button
-              onClick={addToCart}
-              className={`mt-4 w-full p-2 rounded-md ${
-                quantity === 0 ||
-                quantity >
-                  (selectedProduct?.id_stock?.amount -
-                    (selectedProduct?.orderQty || 0) || 0)
-                  ? "closeBtn"
-                  : "addBtn"
-              }`}
-              disabled={
-                quantity === 0 ||
-                quantity >
-                  (selectedProduct?.id_stock?.amount -
-                    (selectedProduct?.orderQty || 0) || 0)
-              }
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="py-2 px-3 border border-black rounded-md"
             >
-              Tambah ke Keranjang
+              <FaMinus />
+            </button>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              className="mx-4 w-16 text-center bg-transparent border-none focus:outline-none focus:border-b focus:border-black spinner-none"
+            />
+            <button
+              onClick={() => setQuantity(quantity + 1)}
+              className="py-2 px-3 border border-black rounded-md"
+              disabled={quantity >= selectedProduct?.id_stock?.amount}
+            >
+              <FaPlus />
             </button>
           </div>
-        </Modal>
-      )}
+
+          {/* Peringatan Stok */}
+          {quantity >
+            (selectedProduct?.id_stock?.amount || 0) -
+              (selectedProduct?.orderQty || 0) && (
+            <p className="text-red-500 mt-2">
+              Stok produk ini hanya{" "}
+              {(selectedProduct?.id_stock?.amount || 0) -
+                (selectedProduct?.orderQty || 0)}
+            </p>
+          )}
+
+          {/* Tombol Tambah ke Keranjang */}
+          <button
+            onClick={addToCart}
+            className={`mt-4 w-full p-2 rounded-md ${
+              quantity === 0 ||
+              quantity >
+                (selectedProduct?.id_stock?.amount -
+                  (selectedProduct?.orderQty || 0) || 0)
+                ? "closeBtn"
+                : "addBtn"
+            }`}
+            disabled={
+              quantity === 0 ||
+              quantity >
+                (selectedProduct?.id_stock?.amount -
+                  (selectedProduct?.orderQty || 0) || 0)
+            }
+          >
+            Tambah ke Keranjang
+          </button>
+        </div>
+      </Modal>
+      ;
     </div>
   );
 }

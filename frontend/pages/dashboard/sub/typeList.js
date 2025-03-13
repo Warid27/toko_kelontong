@@ -5,10 +5,13 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import client from "@/libs/axios";
 import { Modal } from "@/components/Modal";
 import Swal from "sweetalert2";
+import Header from "@/components/section/header";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import { fetchTypeList, fetchTypeAdd } from "@/libs/fetching/type";
 import ReactPaginate from "react-paginate";
+import { SubmitButton } from "@/components/form/button";
+import { CloseButton } from "@/components/form/button";
 
 const TypeList = () => {
   const [type, setType] = useState([]);
@@ -194,57 +197,17 @@ const TypeList = () => {
   );
 
   return (
-    <div className="w-full h-screen pt-16">
-      <div className="justify-between w-full bg-white shadow-lg p-4">
-        <div className="flex flex-row justify-between">
-          <div className="flex flex-col">
-            <p className="text-2xl font-bold">Daftar Tipe</p>
-            <p>Detail Daftar Tipe</p>
-          </div>
-          <div className="relative mt-2 flex flex-row space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Cari tipe..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
-              />
-              <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
-            </div>
-            <div className="avatar">
-              <div className="w-10 h-10 rounded-full">
-                <Image
-                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                />
-              </div>
-            </div>
-            <button className="button btn-ghost btn-sm rounded-lg">
-              <MdKeyboardArrowDown className="text-2xl mt-1" />
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-row justify-between mt-8">
-          <div>
-            <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option value="">Best sellers</option>
-              <option value="">Ricebowl</option>
-              <option value="">Milkshake</option>
-            </select>
-          </div>
-          <div>
-            <button
-              className="button addBtn"
-              onClick={() => modalOpen("add", true)}
-            >
-              + Tambah Type
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="w-full h-screen pt-16 relative">
+      
+      <Header
+        title="Daftar Type"
+        subtitle="Detail Daftar Type"
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        modalOpen={modalOpen}
+        isSearch={true}
+        isAdd={true}
+      />
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
@@ -303,8 +266,11 @@ const TypeList = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <Modal onClose={() => modalOpen("add", false)} title={"Tambah Tipe"}>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => modalOpen("add", false)}
+        title="Tambah Type"
+      >
           <form onSubmit={handleSubmitAdd}>
             <p className="font-semibold mt-4">Nama Tipe</p>
             <input
@@ -317,26 +283,16 @@ const TypeList = () => {
             />
 
             <div className="flex justify-end mt-5">
-              <button
-                type="button"
-                className="closeBtn"
-                onClick={() => modalOpen("add", false)}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                // onClick={typeDataAdd}
-                className="submitBtn"
-              >
-                Tambah
-              </button>
+            <CloseButton onClick={() => modalOpen("add", false)}/>
+            <SubmitButton/>
             </div>
           </form>
         </Modal>
-      )}
-      {isUpdateModalOpen && (
-        <Modal onClose={() => modalOpen("update", false)} title={"Edit Tipe"}>
+        <Modal
+        isOpen={isUpdateModalOpen}
+        onClose={() => modalOpen("update", false)}
+        title={`Edit Perusahaan`}
+      >
           <form onSubmit={handleSubmitUpdate}>
             <p className="font-semibold mt-4">Nama Tipe</p>
             <input
@@ -350,23 +306,11 @@ const TypeList = () => {
               required
             />
             <div className="flex justify-end mt-5">
-              <button
-                type="button"
-                className="closeBtn"
-                onClick={() => modalOpen("update", false)}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
-                Simpan
-              </button>
+            <CloseButton onClick={() => modalOpen("update", false)}/>
+            <SubmitButton/>
             </div>
           </form>
         </Modal>
-      )}
     </div>
   );
 };

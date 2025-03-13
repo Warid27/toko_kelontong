@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 
 const MenuItem = ({ icon, label, onClick, isActive }) => {
   return (
@@ -10,8 +11,17 @@ const MenuItem = ({ icon, label, onClick, isActive }) => {
           : "hover:bg-gray-500"
       }`}
     >
-      {icon && React.cloneElement(icon, { className: "mr-2" })}
-      {label}
+      <motion.div
+        key={label}
+        className="w-full"
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+      >
+        <motion.div className="w-full flex items-center">
+          {icon && React.cloneElement(icon, { className: "mr-2" })}
+          {label}
+        </motion.div>
+      </motion.div>
     </a>
   );
 };

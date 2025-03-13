@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Select from "react-select";
 import StoreIcon from "@/components/nav/sub/storeIcon";
 import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchStoreList } from "@/libs/fetching/store";
 
 const CompanySelector = () => {
+  const dropdownRef = useRef(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [companyList, setCompanyList] = useState([]);
   const [storeList, setStoreList] = useState([]);
   const [companySelect, setCompanySelect] = useState(() => {
@@ -102,50 +104,86 @@ const CompanySelector = () => {
     setIsStore(false);
   };
 
+  useEffect(() => {
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
   return (
-    <div className="flex flex-row gap-2 items-center">
-      {isStore && (
-        <StoreIcon key={storeSelect} role={1} store_id={storeSelect} />
-      )}
+    <div className="relative" ref={dropdownRef}>
+      <div className=" flex flex-row gap-2 items-center">
+        {isStore && (
+          <StoreIcon key={storeSelect} role={1} store_id={storeSelect} />
+        )}
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md shadow-md"
+        >
+          Select Company & Store
+        </button>
+      </div>
 
-      <Select
-        id="company"
-        className="w-full md:w-64"
-        options={companyList.map((c) => ({ value: c._id, label: c.name }))}
-        value={
-          companyList
-            .map((c) => ({ value: c._id, label: c.name }))
-            .find((opt) => opt.value === companySelect) || null
-        }
-        onChange={(selectedOption) => setCompanySelect(selectedOption?.value)}
-        isSearchable
-        placeholder="Select a company"
-        noOptionsMessage={() => "No Company available"}
-      />
+      <div
+        className={`absolute left-0 mt-2 w-64 bg-white border border-gray-300 rounded-md shadow-lg p-4 z-50 transition-all duration-300 ease-out transform  ${
+          dropdownOpen
+            ? "scale-100 opacity-100 translate-y-0"
+            : "scale-95 opacity-0 translate-y-[-10px] pointer-events-none"
+        }`}
+      >
+        <Select
+          id="company"
+          className="w-full"
+          options={companyList.map((c) => ({ value: c._id, label: c.name }))}
+          value={
+            companyList
+              .map((c) => ({ value: c._id, label: c.name }))
+              .find((opt) => opt.value === companySelect) || null
+          }
+          onChange={(selectedOption) => setCompanySelect(selectedOption?.value)}
+          isSearchable
+          placeholder="Select a company"
+          noOptionsMessage={() => "No Company available"}
+        />
 
-      {isCompany && (
-        <>
-          <Select
-            id="store"
-            className="w-full md:w-64"
-            options={storeList.map((s) => ({ value: s._id, label: s.name }))}
-            value={
-              storeList
-                .map((s) => ({ value: s._id, label: s.name }))
-                .find((opt) => opt.value === storeSelect) || null
-            }
-            onChange={(selectedOption) =>
-              handleChangeStore(selectedOption?.value)
-            }
-            isSearchable
-            placeholder="Select a store"
-            noOptionsMessage={() => "No Store available"}
-          />
-          <button className="dangerBtn" onClick={clearSelector}>
-            Clear
-          </button>
-        </>
-      )}
+        {isCompany && (
+          <>
+            <Select
+              id="store"
+              className="w-full mt-2"
+              options={storeList.map((s) => ({
+                value: s._id,
+                label: s.name,
+              }))}
+              value={
+                storeList
+                  .map((s) => ({ value: s._id, label: s.name }))
+                  .find((opt) => opt.value === storeSelect) || null
+              }
+              onChange={(selectedOption) =>
+                handleChangeStore(selectedOption?.value)
+              }
+              isSearchable
+              placeholder="Select a store"
+              noOptionsMessage={() => "No Store available"}
+            />
+            <button className="dangerBtn mt-2 w-full" onClick={clearSelector}>
+              Clear
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 };

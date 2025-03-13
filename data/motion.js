@@ -9,7 +9,7 @@ import {
   TbReportAnalytics,
   TbBuilding,
   TbAdjustments,
-  TbUser,
+  TbUserSquare,
   TbUsersGroup,
   TbBriefcase,
   TbShoppingBagPlus,
@@ -22,7 +22,6 @@ import {
   TbMoneybag,
   TbChevronDown,
   TbBuildingWarehouse,
-  TbUserSquare,
 } from "react-icons/tb";
 
 const Sidebar = ({ setSelectedLink, selectedLink }) => {
@@ -63,14 +62,10 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
       setUserRole(mappedRole);
     };
 
-    // Jalankan langsung pertama kali
     updateStateFromLocalStorage();
-
-    // Set interval untuk cek perubahan setiap 500ms
     const intervalId = setInterval(updateStateFromLocalStorage, 1000);
-
     return () => clearInterval(intervalId);
-  }, []); // Run only once on component mount
+  }, []);
 
   const menuConfig = [
     { label: "Analisis", icon: <TbReportAnalytics />, key: "analytics" },
@@ -102,23 +97,6 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
         { label: "Sales Promo", icon: <TbMoneybag />, key: "sales_campaign" },
       ],
     },
-
-    {
-      label: "Product",
-      icon: TbChevronDown,
-      key: "product",
-      submenu: [
-        { label: "Product", icon: <TbBox />, key: "product" },
-        { label: "Category Product", icon: <TbBox />, key: "category_product" },
-        { label: "Product Promo", icon: <TbMoneybag />, key: "item_campaign" },
-        { label: "Varian", icon: <TbShoppingBagPlus />, key: "extras" },
-        { label: "Ukuran", icon: <TbPercentage />, key: "size" },
-      ],
-    },
-    { label: "Pesanan Masuk", icon: <TbBox />, key: "order_cust" },
-    { label: "Order", icon: <TbBox />, key: "order" },
-    { label: "Pengguna", icon: <TbUsersGroup />, key: "user" },
-    { label: "Kasir UI", icon: <TbBox />, key: "kasir" },
   ];
 
   const filteredMenuConfig = useMemo(() => {
@@ -155,95 +133,60 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
         }
         return rolePermissions[userRole]?.includes(item.key) ? item : null;
       })
-      .filter(Boolean); // Remove null values
+      .filter(Boolean);
   }, [menuConfig, rolePermissions, userRole, idCompany, idStore]);
 
   return (
-    <div className="drawer lg:drawer-open">
-      <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
-      <motion.div
-        className="drawer-content flex flex-col items-center justify-center overflow-auto"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.label
-          htmlFor="my-drawer-2"
-          className="btn btn-primary drawer-button lg:hidden z-20 px-6 py-3 text-lg font-semibold"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          Open drawer
-        </motion.label>
-        <ContentRenderer
-          selectedLink={selectedLink}
-          setSelectedLink={setSelectedLink}
-          userRole={userRole}
-        />
-      </motion.div>
-      <motion.div
-        className="drawer-side relative z-20"
-        initial={{ x: -300 }}
-        animate={{ x: 0 }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-      >
-        <div className="top-20 menu w-80 px-4 py-2 border-b-4 border-black fixed z-50 bg-white shadow-lg rounded-xl">
-          <span className="flex items-center text-2xl font-bold">
-            <TbUserSquare className="mr-4" />
-            {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
-          </span>
-        </div>
-        <ul className="menu bg-white mt-32 text-black min-h-full w-80 text-lg p-4 flex flex-col gap-2">
-          {filteredMenuConfig.map((item) => {
-            if (item.submenu) {
-              return (
-                <ExpandableMenu
-                  key={item.key}
-                  label={item.label}
-                  icon={item.icon}
-                  menuKey={item.key}
-                  expandedMenus={expandedMenus}
-                  toggleMenu={toggleMenu}
-                  isActive={item.submenu.some(
-                    (subItem) => subItem.key === selectedLink
-                  )}
-                >
-                  {item.submenu.map((subItem) => (
-                    <motion.li
-                      key={item.key}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <MenuItem
-                        icon={subItem.icon}
-                        label={subItem.label}
-                        onClick={() => setSelectedLink(subItem.key)}
-                        isActive={selectedLink === subItem.key}
-                        className="w-full"
-                      />
-                    </motion.li>
-                  ))}
-                </ExpandableMenu>
-              );
-            }
-            return (
-              <motion.li
-                key={item.key}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-              >
+    <motion.div
+      className="fixed left-0 top-0 h-full w-80 bg-white/10 backdrop-blur-lg shadow-2xl border-r border-white/20 text-white p-4 flex flex-col"
+      initial={{ x: -100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
+      {/* Header */}
+      <div className="flex items-center space-x-3 text-xl font-semibold mb-6">
+        <TbUserSquare className="text-3xl text-white" />
+        <span>{userRole.charAt(0).toUpperCase() + userRole.slice(1)}</span>
+      </div>
+
+      {/* Menu */}
+      <ul className="space-y-2">
+        {filteredMenuConfig.map((item) =>
+          item.submenu ? (
+            <ExpandableMenu
+              key={item.key}
+              label={item.label}
+              icon={item.icon}
+              menuKey={item.key}
+              expandedMenus={expandedMenus}
+              toggleMenu={toggleMenu}
+              isActive={item.submenu.some(
+                (subItem) => subItem.key === selectedLink
+              )}
+            >
+              {item.submenu.map((subItem) => (
                 <MenuItem
-                  icon={item.icon}
-                  label={item.label}
-                  onClick={() => setSelectedLink(item.key)}
-                  isActive={selectedLink === item.key}
+                  key={subItem.key}
+                  icon={subItem.icon}
+                  label={subItem.label}
+                  onClick={() => setSelectedLink(subItem.key)}
+                  isActive={selectedLink === subItem.key}
                 />
-              </motion.li>
-            );
-          })}
-        </ul>
-      </motion.div>
-    </div>
+              ))}
+            </ExpandableMenu>
+          ) : (
+            <li key={item.key}>
+              <MenuItem
+                icon={item.icon}
+                label={item.label}
+                onClick={() => setSelectedLink(item.key)}
+                isActive={selectedLink === item.key}
+              />
+            </li>
+          )
+        )}
+      </ul>
+    </motion.div>
   );
 };
 

@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 const Card = ({
   lebar = "80",
@@ -16,14 +17,23 @@ const Card = ({
     stock === "not set" ? "" : Number(stock) <= 0 ? "opacity-50" : "";
 
   return (
-    <div
+    <motion.div
       className={`card bg-base-300 w-${lebar} shadow-xl cursor-pointer overflow-hidden relative ${stockClass}`}
       onClick={onClick}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      whileFocus={{ boxShadow: "0px 0px 12px rgba(0, 0, 0, 0.2)" }}
+      transition={{ type: "spring", stiffness: 300 }}
     >
       {diskon > 0 && diskon <= 1 && (
-        <div className="absolute -top-12 -right-12  bg-red-500 text-white w-32 h-32 rounded-full font-bold justify-start flex items-end">
+        <motion.div
+          className="absolute -top-12 -right-12 bg-red-500 text-white w-32 h-32 rounded-full font-bold justify-start flex items-end"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <p className="ps-6 pb-6 w-5 text-center">{diskon * 100}% OFF!</p>
-        </div>
+        </motion.div>
       )}
       <figure className="w-full h-48 flex items-center justify-center bg-green-300">
         <Image
@@ -48,7 +58,7 @@ const Card = ({
           <p className="font-bold text-gray-700">{harga}</p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

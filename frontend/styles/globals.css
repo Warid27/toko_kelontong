@@ -150,6 +150,19 @@ table * {
   transform: scale(0.95);
 }
 
+.iconCloseBtn {
+  color: var(--bg-tertiary);
+}
+
+.iconCloseBtn:hover {
+  color: color-mix(in srgb, var(--bg-tertiary) 80%, black 20%);
+}
+
+.iconCloseBtn:active {
+  color: color-mix(in srgb, var(--bg-tertiary) 70%, black 30%);
+  transform: scale(0.95);
+}
+
 /* === BUTTON === */
 
 /* Remove spinners for WebKit browsers (Chrome, Safari, Edge) */

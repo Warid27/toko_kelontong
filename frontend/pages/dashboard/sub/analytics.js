@@ -193,6 +193,8 @@ export const Analytics = () => {
         const response = await client.post("/sales/transaksi-history", {
           id_store,
           id_company,
+          filterBy,
+          selectedDate
         },{
           headers: {
             Authorization: `Bearer ${token}`,
@@ -217,7 +219,7 @@ export const Analytics = () => {
       }
     };
     fetchTransaksiHistory();
-  }, []);
+  }, [filterBy, selectedDate]);
   useEffect(() => {
     const fetchSalesCount = async () => {
       try {

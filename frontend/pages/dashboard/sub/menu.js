@@ -6,6 +6,7 @@ import client from "@/libs/axios";
 import { HiDotsHorizontal } from "react-icons/hi";
 import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
+import { motion } from "framer-motion";
 import {
   FaRegEdit,
   FaRegFileExcel,
@@ -68,8 +69,9 @@ const Menu = () => {
 
   const handleDownload = () => {
     const link = document.createElement("a");
-    link.href = "/Template_Upload.xlsx";
-    link.download = "Template.xlsx";
+    link.href =
+      "https://api-storage.cli.pics:443/toko-kelontong/file/example.rar";
+    link.download = "Example.rar";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -629,29 +631,65 @@ const Menu = () => {
         </div>
       </div>
 
-      {isExampleModalOpen && (
-        <Modal
-          onClose={() => {
-            modalOpen("example", false);
-            modalOpen("add", true);
-          }}
-          title={"Format Menambahkan Produk"}
+      <Modal
+        onClose={() => {
+          modalOpen("example", false);
+          modalOpen("add", true);
+        }}
+        isOpen={isExampleModalOpen}
+        title={"Format Menambahkan Produk"}
+      >
+         <motion.div 
+        className="flex justify-center p-4"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <Image
+          src="http://localhost:8080/api/image/39f317fa"
+          width={500}
+          height={200}
+          alt="Format Excel"
+          className="rounded-lg shadow-lg border border-gray-300 
+                     hover:shadow-blue-500/50 transition-shadow duration-300"
+        />
+      </motion.div>
+      <motion.div 
+        className="bg-gradient-to-r from-blue-50 to-blue-100 border-l-4 border-blue-500 
+                   text-blue-900 p-5 rounded-lg shadow-md"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <h1 className="text-xl font-bold mb-3">📊 Cara Mengupload Produk Menggunakan Excel:</h1>
+        <ul className="list-decimal list-inside space-y-2 text-md">
+          <li>
+            Samakan dengan format gambar di atas atau langsung unduh template yang tersedia.
+          </li>
+          <li>Tambahkan file Excel sesuai dengan format yang sudah ditentukan.</li>
+          <li>
+            Pastikan setiap gambar berada dalam folder yang sama dan namanya sesuai dengan kolom{" "}
+            <span className="font-mono bg-gray-300 px-1 rounded">image</span> di Excel.
+          </li>
+        </ul>
+      </motion.div>
+      <motion.div 
+        className="flex justify-center my-4"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <button
+          onClick={handleDownload}
+          className="px-6 py-3 bg-white/10 backdrop-blur-lg border border-white/20
+                     hover:bg-white/20 transition text-black font-semibold rounded-lg 
+                     shadow-lg hover:shadow-blue-500/50 flex items-center gap-2"
         >
-          <Image
-            src="http://localhost:8080/uploads/Example.jpg"
-            width={500}
-            height={200}
-          />
-          <div className="flex justify-center items-center">
-            <button
-              onClick={handleDownload}
-              className="p-2 bg-green-500 text-white rounded"
-            >
-              Download Template
-            </button>
-          </div>
-        </Modal>
-      )}
+          📥 Download Template
+        </button>
+      </motion.div>
+      </Modal>
+
       {isBarcodeModalOpen && (
         <Modal
           onClose={() => {
@@ -665,287 +703,296 @@ const Menu = () => {
         </Modal>
       )}
 
-      {isModalOpen && (
-        <Modal onClose={() => modalOpen("add", false)} title={"Tambah Produk"}>
-          <div className="flex flex-row mb-5">
-            <button
-              className={`${
-                openMenu == "form" ? "addBtn mr-2" : "closeBtn"
-              } w-10 h-10 flex items-center justify-center`}
-              onClick={() => setOpenMenu("form")}
-            >
-              <FaWpforms />
-            </button>
-            <button
-              className={`${
-                openMenu == "excel" ? "addBtn" : "closeBtn"
-              } w-10 h-10 flex items-center justify-center`}
-              onClick={() => setOpenMenu("excel")}
-            >
-              <FaRegFileExcel />
-            </button>
-          </div>
-          {(() => {
-            switch (openMenu) {
-              case "form":
-                return (
-                  <form onSubmit={handleSubmitAdd}>
-                    <p className="font-semibold">Gambar Produk</p>
-                    <p className="mb-2 text-sm text-slate-500">
-                      Image format .jpg .jpeg .png and minimum size 300 x 300px
-                    </p>
-                    <div className="upload-container">
-                      <label className="upload-label">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleImageChange(e, "add")}
-                          style={{ display: "none" }}
-                        />
-                        <div className="upload-content">
-                          {productDataAdd.image ? (
-                            <Image
-                              src={productDataAdd.image}
-                              alt="Uploaded"
-                              className="uploaded-image"
-                              width={80}
-                              height={80}
-                            />
-                          ) : (
-                            <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                              <div className="icon-container flex flex-col items-center">
-                                <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
-                                <p className="text-sm text-[#FDDC05]">
-                                  New Image
-                                </p>
-                              </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => modalOpen("add", false)}
+        title={"Tambah Produk"}
+      >
+        <div className="flex flex-row mb-5">
+          <button
+            className={`${
+              openMenu == "form" ? "addBtn mr-2" : "closeBtn"
+            } w-10 h-10 flex items-center justify-center`}
+            onClick={() => setOpenMenu("form")}
+          >
+            <FaWpforms />
+          </button>
+          <button
+            className={`${
+              openMenu == "excel" ? "addBtn" : "closeBtn"
+            } w-10 h-10 flex items-center justify-center`}
+            onClick={() => setOpenMenu("excel")}
+          >
+            <FaRegFileExcel />
+          </button>
+        </div>
+        {(() => {
+          switch (openMenu) {
+            case "form":
+              return (
+                <form onSubmit={handleSubmitAdd}>
+                  <p className="font-semibold">Gambar Produk</p>
+                  <p className="mb-2 text-sm text-slate-500">
+                    Image format .jpg .jpeg .png and minimum size 300 x 300px
+                  </p>
+                  <div className="upload-container">
+                    <label className="upload-label">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageChange(e, "add")}
+                        style={{ display: "none" }}
+                      />
+                      <div className="upload-content">
+                        {productDataAdd.image ? (
+                          <Image
+                            src={productDataAdd.image}
+                            alt="Uploaded"
+                            className="uploaded-image"
+                            width={80}
+                            height={80}
+                          />
+                        ) : (
+                          <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                            <div className="icon-container flex flex-col items-center">
+                              <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
+                              <p className="text-sm text-[#FDDC05]">
+                                New Image
+                              </p>
                             </div>
-                          )}
-                        </div>
-                      </label>
-                    </div>
-                    <p className="font-semibold mt-4">Nama Menu</p>
-                    <p className="mb-2 text-sm text-slate-500">
-                      Include min. 40 characters to make it more interesting
-                    </p>
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                  <p className="font-semibold mt-4">Nama Menu</p>
+                  <p className="mb-2 text-sm text-slate-500">
+                    Include min. 40 characters to make it more interesting
+                  </p>
+                  <input
+                    type="text"
+                    name="name_product"
+                    value={productDataAdd.name_product}
+                    onChange={handleChangeAdd}
+                    className="border rounded-md p-2 w-full bg-white"
+                    required
+                  />
+                  <p className="font-semibold mt-4">Deskripsi Menu</p>
+                  <p className="mb-2 text-sm text-slate-500">
+                    Include min. 260 characters to make it easier for buyers to
+                    understand and find your product
+                  </p>
+                  <textarea
+                    name="deskripsi"
+                    value={productDataAdd.deskripsi}
+                    onChange={handleChangeAdd}
+                    className="border rounded-md p-2 w-full bg-white"
+                    required
+                  />
+                  <p className="font-semibold mt-4 mb-2">Barcode</p>
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      name="name_product"
-                      value={productDataAdd.name_product}
+                      name="barcode"
+                      value={productDataAdd.barcode}
                       onChange={handleChangeAdd}
                       className="border rounded-md p-2 w-full bg-white"
                       required
                     />
-                    <p className="font-semibold mt-4">Deskripsi Menu</p>
-                    <p className="mb-2 text-sm text-slate-500">
-                      Include min. 260 characters to make it easier for buyers
-                      to understand and find your product
-                    </p>
-                    <textarea
-                      name="deskripsi"
-                      value={productDataAdd.deskripsi}
-                      onChange={handleChangeAdd}
-                      className="border rounded-md p-2 w-full bg-white"
-                      required
-                    />
-                    <p className="font-semibold mt-4 mb-2">Barcode</p>
-                    <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleGenerateBarcode}
+                      className="px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      Generate Barcode
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 w-full justify-between">
+                    <div className="w-full">
+                      <p className="font-semibold mt-4 mb-2">Harga Beli</p>
                       <input
-                        type="text"
-                        name="barcode"
-                        value={productDataAdd.barcode}
+                        type="number"
+                        name="buy_price"
+                        value={productDataAdd.buy_price}
                         onChange={handleChangeAdd}
                         className="border rounded-md p-2 w-full bg-white"
                         required
                       />
-                      <button
-                        onClick={handleGenerateBarcode}
-                        className="px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                      >
-                        Generate Barcode
-                      </button>
                     </div>
-
-                    <div className="flex gap-2 w-full justify-between">
-                      <div className="w-full">
-                        <p className="font-semibold mt-4 mb-2">Harga Beli</p>
-                        <input
-                          type="number"
-                          name="buy_price"
-                          value={productDataAdd.buy_price}
-                          onChange={handleChangeAdd}
-                          className="border rounded-md p-2 w-full bg-white"
-                          required
-                        />
-                      </div>
-                      <div className="w-full">
-                        <p className="font-semibold mt-4 mb-2">Harga Jual</p>
-                        <input
-                          type="number"
-                          name="sell_price"
-                          value={productDataAdd.sell_price}
-                          onChange={handleChangeAdd}
-                          className="border rounded-md p-2 w-full bg-white"
-                          required
-                        />
-                      </div>
+                    <div className="w-full">
+                      <p className="font-semibold mt-4 mb-2">Harga Jual</p>
+                      <input
+                        type="number"
+                        name="sell_price"
+                        value={productDataAdd.sell_price}
+                        onChange={handleChangeAdd}
+                        className="border rounded-md p-2 w-full bg-white"
+                        required
+                      />
                     </div>
-                    <p className="font-semibold mt-4 mb-2">Product Code</p>
-                    <input
-                      type="text"
-                      name="product_code"
-                      value={productDataAdd.product_code}
-                      onChange={handleChangeAdd}
-                      className="border rounded-md p-2 w-full bg-white"
-                      required
-                    />
-                    <p className="font-semibold mt-4 mb-2">Category Product</p>
-                    <Select
-                      id="categoryProduct"
-                      className="basic-single"
-                      options={categoryList.map((c) => ({
-                        value: c._id,
-                        label: c.name_category,
-                      }))}
-                      value={
-                        categoryList
-                          .map((c) => ({
-                            value: c._id,
-                            label: c.name_category,
-                          }))
-                          .find(
-                            (opt) =>
-                              opt.value === productDataAdd.id_category_product
-                          ) || null
-                      }
-                      onChange={(selectedOption) =>
-                        setProductDataAdd((prevState) => ({
-                          ...prevState,
-                          id_category_product: selectedOption
-                            ? selectedOption.value
-                            : "",
+                  </div>
+                  <p className="font-semibold mt-4 mb-2">Product Code</p>
+                  <input
+                    type="text"
+                    name="product_code"
+                    value={productDataAdd.product_code}
+                    onChange={handleChangeAdd}
+                    className="border rounded-md p-2 w-full bg-white"
+                    required
+                  />
+                  <p className="font-semibold mt-4 mb-2">Category Product</p>
+                  <Select
+                    id="categoryProduct"
+                    className="basic-single"
+                    options={categoryList.map((c) => ({
+                      value: c._id,
+                      label: c.name_category,
+                    }))}
+                    value={
+                      categoryList
+                        .map((c) => ({
+                          value: c._id,
+                          label: c.name_category,
                         }))
-                      }
-                      isSearchable
-                      required
-                      placeholder="Pilih Category..."
-                      noOptionsMessage={() => "No Category available"}
-                    />
-                    <p className="font-semibold mt-4 mb-2">Diskon</p>
-                    <Select
-                      id="itemCampaign"
-                      className="basic-single"
-                      options={itemCampaignList.map((c) => ({
-                        value: c._id,
-                        label: c.item_campaign_name,
-                      }))}
-                      value={
-                        itemCampaignList
-                          .map((c) => ({
-                            value: c._id,
-                            label: c.item_campaign_name,
-                          }))
-                          .find(
-                            (opt) =>
-                              opt.value === productDataAdd.id_item_campaign
-                          ) || null
-                      }
-                      onChange={(selectedOption) => {
-                        setProductDataAdd((prevState) => ({
-                          ...prevState,
-                          id_item_campaign: selectedOption
-                            ? selectedOption.value
-                            : "",
-                        }));
-                      }}
-                      isSearchable
-                      placeholder="Pilih diskon..."
-                      noOptionsMessage={() => "No diskon available"}
-                    />
+                        .find(
+                          (opt) =>
+                            opt.value === productDataAdd.id_category_product
+                        ) || null
+                    }
+                    onChange={(selectedOption) =>
+                      setProductDataAdd((prevState) => ({
+                        ...prevState,
+                        id_category_product: selectedOption
+                          ? selectedOption.value
+                          : "",
+                      }))
+                    }
+                    isSearchable
+                    required
+                    placeholder="Pilih Category..."
+                    noOptionsMessage={() => "No Category available"}
+                  />
+                  <p className="font-semibold mt-4 mb-2">Diskon</p>
+                  <Select
+                    id="itemCampaign"
+                    className="basic-single"
+                    options={itemCampaignList.map((c) => ({
+                      value: c._id,
+                      label: c.item_campaign_name,
+                    }))}
+                    value={
+                      itemCampaignList
+                        .map((c) => ({
+                          value: c._id,
+                          label: c.item_campaign_name,
+                        }))
+                        .find(
+                          (opt) => opt.value === productDataAdd.id_item_campaign
+                        ) || null
+                    }
+                    onChange={(selectedOption) => {
+                      setProductDataAdd((prevState) => ({
+                        ...prevState,
+                        id_item_campaign: selectedOption
+                          ? selectedOption.value
+                          : "",
+                      }));
+                    }}
+                    isSearchable
+                    placeholder="Pilih diskon..."
+                    noOptionsMessage={() => "No diskon available"}
+                  />
 
-                    <div className="flex justify-end mt-5">
-                      <button
-                        type="button"
-                        className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                        onClick={() => modalOpen("add", false)}
-                      >
-                        Batal
-                      </button>
-                      <button
-                        type="submit"
-                        className="bg-blue-500 text-white p-2 rounded-lg"
-                      >
-                        Tambah
-                      </button>
-                    </div>
-                  </form>
-                );
-              case "excel":
-                return (
-                  <div>
-                    <h1 className="text-lg font-semibold text-gray-800 text-center mb-2">
-                      Upload Excel & Folder Gambar
-                    </h1>
-
-                    {/* Upload Excel File */}
-                    <div className="upload-container">
-                      <label className="upload-label">
-                        <input
-                          type="file"
-                          accept=".xlsx, .xls, .csv"
-                          onChange={handleFileChange}
-                          style={{ display: "none" }}
-                        />
-                        {file && <p>File dipilih: {file.name}</p>}
-                        <div className="upload-content">
-                          {file ? (
-                            <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                              <IoIosCloudDone className="text-5xl text-[#FDDC05]" />
-                              <p className="text-sm text-[#FDDC05]">
-                                File Uploaded
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                              <FaFileUpload className="text-5xl text-[#FDDC05]" />
-                              <p className="text-sm text-[#FDDC05]">New File</p>
-                            </div>
-                          )}
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Upload Folder */}
-                    <div className="upload-container mt-4">
-                      <label className="upload-label">
-                        <input
-                          type="file"
-                          webkitdirectory="" // Allows selecting a folder
-                          directory=""
-                          multiple
-                          onChange={handleFolderChange}
-                          style={{ display: "none" }}
-                        />
-                        {folder ? (
-                          <p>{folder.length} file gambar dipilih</p>
-                        ) : (
-                          <p>Pilih folder gambar</p>
-                        )}
-                      </label>
-                    </div>
-
-                    {/* Upload Button */}
-                    <button onClick={handleProductBatch} className="addBtn">
-                      Upload
+                  <div className="flex justify-end mt-5">
+                    <button
+                      type="button"
+                      className="bg-gray-500 text-white p-2 rounded-lg mr-2"
+                      onClick={() => modalOpen("add", false)}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-blue-500 text-white p-2 rounded-lg"
+                    >
+                      Tambah
                     </button>
                   </div>
-                );
-              default:
-                return null;
-            }
-          })()}
-        </Modal>
-      )}
+                </form>
+              );
+            case "excel":
+              return (
+                <div>
+                  <button
+                    onClick={() => {
+                      modalOpen("add", false);
+                      modalOpen("example", true);
+                    }}
+                  >
+                    example
+                  </button>
+                  <h1 className="text-lg font-semibold text-gray-800 text-center mb-2">
+                    Upload Excel & Folder Gambar
+                  </h1>
+
+                  {/* Upload Excel File */}
+                  <div className="upload-container">
+                    <label className="upload-label">
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls, .csv"
+                        onChange={handleFileChange}
+                        style={{ display: "none" }}
+                      />
+                      {file && <p>File dipilih: {file.name}</p>}
+                      <div className="upload-content">
+                        {file ? (
+                          <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                            <IoIosCloudDone className="text-5xl text-[#FDDC05]" />
+                            <p className="text-sm text-[#FDDC05]">
+                              File Uploaded
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                            <FaFileUpload className="text-5xl text-[#FDDC05]" />
+                            <p className="text-sm text-[#FDDC05]">New File</p>
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Upload Folder */}
+                  <div className="upload-container mt-4">
+                    <label className="upload-label">
+                      <input
+                        type="file"
+                        webkitdirectory="" // Allows selecting a folder
+                        directory=""
+                        multiple
+                        onChange={handleFolderChange}
+                        style={{ display: "none" }}
+                      />
+                      {folder ? (
+                        <p>{folder.length} file gambar dipilih</p>
+                      ) : (
+                        <p>Pilih folder gambar</p>
+                      )}
+                    </label>
+                  </div>
+
+                  {/* Upload Button */}
+                  <button onClick={handleProductBatch} className="addBtn">
+                    Upload
+                  </button>
+                </div>
+              );
+            default:
+              return null;
+          }
+        })()}
+      </Modal>
 
       {isUpdateModalOpen && (
         <Modal onClose={() => modalOpen("update", false)} title={"Edit Menu"}>

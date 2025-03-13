@@ -30,10 +30,11 @@ import fs from "fs/promises"; // For deleting files
 import path from "path"; // For constructing file paths
 import argon2 from "argon2";
 import crypto from "crypto";
+import { Buffer } from "buffer";
 
 const router = new Hono();
 
-const clients = new Set();
+// const clients = new Set();
 
 //Web Socket
 // router.get('/ws', (c) => {
@@ -165,6 +166,79 @@ const deleteImageFile = async (imagePath) => {
 
 // === MinIO ===
 
+router.post("/upload-file", authenticate, async (c) => {
+  try {
+    // Parse the form data
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+    const pathPrefix = formData.get("pathPrefix");
+    const id_user = formData.get("id_user");
+
+    // Validate the file
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: "File is required" }, 400);
+    }
+
+    // Validate file type (only allow .rar)
+    const ext = path.extname(file.name).toLowerCase();
+    if (ext !== ".rar") {
+      return c.json({ error: "Only .rar files are allowed" }, 400);
+    }
+
+    // Validate the path prefix
+    if (!pathPrefix || typeof pathPrefix !== "string") {
+      return c.json({ error: "Path prefix is required" }, 400);
+    }
+
+    // Generate a unique file name
+    const fileName = `${crypto.randomUUID()}${ext}`;
+    const objectKey = `${pathPrefix}/${fileName}`;
+
+    // Read the file buffer
+    const fileBuffer = await file.arrayBuffer();
+
+    // Upload the file to MinIO
+    await minioClient.putObject(
+      MINIO_BUCKET_NAME,
+      objectKey,
+      Buffer.from(fileBuffer),
+      file.size,
+      file.type || "application/x-rar-compressed" // Set correct MIME type
+    );
+
+    // Generate download URL
+    const downloadUrl = `${minioUrl}/${objectKey}`;
+
+    // Save file metadata to the database
+    const fileMetadata = new fileMetadataModels({
+      bucketName: MINIO_BUCKET_NAME,
+      objectName: objectKey,
+      fileUrl: downloadUrl,
+      id_user: id_user || null,
+    });
+
+    await fileMetadata.save();
+
+    // Return success response with download link
+    return c.json(
+      {
+        success: true,
+        metadata: {
+          bucketName: fileMetadata.bucketName,
+          objectName: fileMetadata.objectName,
+          fileUrl: fileMetadata.fileUrl, // Direct download link
+        },
+      },
+      201
+    );
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    return c.json(
+      { error: "Failed to upload file", details: error.message },
+      500
+    );
+  }
+});
 router.post("/upload", authenticate, async (c) => {
   try {
     // Parse the form data

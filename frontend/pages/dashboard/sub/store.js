@@ -19,7 +19,11 @@ import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import { FiLogIn } from "react-icons/fi";
 
 // components
+import { SubmitButton } from "@/components/form/button";
+import { CloseButton } from "@/components/form/button";
+import { AddButton } from "@/components/form/button";
 import { Modal } from "@/components/Modal";
+import Header from "@/components/section/header";
 import { fetchCompanyList } from "@/libs/fetching/company";
 import {
   fetchStoreList,
@@ -409,48 +413,15 @@ const StoreData = () => {
   }
   return (
     <div className="w-full h-screen pt-16">
-      <div className="justify-between w-full bg-white shadow-lg p-4">
-        <div className="flex flex-row justify-between">
-          <div className="flex flex-col">
-            <p className="text-2xl font-bold">Daftar Toko</p>
-            <p>Detail Daftar Toko</p>
-          </div>
-          <div className="relative mt-2 flex flex-row space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Cari store..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
-              />
-              <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
-            </div>
-            <div className="avatar">
-              <div className="w-10 h-10 rounded-full">
-                <Image
-                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                />
-              </div>
-            </div>
-            <button className="button btn-ghost btn-sm rounded-lg">
-              <MdKeyboardArrowDown className="text-2xl mt-1" />
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-row justify-end mt-8">
-          {id_company && (
-            <div>
-              <button className="addBtn" onClick={() => modalOpen("add", true)}>
-                + Tambah Toko
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+      <Header
+        title="Daftar Toko"
+        subtitle="Detail Daftar Toko"
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        modalOpen={modalOpen}
+        isSearch={true}
+        isAdd={true}
+      />
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
@@ -543,8 +514,11 @@ const StoreData = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <Modal onClose={() => modalOpen("add", false)} title={"Tambah Toko"}>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => modalOpen("add", false)}
+        title="Tambah Toko"
+      >
           <form onSubmit={handleSubmitAdd}>
             <p className="font-semibold mt-4">Ikon Toko</p>
             <div className="upload-container">
@@ -600,29 +574,17 @@ const StoreData = () => {
               required
             />
             <div className="flex justify-end mt-5">
-              <button
-                type="button"
-                className="closeBtn"
-                onClick={() => modalOpen("add", false)}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
-                Tambah
-              </button>
+            <CloseButton onClick={() => modalOpen("add", false)} />
+            <SubmitButton />
             </div>
           </form>
         </Modal>
-      )}
 
-      {isUpdateModalOpen && (
         <Modal
-          onClose={() => modalOpen("update", false)}
-          title={`Edit Toko - ${openMenu}`}
-        >
+        isOpen={isUpdateModalOpen}
+        onClose={() => modalOpen("update", false)}
+        title={`Edit Perusahaan - ${openMenu}`}
+      >
           <div className="flex flex-row mb-5">
             <button
               className={`${
@@ -762,16 +724,8 @@ const StoreData = () => {
                       </>
                     )}
                     <div className="flex justify-end mt-5">
-                      <button
-                        type="button"
-                        className="closeBtn"
-                        onClick={() => modalOpen("update", false)}
-                      >
-                        Batal
-                      </button>
-                      <button type="submit" className="submitBtn">
-                        Edit
-                      </button>
+                    <CloseButton onClick={() => modalOpen("update", false)} />
+                    <SubmitButton />
                     </div>
                   </form>
                 );
@@ -788,12 +742,10 @@ const StoreData = () => {
                         id_company={companyCreateQR || id_company}
                       />
                     </div>
-                    <button
+                    <AddButton
                       onClick={() => handleDownloadQR(storeDataUpdate.name)}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
-                    >
-                      Download as JPG
-                    </button>
+                      content="Download as JPG"
+                    />
                   </div>
                 );
               case "Banner":
@@ -836,16 +788,8 @@ const StoreData = () => {
                       </label>
                     </div>
                     <div className="flex justify-end mt-5">
-                      <button
-                        type="button"
-                        className="closeBtn"
-                        onClick={() => modalOpen("update", false)}
-                      >
-                        Batal
-                      </button>
-                      <button type="submit" className="submitBtn">
-                        Edit
-                      </button>
+                    <CloseButton onClick={() => modalOpen("update", false)} />
+                    <SubmitButton />
                     </div>
                   </form>
                 );
@@ -1114,16 +1058,8 @@ const StoreData = () => {
 
                       {/* Buttons */}
                       <div className="flex justify-end mt-5 gap-2">
-                        <button
-                          type="button"
-                          className="closeBtn"
-                          onClick={() => modalOpen("update", false)}
-                        >
-                          Batal
-                        </button>
-                        <button type="submit" className="submitBtn">
-                          Edit
-                        </button>
+                      <CloseButton onClick={() => modalOpen("update", false)} />
+                      <SubmitButton />
                       </div>
                     </div>
                   </form>
@@ -1133,7 +1069,6 @@ const StoreData = () => {
             }
           })()}
         </Modal>
-      )}
     </div>
   );
 };

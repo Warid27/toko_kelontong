@@ -165,10 +165,6 @@ const ItemCampaign = () => {
       }
 
       let value = itemCampaignDataAdd.value;
-      if (value.includes(",")) {
-        alert("Discount can't have comma.");
-        return;
-      }
 
       value = itemCampaignDataAdd.value / 100;
 
@@ -232,10 +228,6 @@ const ItemCampaign = () => {
 
     try {
       let value = itemCampaignDataUpdate.value;
-      if (value.includes(",")) {
-        alert("Discount can't have comma.");
-        return;
-      }
 
       value = itemCampaignDataUpdate.value / 100;
 
@@ -341,7 +333,6 @@ const ItemCampaign = () => {
           </div>
         </div>
       </div>
-
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div>
@@ -410,176 +401,169 @@ const ItemCampaign = () => {
           </div>
         </div>
       </div>
-
-      {isModalOpen && (
-        <Modal
-          onClose={() => modalOpen("add", false)}
-          title={"Tambah Item Campaign"}
-        >
-          <form onSubmit={handleSubmitAdd}>
-            <p className="font-semibold mt-4">Nama Item Campaign</p>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => modalOpen("add", false)}
+        title={"Tambah Item Campaign"}
+      >
+        <form onSubmit={handleSubmitAdd}>
+          <p className="font-semibold mt-4">Nama Item Campaign</p>
+          <input
+            type="text"
+            name="item_campaign_name"
+            value={itemCampaignDataAdd.item_campaign_name}
+            onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
+            className="border rounded-md p-2 w-full bg-white"
+            required
+          />
+          <p className="font-semibold mt-4">Rules</p>
+          <input
+            type="text"
+            name="rules"
+            value={itemCampaignDataAdd.rules}
+            onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
+            className="border rounded-md p-2 w-full bg-white"
+            required
+          />
+          <p className="font-semibold mt-4">Start Date</p>
+          {/* <DateTimePicker onChange={handleChangeAdd} value={itemCampaignDataAdd.start_date} name="start_date"></DateTimePicker> */}
+          <DateTimePicker
+            onChange={(date) => handleChangeAdd(date, "start_date")}
+            value={
+              itemCampaignDataAdd.start_date
+                ? new Date(itemCampaignDataAdd.start_date)
+                : null
+            }
+            name="start_date"
+          />
+          <p className="font-semibold mt-4">End Date</p>
+          <DateTimePicker
+            onChange={(date) => handleChangeAdd(date, "end_date")}
+            value={
+              itemCampaignDataAdd.end_date
+                ? new Date(itemCampaignDataAdd.end_date)
+                : null
+            }
+            minDate={
+              itemCampaignDataAdd.start_date
+                ? new Date(itemCampaignDataAdd.start_date)
+                : null
+            }
+            name="end_date"
+          />
+          <p className="font-semibold mt-4 mb-2">Value</p>
+          <div className="relative mt-4">
             <input
-              type="text"
-              name="item_campaign_name"
-              value={itemCampaignDataAdd.item_campaign_name}
+              type="number"
+              name="value"
+              value={itemCampaignDataAdd.value}
               onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
-              className="border rounded-md p-2 w-full bg-white"
+              className="border rounded-md p-2 pr-8 w-full bg-white"
               required
+              max={99}
+              min={1}
+              step={1}
             />
-            <p className="font-semibold mt-4">Rules</p>
-            <input
-              type="text"
-              name="rules"
-              value={itemCampaignDataAdd.rules}
-              onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Start Date</p>
-            {/* <DateTimePicker onChange={handleChangeAdd} value={itemCampaignDataAdd.start_date} name="start_date"></DateTimePicker> */}
-            <DateTimePicker
-              onChange={(date) => handleChangeAdd(date, "start_date")}
-              value={
-                itemCampaignDataAdd.start_date
-                  ? new Date(itemCampaignDataAdd.start_date)
-                  : null
-              }
-              name="start_date"
-            />
-            <p className="font-semibold mt-4">End Date</p>
-            <DateTimePicker
-              onChange={(date) => handleChangeAdd(date, "end_date")}
-              value={
-                itemCampaignDataAdd.end_date
-                  ? new Date(itemCampaignDataAdd.end_date)
-                  : null
-              }
-              minDate={
-                itemCampaignDataAdd.start_date
-                  ? new Date(itemCampaignDataAdd.start_date)
-                  : null
-              }
-              name="end_date"
-            />
-            <p className="font-semibold mt-4 mb-2">Value</p>
-            <div className="relative mt-4">
-              <input
-                type="number"
-                name="value"
-                value={itemCampaignDataAdd.value}
-                onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
-                className="border rounded-md p-2 pr-8 w-full bg-white"
-                required
-                max={99}
-                min={1}
-                step={1}
-              />
-              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none">
-                %
-              </span>
-            </div>
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none">
+              %
+            </span>
+          </div>
 
-            <div className="flex justify-end mt-5">
-              <button
-                type="button"
-                className="closeBtn"
-                onClick={() => modalOpen("add", false)}
-              >
-                Batal
-              </button>
-              <button type="submit" className="submitBtn">
-                Tambah
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {isUpdateModalOpen && (
-        <Modal
-          onClose={() => modalOpen("update", false)}
-          title={"Edit Item Campaign"}
-        >
-          <form onSubmit={handleSubmitUpdate}>
-            <p className="font-semibold mt-4">Nama Item Campaign</p>
+          <div className="flex justify-end mt-5">
+            <button
+              type="button"
+              className="closeBtn"
+              onClick={() => modalOpen("add", false)}
+            >
+              Batal
+            </button>
+            <button type="submit" className="submitBtn">
+              Tambah
+            </button>
+          </div>
+        </form>
+      </Modal>
+      <Modal
+        isOpen={isUpdateModalOpen}
+        onClose={() => modalOpen("update", false)}
+        title={"Edit Item Campaign"}
+      >
+        <form onSubmit={handleSubmitUpdate}>
+          <p className="font-semibold mt-4">Nama Item Campaign</p>
+          <input
+            type="text"
+            name="item_campaign_name"
+            value={itemCampaignDataUpdate.item_campaign_name}
+            onChange={(e) => handleChangeUpdate(e.target.value, e.target.name)}
+            className="border rounded-md p-2 w-full bg-white"
+            required
+          />
+          <p className="font-semibold mt-4">Rules</p>
+          <input
+            type="text"
+            name="rules"
+            value={itemCampaignDataUpdate.rules}
+            onChange={(e) => handleChangeUpdate(e.target.value, e.target.name)}
+            className="border rounded-md p-2 w-full bg-white"
+            required
+          />
+          <p className="font-semibold mt-4">Start Date</p>
+          <DateTimePicker
+            onChange={(date) => handleChangeUpdate(date, "start_date")}
+            value={
+              itemCampaignDataUpdate.start_date
+                ? new Date(itemCampaignDataUpdate.start_date)
+                : null
+            }
+            name="start_date"
+          />
+          <p className="font-semibold mt-4">End Date</p>
+          <DateTimePicker
+            onChange={(date) => handleChangeUpdate(date, "end_date")}
+            value={
+              itemCampaignDataUpdate.end_date
+                ? new Date(itemCampaignDataUpdate.end_date)
+                : null
+            }
+            minDate={
+              itemCampaignDataUpdate.start_date
+                ? new Date(itemCampaignDataUpdate.start_date)
+                : null
+            }
+            name="end_date"
+          />
+          <p className="font-semibold mt-4 mb-2">Value</p>
+          <div className="relative mt-4">
             <input
-              type="text"
-              name="item_campaign_name"
-              value={itemCampaignDataUpdate.item_campaign_name}
+              type="number"
+              name="value"
+              value={itemCampaignDataUpdate.value}
               onChange={(e) =>
                 handleChangeUpdate(e.target.value, e.target.name)
               }
-              className="border rounded-md p-2 w-full bg-white"
+              className="border rounded-md p-2 pr-8 w-full bg-white"
               required
+              max={99}
+              min={1}
+              step={1}
             />
-            <p className="font-semibold mt-4">Rules</p>
-            <input
-              type="text"
-              name="rules"
-              value={itemCampaignDataUpdate.rules}
-              onChange={(e) =>
-                handleChangeUpdate(e.target.value, e.target.name)
-              }
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <p className="font-semibold mt-4">Start Date</p>
-            <DateTimePicker
-              onChange={(date) => handleChangeUpdate(date, "start_date")}
-              value={
-                itemCampaignDataUpdate.start_date
-                  ? new Date(itemCampaignDataUpdate.start_date)
-                  : null
-              }
-              name="start_date"
-            />
-            <p className="font-semibold mt-4">End Date</p>
-            <DateTimePicker
-              onChange={(date) => handleChangeUpdate(date, "end_date")}
-              value={
-                itemCampaignDataUpdate.end_date
-                  ? new Date(itemCampaignDataUpdate.end_date)
-                  : null
-              }
-              minDate={
-                itemCampaignDataUpdate.start_date
-                  ? new Date(itemCampaignDataUpdate.start_date)
-                  : null
-              }
-              name="end_date"
-            />
-            <p className="font-semibold mt-4 mb-2">Value</p>
-            <div className="relative mt-4">
-              <input
-                type="number"
-                name="value"
-                value={itemCampaignDataUpdate.value}
-                onChange={(e) =>
-                  handleChangeUpdate(e.target.value, e.target.name)
-                }
-                className="border rounded-md p-2 pr-8 w-full bg-white"
-                required
-                max={99}
-                min={1}
-                step={1}
-              />
-              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none">
-                %
-              </span>
-            </div>
-            <div className="flex justify-end mt-5">
-              <button
-                onClick={() => modalOpen("update", false)}
-                className="closeBtn"
-              >
-                Batal{" "}
-              </button>
-              <button type="submit" className="submitBtn">
-                Simpan
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none">
+              %
+            </span>
+          </div>
+          <div className="flex justify-end mt-5">
+            <button
+              onClick={() => modalOpen("update", false)}
+              className="closeBtn"
+            >
+              Batal{" "}
+            </button>
+            <button type="submit" className="submitBtn">
+              Simpan
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

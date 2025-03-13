@@ -1,4 +1,3 @@
-import { Hono } from "hono";
 import { Client } from "minio";
 import mongoose from "mongoose";
 
@@ -9,6 +8,11 @@ const renderEJS = "";
 // JWT
 const SECRET_KEY = Bun.env.JWT_SECRET;
 const JWT_SECRET = Bun.env.JWT_SECRET;
+
+// Mail
+const SMTP_EMAIL = Bun.env.SMTP_EMAIL;
+const SMTP_PASSWORD = Bun.env.SMTP_PASSWORD;
+const EMAIL_RECIPIENT = Bun.env.EMAIL_RECIPIENT;
 
 // PORT
 const BUN_ENV = Bun.env.BUN_ENV || "local";
@@ -95,4 +99,7 @@ export {
   minioUrl,
   BACKEND_URI,
   HOST_NAME,
+  SMTP_PASSWORD,
+  SMTP_EMAIL,
+  EMAIL_RECIPIENT,
 };

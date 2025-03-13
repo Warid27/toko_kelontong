@@ -1,5 +1,4 @@
-import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaRegEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa6";
 import { useRouter } from "next/router";

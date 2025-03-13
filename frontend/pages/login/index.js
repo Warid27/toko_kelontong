@@ -1,163 +1,133 @@
 import React, { useState, useEffect } from "react";
-import { FaRegEye } from "react-icons/fa";
-import { FaRegEyeSlash } from "react-icons/fa6";
-import Swal from "sweetalert2";
 import { useRouter } from "next/router";
+import { motion } from "framer-motion";
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { loginServices } from "@/libs/fetching/auth";
 import { tokenDecoded } from "@/utils/tokenDecoded";
+import { toast } from "react-toastify";
+
 const Login = () => {
-  const [username, setUsername] = useState(""); // State for username
-  const [password, setPassword] = useState(""); // State for password
-  const [showPassword, setShowPassword] = useState(false); // State for showing password
-  const [errorMessage, setErrorMessage] = useState(""); // State for error message
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     if (localStorage.getItem("unauthorized") === "true") {
-      Swal.fire({
-        icon: "warning",
-        title: "Unauthorized Access",
-        text: "You need to log in first!",
-        confirmButtonText: "OK",
+      toast.warning("Unauthorized Access: You need to log in first!", {
+        position: "top-center",
+        autoClose: 5000,
       });
-      localStorage.removeItem("unauthorized"); // Remove flag after showing alert
+      localStorage.removeItem("unauthorized");
     }
   }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setErrorMessage(""); // Reset error message on new login attempt
+    setErrorMessage("");
 
-    const loginData = { username, password };
     try {
-      await loginServices(loginData);
+      await loginServices({ username, password });
       const userData = tokenDecoded();
-      if (userData.rule != 5) {
-        router.push("/dashboard");
-      } else {
-        router.push("/");
-      }
+      router.push(userData.rule != 5 ? "/dashboard" : "/");
     } catch (error) {
-      console.error("Error during login:", error);
-
-      // Show SweetAlert error message
-      if (error.response && error.response.status === 401) {
-        Swal.fire({
-          icon: "error",
-          title: "Login Failed",
-          text: "Invalid username or password",
-          confirmButtonText: "Try Again",
-        });
-      } else if (error.response && error.response.status === 403) {
-        Swal.fire({
-          icon: "error",
-          title: "Login Failed",
-          text: "User account not activated",
-          confirmButtonText: "Try Again",
-        });
-        return;
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Login Failed",
-          text: "An unexpected error occurred. Please try again.",
-          confirmButtonText: "OK",
-        });
-      }
+      toast.error("Login Failed: Invalid username or password", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   };
+
   return (
-    <>
-      <div className="flex flex-col md:flex-row min-h-screen">
-        {/* Left Green Section */}
-        <div className="w-full md:w-1/2 bg-green-500 flex items-start justify-start p-8">
-          <h1 className="text-2xl font-bold text-black">
-            <a href="/">Toko Kelontong</a>
-          </h1>
-        </div>
-        {/* Right White Section */}
-        <div className="w-full md:w-1/2 bg-white flex flex-col justify-center items-center p-8">
-          <form className="w-full max-w-sm" onSubmit={handleLogin}>
-            <h2 className="text-4xl font-bold mb-8">Login</h2>
-            <div className="mb-4">
-              <label
-                className="block text-gray-700 text-sm font-bold mb-2"
-                htmlFor="username"
-              >
-                Username
-              </label>
+    <motion.div
+      className="flex min-h-screen bg-gray-900 text-white"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Left Side */}
+      <div className="hidden md:flex w-1/2 items-center justify-center bg-green-600 relative">
+        <motion.div
+          className="absolute w-80 h-80 bg-green-500/40 blur-3xl rounded-full top-10 left-10"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+        />
+        <h1 className="text-4xl font-bold">Toko Kelontong</h1>
+      </div>
+
+      {/* Right Side */}
+      <motion.div
+        className="flex flex-col justify-center items-center w-full md:w-1/2 p-10"
+        initial={{ x: 50, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
+        <motion.h2
+          className="text-4xl font-bold mb-6 text-green-400"
+          initial={{ y: -10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          Welcome Back
+        </motion.h2>
+
+        <form className="w-full max-w-sm" onSubmit={handleLogin}>
+          <div className="mb-4">
+            <label className="text-sm font-bold text-gray-300" htmlFor="username">
+              Username
+            </label>
+            <input
+              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-400 outline-none"
+              id="username"
+              placeholder="Enter your username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="mb-4 relative">
+            <label className="text-sm font-bold text-gray-300" htmlFor="password">
+              Password
+            </label>
+            <div className="relative">
               <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="username"
-                placeholder="Username"
-                name="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-400 outline-none"
                 required
               />
-            </div>
-            <div className="mb-4 relative">
-              <label
-                className="block text-gray-700 text-sm font-bold mb-2"
-                htmlFor="password"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  className="mt-1 block w-full border border-gray-300 bg-white rounded-md p-2"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
-                >
-                  {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
-                </button>
-              </div>
-              {errorMessage && (
-                <p className="text-red-500 mt-2">{errorMessage}</p>
-              )}{" "}
-              {/* Display error message */}
-            </div>
-            <div className="mb-6 flex items-center">
-              <input
-                className="mr-2 leading-tight"
-                type="checkbox"
-                id="terms"
-              />
-              <label className="text-sm text-gray-700" htmlFor="terms">
-                I agree to the Terms of Service and Privacy Policy.
-              </label>
-            </div>
-            <div className="flex items-center justify-between">
               <button
-                className="bg-black text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-                type="submit"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-gray-400 hover:text-white transition"
               >
-                Login
+                {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
               </button>
             </div>
-          </form>
-          <p className="text-center text-sm text-gray-700 mt-1">
-            Don't have an account?
-            <a href="/register" className="link-opacity-100">
-              <u>Register</u>
-            </a>
-            .
-          </p>
-          <p className="text-center text-gray-500 text-xs mt-8">
-            ©2024 All Rights Reserved. Carakan.
-          </p>
-        </div>
-      </div>
-    </>
+          </div>
+
+          {errorMessage && <p className="text-red-400 mt-2 text-sm">{errorMessage}</p>}
+
+          <button
+            className="w-full py-3 bg-green-500 hover:bg-green-400 text-gray-900 font-bold rounded-lg shadow-lg mt-4 transition duration-300"
+            type="submit"
+          >
+            Login
+          </button>
+        </form>
+
+        <p className="text-sm text-gray-500 mt-4">
+          Don't have an account?{" "}
+          <a href="/register" className="text-green-400 hover:text-green-300 transition">
+            Register
+          </a>
+        </p>
+      </motion.div>
+    </motion.div>
   );
 };
 

@@ -1,13 +1,41 @@
-import React, { useState, useEffect } from "react";
+// Component Imports
 import Footer from "@/components/Footer";
 import Topbar from "@/components/Topbar";
 import Carousel from "@/components/carousel/carousel";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
+import {
+  InputText,
+  InputNumber,
+  InputEmail,
+  InputPassword,
+  InputFile,
+  TextArea,
+} from "@/components/form/input";
+import { SubmitButton } from "@/components/form/button";
+
+// React Imports
+import React, { useState, useEffect } from "react";
+
+// Next.js Imports
 import Image from "next/image";
 import { useRouter } from "next/router";
+import { toast } from "react-toastify";
+
+// Data Fetching Imports
 import { fetchCompanyListLogo } from "@/libs/fetching/company";
 import { listStoreStatus } from "@/libs/fetching/store";
 import { listProductStatus } from "@/libs/fetching/product";
+import { sendMessage } from "@/libs/fetching/contact-service";
+
+// Icon Imports
+import { FaLocationDot } from "react-icons/fa6";
+import { MdOutlinePhoneAndroid } from "react-icons/md";
+import {
+  FaRegEnvelope,
+  FaTwitter,
+  FaFacebook,
+  FaLinkedin,
+} from "react-icons/fa";
 
 export default function Home() {
   const [companyData, setCompanyData] = useState([]);
@@ -16,6 +44,20 @@ export default function Home() {
   const router = useRouter();
   const motiveLength = 8;
   const baseURL = "http://localhost:8080";
+
+  const [contactData, setContactData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const handleChangeContact = (e) => {
+    const { name, value } = e.target;
+    setContactData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
 
   useEffect(() => {
     const fetchingRequirements = async () => {
@@ -70,6 +112,39 @@ export default function Home() {
     const mainSection = document.getElementById("main");
     if (mainSection) {
       mainSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+
+    const { name, email, message } = contactData;
+
+    if (!name || !email || !message) {
+      toast.error("Please fill all required fields.");
+      return;
+    }
+
+    try {
+      const reqBody = { name, email, message };
+
+      const response = await sendMessage(reqBody);
+
+      if (response.status === 200) {
+        toast.success("Pesan terkirim!");
+        setContactData({
+          name: "",
+          email: "",
+          message: "",
+        });
+      } else {
+        toast.error(
+          `Pesan Gagal Dikirim: ${response.statusText || "Unknown error"}`
+        );
+      }
+    } catch (error) {
+      console.error("Pesan Gagal Dikirim:", error);
+      toast.error("Terjadi kesalahan saat mengirim pesan.");
     }
   };
 
@@ -253,6 +328,78 @@ export default function Home() {
           Company That Use Our Services
         </h1>
         <Carousel companyData={companyData} />
+      </section>
+
+      {/* Section 4 */}
+      <section className="relative bg-[#EAF8D3] py-16 pb-32 px-16 lg:px-40 mt-20 flex flex-col items-center text-center gap-8">
+        <h1 className="text-4xl font-bold text-gray-800 uppercase tracking-wide mb-8">
+          Contact Us
+        </h1>
+        <div className="flex flex-col lg:flex-row items-start lg:items-start justify-between w-full max-w-6xl gap-12 px-6 lg:px-0">
+          {/* Form Section */}
+          <div className="w-full max-w-lg bg-white p-6 rounded-xl shadow-xl flex flex-col gap-3 ">
+            <h1 className="text-3xl font-bold text-gray-800 uppercase tracking-wide mb-8">
+              Contact Us
+            </h1>
+            <form onSubmit={handleSendMessage} className="flex flex-col gap-5">
+              <InputText
+                label="Name"
+                name="name"
+                value={contactData.name}
+                onChange={handleChangeContact}
+              />
+              <InputEmail
+                label="Email"
+                name="email"
+                value={contactData.email}
+                onChange={handleChangeContact}
+              />
+              <TextArea
+                label="Message"
+                name="message"
+                value={contactData.message}
+                onChange={handleChangeContact}
+              />
+              <SubmitButton content="Send" className="w-full" />
+            </form>
+          </div>
+
+          {/* Contact Info Section */}
+          <div className="w-full max-w-lg flex flex-col items-center gap-6">
+            <div className="grid grid-cols-3 gap-5 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <FaLocationDot className="text-4xl text-[var(--bg-primary)]" />
+                <span className="text-gray-700">DIY, Indonesia</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <MdOutlinePhoneAndroid className="text-4xl text-[var(--bg-primary)]" />
+                <span className="text-gray-700">+62 822-2506-8682</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <FaRegEnvelope className="text-4xl text-[var(--bg-primary)]" />
+                <span className="text-gray-700">carakan@gmail.com</span>
+              </div>
+            </div>
+
+            <div className="w-full h-[300px] rounded-lg overflow-hidden shadow-lg">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d390.60816537725344!2d110.38326426669323!3d-7.7151857436691!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a59320156f21f%3A0x7815052c2e29e70d!2sCarakan%20Sadhana%20Dirgantara!5e1!3m2!1sid!2sid!4v1741753203003!5m2!1sid!2sid"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+
+            <div className="flex gap-4 mt-4">
+              <FaFacebook className="text-4xl text-[var(--bg-primary)] cursor-pointer hover:text-blue-600 transition" />
+              <FaTwitter className="text-4xl text-[var(--bg-primary)] cursor-pointer hover:text-blue-400 transition" />
+              <FaLinkedin className="text-4xl text-[var(--bg-primary)] cursor-pointer hover:text-blue-700 transition" />
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Footer Motive */}

@@ -19,3 +19,23 @@ export const fetchItemCampaignList = async () => {
     console.error("Error fetching item Campaign:", error);
   }
 };
+
+export const getItemCampaign = async (id_item_campaign) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await client.post(
+      "/itemcampaign/getitemcampaign",
+      { id: id_item_campaign },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Error fetching item Campaign:", error);
+  }
+};

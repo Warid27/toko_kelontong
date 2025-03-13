@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { TbChevronDown } from "react-icons/tb";
 import { getAvatar } from "@/libs/fetching/user";
@@ -6,6 +6,7 @@ import { getAvatar } from "@/libs/fetching/user";
 const Avatar = ({ handleLogout, setSelectedLink }) => {
   const [avatar, setAvatar] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchAvatar = async () => {
@@ -15,13 +16,30 @@ const Avatar = ({ handleLogout, setSelectedLink }) => {
     fetchAvatar();
   }, []);
 
+  useEffect(() => {
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
   const handleNavigateToProfile = () => {
     setDropdownOpen(false);
     setSelectedLink("profile");
   };
 
   return (
-    <div className="relative flex items-center gap-3">
+    <div className="relative flex items-center gap-3" ref={dropdownRef}>
       {/* Avatar */}
       <div className="relative w-14 h-14 rounded-full border-[3px] border-white overflow-hidden shadow-lg">
         <Image
@@ -47,7 +65,7 @@ const Avatar = ({ handleLogout, setSelectedLink }) => {
 
       {/* Dropdown Menu */}
       <div
-        className={`absolute right-0 top-16 w-56 bg-white shadow-2xl rounded-xl overflow-hidden z-20 transition-all duration-300 ease-out transform backdrop-blur-md ${
+        className={`absolute right-0 top-16 w-56 bg-white shadow-2xl rounded-xl overflow-hidden z-20 backdrop-blur-md transition-all duration-300 ease-out transform  ${
           dropdownOpen
             ? "scale-100 opacity-100 translate-y-0"
             : "scale-95 opacity-0 translate-y-[-10px] pointer-events-none"

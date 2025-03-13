@@ -14,6 +14,9 @@ import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchStoreList } from "@/libs/fetching/store";
 import { fetchUserList } from "@/libs/fetching/user";
 import ReactPaginate from "react-paginate";
+import Header from "@/components/section/header";
+import { SubmitButton } from "@/components/form/button";
+import { CloseButton } from "@/components/form/button";
 
 const User = () => {
   const [showPassword, setShowPassword] = useState(false); // State for showing password
@@ -75,21 +78,6 @@ const User = () => {
     fetching_requirement();
   }, []);
 
-  const openModalAdd = () => {
-    setIsModalOpen(true);
-  };
-
-  const closeModalAdd = () => {
-    setIsModalOpen(false);
-  };
-  const openModalUpdate = () => {
-    setIsUpdateModalOpen(true);
-  };
-
-  const closeModalUpdate = () => {
-    setIsUpdateModalOpen(false);
-  };
-
   const handleStatusSelect = async (userId, selectedStatus) => {
     try {
       setLoading(true);
@@ -105,6 +93,16 @@ const User = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const modalOpen = (param, bool) => {
+    const setters = {
+      add: setIsModalOpen,
+      update: setIsUpdateModalOpen,
+    };
+    if (setters[param]) {
+      setters[param](bool);
     }
   };
 
@@ -261,56 +259,15 @@ const User = () => {
   }
   return (
     <div className="w-full h-screen pt-16">
-      <div className="justify-between w-full bg-white shadow-lg p-4">
-        <div className="flex flex-row justify-between">
-          <div className="flex flex-col">
-            <p className="text-2xl font-bold">Daftar Pengguna</p>
-            <p>Detail Daftar Pengguna</p>
-          </div>
-          <div className="relative mt-2 flex flex-row space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Cari user..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
-              />
-              <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
-            </div>
-            <div className="avatar">
-              <div className="w-10 h-10 rounded-full">
-                <Image
-                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                />
-              </div>
-            </div>
-            <button className="button btn-ghost btn-sm rounded-lg">
-              <MdKeyboardArrowDown className="text-2xl mt-1" />
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-row justify-between mt-8">
-          <div>
-            <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option value="">Best sellers</option>
-              <option value="">Ricebowl</option>
-              <option value="">Milkshake</option>
-            </select>
-          </div>
-          <div>
-            <button
-              className="button bg-[#FDDC05] text-white p-2 rounded-lg font-bold"
-              onClick={openModalAdd}
-            >
-              + Tambah Pengguna
-            </button>
-          </div>
-        </div>
-      </div>
+      <Header
+        title="Daftar User"
+        subtitle="Detail Daftar User"
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        modalOpen={modalOpen}
+        isSearch={true}
+        isAdd={true}
+      />
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
@@ -388,8 +345,11 @@ const User = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <Modal onClose={closeModalAdd} title={"Tambah Pengguna"}>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => modalOpen("add", false)}
+        title="Tambah User"
+      >
           <form onSubmit={handleSubmitAdd}>
             <p className="font-semibold mt-4">Username</p>
             <input
@@ -430,6 +390,8 @@ const User = () => {
                 setUserDataAdd((prevState) => ({
                   ...prevState,
                   rule: e.target.value,
+                  id_company: "", // Reset when changing rule
+                  id_store: "", // Reset when changing rule
                 }))
               }
               required
@@ -437,92 +399,94 @@ const User = () => {
               <option value="" disabled>
                 === Pilih Rule ===
               </option>
-              <option key={1} value={1}>
+              <option key={1} value="1">
                 Superadmin
               </option>
-              <option key={2} value={2}>
+              <option key={2} value="2">
                 Admin
               </option>
-              <option key={3} value={3}>
+              <option key={3} value="3">
                 Manajer
               </option>
-              <option key={4} value={4}>
+              <option key={4} value="4">
                 Kasir
               </option>
-              <option key={5} value={5}>
+              <option key={5} value="5">
                 Pelanggan
               </option>
             </select>
-            <p className="font-semibold mt-4 mb-2">Company</p>
-            <Select
-              id="company"
-              className="basic-single"
-              options={companyList.map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={
-                companyList
-                  .map((c) => ({ value: c._id, label: c.name }))
-                  .find((opt) => opt.value === userDataAdd.id_company) || null
-              }
-              onChange={(selectedOption) =>
-                setUserDataAdd((prevState) => ({
-                  ...prevState,
-                  id_company: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Company..."
-              noOptionsMessage={() => "No Company available"}
-            />
+            {userDataAdd.rule !== "1" && (
+              <>
+                <p className="font-semibold mt-4 mb-2">Company</p>
+                <Select
+                  id="company"
+                  className="basic-single"
+                  options={companyList.map((c) => ({
+                    value: c._id,
+                    label: c.name,
+                  }))}
+                  value={
+                    companyList
+                      .map((c) => ({ value: c._id, label: c.name }))
+                      .find((opt) => opt.value === userDataAdd.id_company) ||
+                    null
+                  }
+                  onChange={(selectedOption) =>
+                    setUserDataAdd((prevState) => ({
+                      ...prevState,
+                      id_company: selectedOption ? selectedOption.value : "",
+                    }))
+                  }
+                  isSearchable
+                  required
+                  placeholder="Pilih Company..."
+                  noOptionsMessage={() => "No Company available"}
+                />
 
-            <p className="font-semibold mt-4 mb-2">Store</p>
-            <Select
-              id="store"
-              className="basic-single"
-              options={storeList.map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={
-                storeList
-                  .map((c) => ({ value: c._id, label: c.name }))
-                  .find((opt) => opt.value === userDataAdd.id_store) || null
-              }
-              onChange={(selectedOption) =>
-                setUserDataAdd((prevState) => ({
-                  ...prevState,
-                  id_store: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Store..."
-              noOptionsMessage={() => "No Store available"}
-            />
+                {userDataAdd.rule !== "2" && (
+                  <>
+                    <p className="font-semibold mt-4 mb-2">Store</p>
+                    <Select
+                      id="store"
+                      className="basic-single"
+                      options={storeList.map((c) => ({
+                        value: c._id,
+                        label: c.name,
+                      }))}
+                      value={
+                        storeList
+                          .map((c) => ({ value: c._id, label: c.name }))
+                          .find((opt) => opt.value === userDataAdd.id_store) ||
+                        null
+                      }
+                      onChange={(selectedOption) =>
+                        setUserDataAdd((prevState) => ({
+                          ...prevState,
+                          id_store: selectedOption ? selectedOption.value : "",
+                        }))
+                      }
+                      isSearchable
+                      required
+                      placeholder="Pilih Store..."
+                      noOptionsMessage={() => "No Store available"}
+                    />
+                  </>
+                )}
+              </>
+            )}
+
             <div className="flex justify-end mt-5">
-              <button
-                type="button"
-                className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={closeModalAdd}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
-                Tambah
-              </button>
+            <CloseButton onClick={() => modalOpen("add", false)}/>
+            <SubmitButton/>
             </div>
           </form>
         </Modal>
-      )}
 
-      {isUpdateModalOpen && (
-        <Modal onClose={closeModalUpdate} title={"Edit Pengguna"}>
+        <Modal
+        isOpen={isUpdateModalOpen}
+        onClose={() => modalOpen("update", false)}
+        title={`Edit User`}
+      >
           <form onSubmit={handleSubmitUpdate}>
             <p className="font-semibold mt-4">Username</p>
             <input
@@ -561,7 +525,7 @@ const User = () => {
               className="bg-white shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={userDataUpdate.rule}
               onChange={(e) =>
-                setUserDataAdd((prevState) => ({
+                setUserDataUpdate((prevState) => ({
                   ...prevState,
                   rule: e.target.value,
                 }))
@@ -584,76 +548,75 @@ const User = () => {
                 Kasir
               </option>
             </select>
-            <p className="font-semibold mt-4 mb-2">Company</p>
-            <Select
-              id="company"
-              name="id_company"
-              className="basic-single"
-              options={companyList.map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={
-                companyList
-                  .map((c) => ({ value: c._id, label: c.name }))
-                  .find((opt) => opt.value === userDataUpdate.id_company) ||
-                null
-              }
-              onChange={(selectedOption) =>
-                setUserDataUpdate((prevState) => ({
-                  ...prevState,
-                  id_company: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Company..."
-              noOptionsMessage={() => "No Company available"}
-            />
+            {userDataUpdate.rule !== "1" && (
+              <>
+                <p className="font-semibold mt-4 mb-2">Company</p>
+                <Select
+                  id="company"
+                  name="id_company"
+                  className="basic-single"
+                  options={companyList.map((c) => ({
+                    value: c._id,
+                    label: c.name,
+                  }))}
+                  value={
+                    companyList
+                      .map((c) => ({ value: c._id, label: c.name }))
+                      .find((opt) => opt.value === userDataUpdate.id_company) ||
+                    null
+                  }
+                  onChange={(selectedOption) =>
+                    setUserDataUpdate((prevState) => ({
+                      ...prevState,
+                      id_company: selectedOption ? selectedOption.value : "",
+                    }))
+                  }
+                  isSearchable
+                  required
+                  placeholder="Pilih Company..."
+                  noOptionsMessage={() => "No Company available"}
+                />
 
-            <p className="font-semibold mt-4 mb-2">Store</p>
-            <Select
-              id="store"
-              name="id_password"
-              className="basic-single"
-              options={storeList.map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={
-                storeList
-                  .map((c) => ({ value: c._id, label: c.name }))
-                  .find((opt) => opt.value === userDataUpdate.id_store) || null
-              }
-              onChange={(selectedOption) =>
-                setUserDataUpdate((prevState) => ({
-                  ...prevState,
-                  id_store: selectedOption ? selectedOption.value : "",
-                }))
-              }
-              isSearchable
-              required
-              placeholder="Pilih Store..."
-              noOptionsMessage={() => "No Store available"}
-            />
+                {userDataUpdate.rule !== "2" && (
+                  <>
+                    <p className="font-semibold mt-4 mb-2">Store</p>
+                    <Select
+                      id="store"
+                      name="id_store"
+                      className="basic-single"
+                      options={storeList.map((c) => ({
+                        value: c._id,
+                        label: c.name,
+                      }))}
+                      value={
+                        storeList
+                          .map((c) => ({ value: c._id, label: c.name }))
+                          .find(
+                            (opt) => opt.value === userDataUpdate.id_store
+                          ) || null
+                      }
+                      onChange={(selectedOption) =>
+                        setUserDataUpdate((prevState) => ({
+                          ...prevState,
+                          id_store: selectedOption ? selectedOption.value : "",
+                        }))
+                      }
+                      isSearchable
+                      required
+                      placeholder="Pilih Store..."
+                      noOptionsMessage={() => "No Store available"}
+                    />
+                  </>
+                )}
+              </>
+            )}
+
             <div className="flex justify-end mt-5">
-              <button
-                type="button"
-                className="bg-gray-500 text-white p-2 rounded-lg mr-2"
-                onClick={closeModalUpdate}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
-                Edit
-              </button>
+            <CloseButton onClick={() => modalOpen("update", false)}/>
+            <SubmitButton/>
             </div>
           </form>
         </Modal>
-      )}
     </div>
   );
 };

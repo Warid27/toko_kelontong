@@ -100,5 +100,49 @@ router.post("/", async (c) => {
     return c.json({ message: "An error occurred", error: error.message }, 500); // Internal Server Error
   }
 });
+router.post("/checkpass", async (c) => {
+  try {
+    // Parse request body
+    const { username, password, error } = await parseRequestBody(c);
+    if (error) {
+      return c.json({ message: error }, 400); // Bad Request
+    }
+
+    // Find user in the database, including the 'status' field
+    const user = await UserModels.findOne({ username }).select(
+      "+password +status"
+    ); // Ensure 'password' and 'status' are included
+    if (!user || !(await argon2.verify(user.password, password))) {
+      return c.json({ message: "Invalid credentials" }, 401);
+    }
+
+    // Verify password using Argon2
+    const isPasswordMatch = await argon2.verify(user.password, password);
+    if (!isPasswordMatch) {
+      return c.json({ message: "Wrong username or password" }, 401); // Unauthorized
+    }
+
+    // Check if the user's account is activated (status === 0)
+    if (user.status !== 0) {
+      return c.json(
+        {
+          message: "Login failed, user account not activated",
+        },
+        403
+      ); // Forbidden
+    }
+    // Generate a JWT token
+    // Return success response
+    return c.json(
+      {
+        message: "password correct",
+      },
+      200
+    );
+  } catch (error) {
+    console.error("password incorrect:", error.message);
+    return c.json({ message: "An error occurred", error: error.message }, 500); // Internal Server Error
+  }
+});
 
 export default router;

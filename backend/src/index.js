@@ -21,6 +21,8 @@ import salesRoutes from "@routes/sales-routes";
 import salesCampaignRoutes from "@routes/salesCampaign-routes";
 import itemCampaignRoutes from "@routes/itemCampaign-routes";
 import categoryRoutes from "@routes/category-routes";
+import emailRoutes from "@routes/email-routes";
+import ruleRoutes from "@routes/rule_access-routes";
 
 const app = new Hono();
 
@@ -42,6 +44,8 @@ app.use("*", async (c, next) => {
 
 // Routes (Alphabetically Sorted)
 const routes = {
+  "/rule": ruleRoutes,
+  "/email": emailRoutes,
   "/api": apiRoutes,
   "/category": categoryRoutes,
   "/company": companyRoutes,

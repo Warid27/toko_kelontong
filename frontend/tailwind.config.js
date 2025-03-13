@@ -7,6 +7,15 @@ module.exports = {
   ],
   theme: {
     extend: {
+      keyframes: {
+        scroll: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-33.33%)" },
+        },
+      },
+      animation: {
+        "scroll-infinite": "scroll 10s linear infinite",
+      },
       colors: {
         primary: "var(--bg-primary)",
         secondary: "var(--bg-secondary)",

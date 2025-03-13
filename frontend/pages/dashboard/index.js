@@ -40,16 +40,23 @@ const Dashboard = () => {
     checkAuth();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = (setUnauthorized = true) => {
     localStorage.clear();
-    localStorage.setItem("unauthorized", "true");
+    if (setUnauthorized) {
+      localStorage.setItem("unauthorized", "true");
+    }
     setIsAuthenticated(false);
     router.push("/login");
   };
 
   return isAuthenticated ? (
     <div className="flex">
-      <Navbar handleLogout={handleLogout} setSelectedLink={setSelectedLink} />
+      <div className="z-50">
+        <Navbar
+          handleLogout={() => handleLogout(false)}
+          setSelectedLink={setSelectedLink}
+        />
+      </div>
       <Sidebar selectedLink={selectedLink} setSelectedLink={setSelectedLink} />
     </div>
   ) : null; // Renders nothing while checking auth

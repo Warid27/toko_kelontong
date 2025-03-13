@@ -16,11 +16,9 @@ export const loginServices = async (reqBody) => {
       return token;
     } else {
       Swal.fire("Gagal", response.data.message || "Login gagal", "error");
-      throw new Error(response.data.message || "Login failed");
     }
   } catch (error) {
     console.error("Login error:", error);
-    Swal.fire("Error", "Terjadi kesalahan saat login", "error");
     throw error; // Rethrow the error for further handling
   }
 };
