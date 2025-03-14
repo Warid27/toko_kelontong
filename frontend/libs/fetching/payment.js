@@ -17,6 +17,41 @@ export const fetchPaymentList = async () => {
     }
   };
 
+  export const updatePayment = async (paymentId, requestBody) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await client.put(
+        `/api/payment/${paymentId}`,
+        requestBody,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      return response;
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+    }
+  };
+  
+  export const deletePayment = async (id_payment) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await client.delete(`/api/payment/${id_payment}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      return response;
+    } catch (error) {
+      console.error("Error update store:", error);
+    }
+  };
+  
+
   export const fetchPaymentAdd = async (payment_method, keterangan) => {
     try {
         const token = localStorage.getItem("token");
@@ -30,7 +65,7 @@ export const fetchPaymentList = async () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
-      const data = response.data;
+      const data = response;
 
       return data
     } catch (error) {

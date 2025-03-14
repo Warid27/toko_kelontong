@@ -1,65 +1,55 @@
-import { useEffect, useState } from "react";
-import Flatpickr from "react-flatpickr";
-import "flatpickr/dist/flatpickr.min.css";
+"use client";
+import { useState } from "react";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 
 export default function DateTimePicker({
-  onChange,
-  value,
-  name,
-  minDate,
-  options,
-  placeholder,
-  classname,
-  filterBy,
+  itemCampaignDataAdd,//ridridwar
+  handleChangeAdd,//ridridwar
 }) {
-  const [plugins, setPlugins] = useState([]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("flatpickr/dist/plugins/weekSelect/weekSelect").then((module) => {
-        if (filterBy === "weekly") setPlugins([new module.default()]);
-      });
-      import("flatpickr/dist/plugins/monthSelect").then((module) => {
-        if (filterBy === "monthly") setPlugins([new module.default()]);
-      });
-    }
-  }, [filterBy]);
+  const [startDate, setStartDate] = useState(
+    itemCampaignDataAdd.start_date
+      ? new Date(itemCampaignDataAdd.start_date)
+      : null
+  );
+  const [endDate, setEndDate] = useState(
+    itemCampaignDataAdd.end_date ? new Date(itemCampaignDataAdd.end_date) : null
+  );
 
   return (
-    <Flatpickr
-      value={value}
-      onChange={(selectedDates) => {
-        if (selectedDates.length > 0 && onChange) {
-          onChange(selectedDates[0]);
-        }
-      }}
-      options={{
-        plugins,
-        dateFormat:
-          filterBy === "weekly"
-            ? "Y-W"
-            : filterBy === "monthly"
-            ? "Y-m"
-            : filterBy === "yearly"
-            ? "Y"
-            : "Y-m-d H:i",
-        altInput: true,
-        altFormat:
-          filterBy === "weekly"
-            ? "F, Y - Week W"
-            : filterBy === "monthly"
-            ? "F Y"
-            : filterBy === "yearly"
-            ? "Y"
-            : "Y-m-d H:i",
-        minDate: filterBy === "yearly" ? "2000" : minDate || null,
-        maxDate: filterBy === "yearly" ? "2030" : undefined,
-        disableMobile: true,
-        enableTime: filterBy === undefined,
-        time_24hr: filterBy === undefined,
-        ...options,
-      }}
-      className={classname || "p-2 border border-gray-300 rounded-md w-full bg-white"}
-    />
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <div>
+        {/* Start Date Picker */}
+        <p className="font-semibold mt-4">Start Date</p>
+        <DatePicker
+          value={startDate}
+          onChange={(date) => {
+            setStartDate(date);
+            handleChangeAdd(date, "start_date");
+
+            // Ensure end date is not before start date
+            if (endDate && date && endDate < date) {
+              setEndDate(date);
+              handleChangeAdd(date, "end_date");
+            }
+          }}
+          format="yyyy-MM-dd"
+          className="border p-2 rounded bg-white w-full"
+        />
+
+        {/* End Date Picker */}
+        <p className="font-semibold mt-4">End Date</p>
+        <DatePicker
+          value={endDate}
+          onChange={(date) => {
+            setEndDate(date);
+            handleChangeAdd(date, "end_date");
+          }}
+          format="yyyy-MM-dd"
+          minDate={startDate} // Prevent selecting a date before Start Date
+          className="border p-2 rounded bg-white w-full"
+        />
+      </div>
+    </LocalizationProvider>
   );
 }

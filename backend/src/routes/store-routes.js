@@ -13,66 +13,28 @@ const router = new Hono();
 // Add Store
 router.post("/addstore", authenticate, async (c) => {
   try {
-    let body;
-    let name;
-    let address;
-    let status;
-    let id_company;
-    let icon;
-
-    // Check if the request is for JSON data
-    if (
-      c.req.header("accept") === "application/json" ||
-      c.req.header("Content-Type") === "application/json"
-    ) {
-      // Parse JSON body
-      body = await c.req.json();
-      name = body.name;
-      address = body.address;
-      id_company = body.id_company; // Fixed typo (was id_type before)
-      status = body.status;
-      icon = body.icon;
-    } else {
-      // If the body is URL-encoded, use URLSearchParams to parse it
-      const rawBody = await c.req.text();
-      body = new URLSearchParams(rawBody);
-      name = body.get("name");
-      address = body.get("address");
-      id_company = body.get("id_company");
-      status = body.get("status");
-      icon = body.get("icon");
-    }
-
-    // Construct a new object with the required fields
-    const storeData = {
-      name,
-      address,
-      id_company,
-      status,
-      icon,
-    };
+    const body = await c.req.json();
+    const { name, address, id_company, status, icon } = body;
 
     // Validate all required fields
     if (!name || !address || !id_company || status === undefined) {
-      throw new Error(
-        "Validation error: name, address, id_company, and status are required."
+      return c.json(
+        {
+          error:
+            "Validation error: name, address, id_company, and status are required.",
+        },
+        400
       );
     }
 
     // Create a new store object with the parsed data
+    const storeData = { name, address, id_company, status, icon };
     const store = new StoreModels(storeData);
     await store.save();
 
-    if (
-      c.req.header("content-type") === "application/json" ||
-      c.req.header("accept") === "application/json"
-    ) {
-      return c.json(store);
-    } else {
-      return c.redirect("/store");
-    }
+    return c.json(store);
   } catch (error) {
-    return c.text(error.message, 400);
+    return c.json({ error: error.message }, 400);
   }
 });
 

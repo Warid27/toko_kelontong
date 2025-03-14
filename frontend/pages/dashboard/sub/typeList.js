@@ -1,27 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { IoSearchOutline } from "react-icons/io5";
-import Image from "next/image";
-import { MdKeyboardArrowDown } from "react-icons/md";
 import client from "@/libs/axios";
 import { Modal } from "@/components/Modal";
-import Swal from "sweetalert2";
+import { toast } from "react-toastify";
 import Header from "@/components/section/header";
 import { MdDelete } from "react-icons/md";
-import { FaRegEdit } from "react-icons/fa";
+import { FaInfoCircle } from "react-icons/fa";
 import { fetchTypeList, fetchTypeAdd } from "@/libs/fetching/type";
-import ReactPaginate from "react-paginate";
-import { SubmitButton } from "@/components/form/button";
-import { CloseButton } from "@/components/form/button";
+import { SubmitButton, CloseButton } from "@/components/form/button";
+import Table from "@/components/form/table";
+import Loading from "@/components/loading"; // Assuming this exists based on CompanyData
+import Swal from "sweetalert2";
 
 const TypeList = () => {
   const [type, setType] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [typeToUpdate, setTypeToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Untuk mengontrol tampilan modal update
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [typeToUpdate, setTypeToUpdate] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 10;
 
   const [typeDataAdd, setTypeDataAdd] = useState({
     type: "",
@@ -31,9 +27,8 @@ const TypeList = () => {
     id: "",
     type: "",
   });
-  const token = localStorage.getItem("token");
 
-  // --- Function
+  // --- Functions
   const modalOpen = (param, bool) => {
     const setters = {
       add: setIsModalOpen,
@@ -45,29 +40,22 @@ const TypeList = () => {
   };
 
   useEffect(() => {
-    const fetching_requirement = async () => {
-      const get_type_list = async () => {
-        const data_type = await fetchTypeList(token);
-        setType(data_type);
+    const fetchData = async () => {
+      try {
+        const data = await fetchTypeList();
+        setType(data);
+      } catch (error) {
+        toast.error("Failed to fetch type list");
+      } finally {
         setIsLoading(false);
-      };
-      get_type_list();
+      }
     };
-    fetching_requirement();
+    fetchData();
   }, []);
-  // useEffect(() => {
-  //   const unsubscribe = fetchTypeStream((newData) => {
-  //     setType((prevTypes) => [...prevTypes, newData]); // Menambahkan data baru ke list
-  //   });
-  //   setIsLoading(false);
-  //   return () => unsubscribe(); // Cleanup saat unmount
-  // }, []);
 
-  const handleUpdateType = (type) => {
-    setTypeToUpdate(type); // Menyimpan produk yang dipilih
+  const handleUpdateType = (typeItem) => {
+    setTypeToUpdate(typeItem);
     modalOpen("update", true);
-
-    console.log(type);
   };
 
   const deleteTypeById = async (id) => {
@@ -82,6 +70,7 @@ const TypeList = () => {
 
     if (result.isConfirmed) {
       try {
+        const token = localStorage.getItem("token"); // Fix: Get token from localStorage
         const response = await client.delete(`/api/type/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -89,45 +78,43 @@ const TypeList = () => {
         });
 
         if (response.status === 200) {
-          Swal.fire("Berhasil", "Type berhasil dihapus!", "success");
-          setType((prevTypes) => prevTypes.filter((p) => p._id !== id));
+          toast.success("Type deleted successfully");
+          setType((prevTypes) => prevTypes.filter((t) => t._id !== id));
         }
       } catch (error) {
-        console.error("Gagal menghapus Type:", error.message);
-        Swal.fire("Gagal", "Type tidak dapat dihapus!", "error");
+        toast.error("Failed to delete type");
+        console.error("Error deleting type:", error.message);
       }
     }
   };
 
-  const handleChangeAdd = (value, name) => {
+  const handleChangeAdd = (e) => {
+    const { name, value } = e.target;
     setTypeDataAdd((prevState) => ({
       ...prevState,
-      [name]: value instanceof Date ? value.toISOString() : value,
+      [name]: value,
     }));
   };
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
-    console.log("datanya cok asuk", typeDataAdd);
+    if (!typeDataAdd.type) {
+      toast.error("Please fill all required fields");
+      return;
+    }
 
     try {
-      // Ensure all required fields are filled
-      if (!typeDataAdd.type) {
-        alert("Please fill all required fields.");
-        return;
+      const token = localStorage.getItem("token");
+      const response = await fetchTypeAdd(typeDataAdd.type, token); // Pass token if required by fetchTypeAdd
+      if (response.status === 201) {
+        toast.success("Type added successfully");
+        setType((prevTypes) => [...prevTypes, response.data]);
+        setTypeDataAdd({ type: "" });
+        modalOpen("add", false);
       }
-
-      // Send product data to the backend
-      const response = await fetchTypeAdd(typeDataAdd.type);
-
-      console.log("Type added:", response);
-      Swal.fire("Berhasil", "Type berhasil ditambahkan!", "success");
-
-      // Reload the page or update state
-      // onClose();
-      window.location.reload();
     } catch (error) {
-      console.error("Error adding Type:", error);
+      toast.error("Failed to add type");
+      console.error("Error adding type:", error);
     }
   };
 
@@ -140,7 +127,8 @@ const TypeList = () => {
     }
   }, [typeToUpdate]);
 
-  const handleChangeUpdate = (value, name) => {
+  const handleChangeUpdate = (e) => {
+    const { name, value } = e.target;
     setTypeDataUpdate((prevState) => ({
       ...prevState,
       [name]: value,
@@ -149,56 +137,78 @@ const TypeList = () => {
 
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
-
-    const formData = new FormData();
-    for (const key in typeDataUpdate) {
-      formData.append(key, typeDataUpdate[key]);
+    if (!typeDataUpdate.type) {
+      toast.error("Please fill all required fields");
+      return;
     }
 
     try {
-      // const productId = "67a9615bf59ec80d10014871";
+      const token = localStorage.getItem("token");
       const response = await client.put(
         `/api/type/${typeDataUpdate.id}`,
-        {
-          type: typeDataUpdate.type || "",
-        },
-
+        { type: typeDataUpdate.type },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      console.log("Type updated successfully:", response.data);
-      // onClose();
-      window.location.reload();
+
+      if (response.status === 200) {
+        toast.success("Type updated successfully");
+        setType((prevTypes) =>
+          prevTypes.map((t) =>
+            t._id === typeDataUpdate.id ? response.data : t
+          )
+        );
+        modalOpen("update", false);
+      }
     } catch (error) {
-      console.error("Error updating Type:", error);
+      toast.error("Failed to update type");
+      console.error("Error updating type:", error);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="w-full h-screen pt-16 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
+  const ExportHeaderTable = [
+    { label: "No", key: "no" },
+    { label: "ID", key: "_id" },
+    { label: "Type Name", key: "type" },
+  ];
+
+  const HeaderTable = [
+    { label: "ID", key: "_id" },
+    { label: "Type Name", key: "type" },
+  ];
+
+  const actions = [
+    {
+      icon: <MdDelete size={20} />,
+      onClick: (row) => deleteTypeById(row._id), // Use _id consistent with data
+      className: "bg-red-500 hover:bg-red-600",
+    },
+    {
+      icon: <FaInfoCircle size={20} />,
+      onClick: (row) => handleUpdateType(row), // Fixed typo from handleTypeCompany
+      className: "bg-blue-500 hover:bg-blue-600",
+    },
+  ];
 
   const filteredTypeList = type.filter((t) =>
     t.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Hitung data yang akan ditampilkan berdasarkan halaman
-  const startIndex = currentPage * itemsPerPage;
-  const selectedData = filteredTypeList.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const dataForExport = filteredTypeList.map((item, index) => ({
+    no: index + 1,
+    id: item._id,
+    type: item.type, // Fixed key name
+  }));
+
+  if (isLoading) {
+    return <Loading />; // Use proper Loading component
+  }
 
   return (
     <div className="w-full h-screen pt-16 relative">
-      
       <Header
         title="Daftar Type"
         subtitle="Detail Daftar Type"
@@ -211,58 +221,17 @@ const TypeList = () => {
 
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div className="overflow-x-auto">
-            {filteredTypeList.length === 0 ? (
-              <h1>Data Tipe tidak ditemukan!</h1>
-            ) : (
-              <>
-                <table className="table w-full border border-gray-300">
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Id</th>
-                      <th>Nama Tipe</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedData.map((cp, index) => (
-                      <tr key={cp._id}>
-                        <td>{startIndex + index + 1}</td>
-                        <td>{cp._id}</td>
-                        <td>{cp.type}</td>
-                        <td>
-                          <button
-                            className=" p-3 rounded-lg text-2xl "
-                            onClick={() => deleteTypeById(cp._id)}
-                          >
-                            <MdDelete />
-                          </button>
-                          <button
-                            className=" p-3 rounded-lg text-2xl "
-                            onClick={() => handleUpdateType(cp)}
-                          >
-                            <FaRegEdit />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <ReactPaginate
-                  previousLabel={"← Prev"}
-                  nextLabel={"Next →"}
-                  pageCount={Math.ceil(type.length / itemsPerPage)}
-                  onPageChange={({ selected }) => setCurrentPage(selected)}
-                  containerClassName={"flex gap-2 justify-center mt-4"}
-                  pageLinkClassName={"border px-3 py-1"}
-                  previousLinkClassName={"border px-3 py-1"}
-                  nextLinkClassName={"border px-3 py-1"}
-                  activeClassName={"bg-blue-500 text-white"}
-                />
-              </>
-            )}
-          </div>
+          {filteredTypeList.length === 0 ? (
+            <h1>Data Tipe tidak ditemukan!</h1>
+          ) : (
+            <Table
+              fileName="Data Tipe"
+              ExportHeaderTable={ExportHeaderTable}
+              columns={HeaderTable}
+              data={filteredTypeList}
+              actions={actions}
+            />
+          )}
         </div>
       </div>
 
@@ -271,46 +240,44 @@ const TypeList = () => {
         onClose={() => modalOpen("add", false)}
         title="Tambah Type"
       >
-          <form onSubmit={handleSubmitAdd}>
-            <p className="font-semibold mt-4">Nama Tipe</p>
-            <input
-              type="text"
-              name="type"
-              value={typeDataAdd.type}
-              onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
+        <form onSubmit={handleSubmitAdd}>
+          <p className="font-semibold mt-4">Nama Tipe</p>
+          <input
+            type="text"
+            name="type"
+            value={typeDataAdd.type}
+            onChange={handleChangeAdd}
+            className="border rounded-md p-2 w-full bg-white"
+            required
+          />
+          <div className="flex justify-end mt-5">
+            <CloseButton onClick={() => modalOpen("add", false)} />
+            <SubmitButton />
+          </div>
+        </form>
+      </Modal>
 
-            <div className="flex justify-end mt-5">
-            <CloseButton onClick={() => modalOpen("add", false)}/>
-            <SubmitButton/>
-            </div>
-          </form>
-        </Modal>
-        <Modal
+      <Modal
         isOpen={isUpdateModalOpen}
         onClose={() => modalOpen("update", false)}
-        title={`Edit Perusahaan`}
+        title="Edit Type" // Fixed title to reflect "Type" instead of "Perusahaan"
       >
-          <form onSubmit={handleSubmitUpdate}>
-            <p className="font-semibold mt-4">Nama Tipe</p>
-            <input
-              type="text"
-              name="type"
-              value={typeDataUpdate.type}
-              onChange={(e) =>
-                handleChangeUpdate(e.target.value, e.target.name)
-              }
-              className="border rounded-md p-2 w-full bg-white"
-              required
-            />
-            <div className="flex justify-end mt-5">
-            <CloseButton onClick={() => modalOpen("update", false)}/>
-            <SubmitButton/>
-            </div>
-          </form>
-        </Modal>
+        <form onSubmit={handleSubmitUpdate}>
+          <p className="font-semibold mt-4">Nama Tipe</p>
+          <input
+            type="text"
+            name="type"
+            value={typeDataUpdate.type}
+            onChange={handleChangeUpdate}
+            className="border rounded-md p-2 w-full bg-white"
+            required
+          />
+          <div className="flex justify-end mt-5">
+            <CloseButton onClick={() => modalOpen("update", false)} />
+            <SubmitButton />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

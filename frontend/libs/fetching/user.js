@@ -20,6 +20,21 @@ export const fetchUserList = async () => {
   }
 };
 
+export const addUserData = async (reqBody) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.post("/user/adduser", reqBody, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error fetching store:", error);
+  }
+};
+
 export const fetchUserGet = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -53,7 +68,6 @@ export const getAvatar = async () => {
       { id: id_user },
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    console.log("RESP O AV", response);
     const data = response.data;
     return data;
   } catch (error) {

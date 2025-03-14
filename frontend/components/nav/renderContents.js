@@ -1,7 +1,7 @@
 // ContentRenderer.jsx
 import React from "react";
 import Analytics from "@/pages/dashboard/sub/analytics";
-import Menu from "@/pages/dashboard/sub/menu";
+import ProductMenu from "@/pages/dashboard/sub/menu";
 import CompanyData from "@/pages/dashboard/sub/company";
 import SalesCampaign from "@/pages/dashboard/sub/salesCampaign";
 import StoreData from "@/pages/dashboard/sub/store";
@@ -23,11 +23,7 @@ import Pembelian from "@/pages/dashboard/sub/pembelian";
 import Report from "@/pages/dashboard/sub/report";
 import { rolePermissions } from "@/utils/permission";
 
-const ContentRenderer = ({
-  selectedLink,
-  setSelectedLink,
-  userRole,
-}) => {
+const ContentRenderer = ({ selectedLink, setSelectedLink, userRole }) => {
   // Check if the user has permission to access the selectedLink
   const hasPermission = rolePermissions[userRole]?.includes(selectedLink);
 
@@ -53,7 +49,8 @@ const ContentRenderer = ({
     case "report":
       return <Report />;
     case "product":
-      return <Menu />;
+      console.log("PRODUCT MENU", ProductMenu);
+      return <ProductMenu />;
     case "extras":
       return <Extras />;
     case "user":

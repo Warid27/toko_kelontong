@@ -1,12 +1,14 @@
 import { Hono } from "hono";
-import { getCookie } from "hono/cookie";
-import { PORT, SECRET_KEY } from "@config/config";
 import { UserModels } from "@models/user-models";
-import jwt from "jsonwebtoken";
-import { renderEJS } from "@config/config";
 import { authenticate } from "@middleware/authMiddleware";
+import argon2 from "argon2";
 
 const router = new Hono();
+
+// Hash a password
+async function hashPassword(password) {
+  return await argon2.hash(password);
+}
 
 // Get all user
 router.post("/listuser", authenticate, async (c) => {
@@ -76,27 +78,10 @@ router.post("/getavatar", authenticate, async (c) => {
 // AddUser from Admin
 router.post("/adduser", authenticate, async (c) => {
   try {
-    const body = await c.req.json(); // Parse JSON request body
-
-    const data = {
-      username: body.username,
-      password: body.password,
-      rule: body.rule,
-      id_company: body.company ? body.company : body.id_company,
-      id_store: body.store ? body.store : body.id_store,
-      status: body.status,
-    };
-
-    if (data.rule == "admin" || data.rule == 1) {
-      data.rule = 1;
-    }
-    if (data.id_company == "besar" || data.id_company == 2) {
-      data.id_company = 2;
-    }
-    data.status = data.status == "active" ? 1 : 0;
+    const body = await c.req.json();
 
     // Check if username already exists
-    const existingUser = await UserModels.findOne({ username: data.username });
+    const existingUser = await UserModels.findOne({ username: body.username });
 
     if (existingUser) {
       return c.text(
@@ -104,17 +89,23 @@ router.post("/adduser", authenticate, async (c) => {
         400
       );
     }
+    const password = body.password;
+    const hashedPassword = await hashPassword(password);
+    const data = {
+      username: body.username,
+      password: hashedPassword,
+      rule: body.rule,
+      id_company: body.company ? body.company : body.id_company,
+      id_store: body.store ? body.store : body.id_store,
+      avatar: body.avatar ? body.avatar : "https://placehold.co/500x500",
+      status: body.status,
+    };
 
-    // Save user data (without hashing)
-    const userdata = await UserModels.insertMany(data);
+    // Save user data (with hashing)
+    const userdata = await UserModels.create(data);
 
     // Return JSON response if request is JSON
-    if (c.req.header("content-type") === "application/json") {
-      return c.json(userdata);
-    }
-
-    // Redirect to /user
-    return c.redirect("/user");
+    return c.json(userdata, 201);
   } catch (error) {
     return c.text("Terjadi kesalahan saat menambahkan pengguna.", 500);
   }

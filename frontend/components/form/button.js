@@ -41,10 +41,15 @@ export const AddButton = ({ onClick, content = "+ Tambah Data" }) => (
   />
 );
 
-export const SubmitButton = ({ content = "Submit" }) => (
+export const SubmitButton = ({
+  onClick = () => {},
+  content = "Submit",
+  type = "submit",
+}) => (
   <BaseButton
-    type="submit"
-    content={content}      
+    onClick={onClick}
+    type={type}
+    content={content}
     bgColor="var(--bg-secondary)"
     gradient="bg-gradient-to-r bg-[var(--bg-secondary)]"
   />

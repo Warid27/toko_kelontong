@@ -15,19 +15,13 @@ const DevelopmentHome = () => {
   useEffect(() => {
     const loginAndFetchStores = async () => {
       try {
-        let token = localStorage.getItem("token");
-        if (!token) {
-          const reqBody = {
-            username: "customer",
-            password: "customer",
-          };
-          const response = await loginServices(reqBody);
-          token = response;
-          if (token) {
-            localStorage.setItem("token", token);
-          } else {
-            throw new Error("Failed to retrieve token");
-          }
+        const reqBody = {
+          username: "customer",
+          password: "customer",
+        };
+        const response = await loginServices(reqBody);
+        if (!response) {
+          throw new Error("Failed to retrieve token");
         }
 
         // Now fetch stores using the valid token

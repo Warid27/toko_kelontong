@@ -43,7 +43,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    checkAuth(); // Check token on mount
+    checkAuth();
 
     // Listen for user activity (mouse, keyboard, touch)
     window.addEventListener("mousemove", resetInactivityTimer);

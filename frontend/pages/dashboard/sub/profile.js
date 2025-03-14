@@ -34,8 +34,8 @@ const Profile = () => {
     id_store: "",
     avatar: "",
   });
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [repeatPassword, setRepeatPassword] = useState("")
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
 
   useEffect(() => {
     const fetching_requirement = async () => {
@@ -75,7 +75,6 @@ const Profile = () => {
     }
   }, [userToUpdate]);
 
-  
   const handleChangeUpdate = (e) => {
     const { name, value } = e.target;
     setUserDataUpdate((prevState) => ({
@@ -130,26 +129,26 @@ const Profile = () => {
   };
 
   const handleChangePassword = async (e) => {
-    e.preventDefault()
-    console.log("data", userDataUpdate)
-    console.log("password", currentPassword)
+    e.preventDefault();
+    console.log("data", userDataUpdate);
+    console.log("password", currentPassword);
     if (!userDataUpdate.username) {
       Swal.fire("Error", "Please fill in all required fields!", "error");
       return;
     }
-    if(userDataUpdate.password !== repeatPassword){
+    if (userDataUpdate.password !== repeatPassword) {
       Swal.fire("Error", "password and repeated password not same!", "error");
-      return
+      return;
     }
-    try{
+    try {
       const response = await client.post("/login/checkpass", {
         username: userDataUpdate.username,
-        password: currentPassword
-      })
-      
-      if(response.status === 200) {
-        console.log(response)
-        await handleSubmitUpdate(e)
+        password: currentPassword,
+      });
+
+      if (response.status === 200) {
+        console.log(response);
+        await handleSubmitUpdate(e);
         Swal.fire("Success", "Profile updated successfully!", "success");
       } else {
         Swal.fire("Error", "Password cannot be updating!", "error");
@@ -158,8 +157,7 @@ const Profile = () => {
       console.error("Error updating password:", error);
       Swal.fire("Error", "Password cannot be updating!", "error");
     }
-    
-  }
+  };
 
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
@@ -175,9 +173,9 @@ const Profile = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       Swal.fire("Success", "Profile updated successfully!", "success");
-      setCurrentPassword("")
-      setRepeatPassword("")
-      modalOpen("change", false)
+      setCurrentPassword("");
+      setRepeatPassword("");
+      modalOpen("change", false);
       setUserToUpdate(response.data);
       setIsEditMode(false);
     } catch (error) {
@@ -297,11 +295,12 @@ const Profile = () => {
               {userDataUpdate.username || "NAMA USER"}
             </h1>
           </div>
-          <button 
-              onClick={() => modalOpen("change", true)}
-              className="addBtn flex items-center space-x-2">
-                Change Password
-            </button>
+          <button
+            onClick={() => modalOpen("change", true)}
+            className="addBtn flex items-center space-x-2"
+          >
+            Change Password
+          </button>
           <button
             onClick={() => setIsEditMode(true)}
             className={`addBtn flex items-center space-x-2 ${
@@ -481,24 +480,23 @@ const Profile = () => {
             value={repeatPassword}
             onChange={(e) => setRepeatPassword(e.target.value)}
           />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
-            >
-              {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
-            </button>
-            <button
-              type="submit"
-              onClick={(e) => handleChangePassword(e)}
-              className="submitBtn"
-            >
-              Submit
-            </button>
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+          >
+            {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+          </button>
+          <button
+            type="submit"
+            onClick={(e) => handleChangePassword(e)}
+            className="submitBtn"
+          >
+            Submit
+          </button>
         </Modal>
       )}
     </div>
-    
   );
 };
 

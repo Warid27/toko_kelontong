@@ -8,24 +8,11 @@ import { MdDelete } from "react-icons/md";
 import { FaRegEdit, FaInfoCircle, FaImage } from "react-icons/fa";
 
 // Components
-const ExportData = dynamic(() => import("@/components/ExportData"), {
-  ssr: false,
-  loading: () => <span>Loading...</span>, // Indikator saat memuat
-});
 
-import { SubmitButton, CloseButton, AddButton } from "@/components/form/button";
-
-import { SubmitMenu, CloseMenu, AddMenu } from "@/components/form/menu";
-
+import { SubmitButton, CloseButton } from "@/components/form/button";
+import { AddMenu } from "@/components/form/menu";
+import Table from "@/components/form/table";
 import ImageUpload from "@/components/form/uploadImage";
-
-import {
-  SubmitIcon,
-  CloseIcon,
-  AddIcon,
-  DangerIcon,
-} from "@/components/form/icon";
-
 import { Modal } from "@/components/Modal";
 import Header from "@/components/section/header";
 import Loading from "@/components/loading";
@@ -44,8 +31,7 @@ import { validatePhoneNumber } from "@/utils/validatePhoneNumber";
 
 // Packages
 import { toast } from "react-toastify";
-import ReactPaginate from "react-paginate";
-import Select from "react-select";
+import Select from "react-select"; //warid warid
 import Swal from "sweetalert2";
 
 const CompanyData = () => {
@@ -53,17 +39,14 @@ const CompanyData = () => {
   const [typeList, setTypeList] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [loading, setLoading] = useState(false); // Untuk loading saat update status
+  const [loading, setLoading] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Untuk mengontrol tampilan modal update
-  const [companyToUpdate, setCompanyToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [companyToUpdate, setCompanyToUpdate] = useState(null);
 
-  const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenu, setOpenMenu] = useState("Info");
-
-  const itemsPerPage = 10;
 
   const [companiesDataAdd, setCompaniesDataAdd] = useState({
     name: "",
@@ -88,11 +71,55 @@ const CompanyData = () => {
     header: "",
   });
 
-  const columns = [
+  const statusOptions = [
+    { value: 0, label: "Active" },
+    { value: 1, label: "Inactive" },
+    { value: 2, label: "Bankrupt" },
+  ];
+  const ExportHeaderTable = [
     { label: "No", key: "no" },
     { label: "Nama Perusahaan", key: "name" },
     { label: "Alamat", key: "address" },
     { label: "Status", key: "status" },
+  ];
+
+  const HeaderTable = [
+    { label: "Nama Perusahaan", key: "name" },
+    { label: "Alamat", key: "address" },
+    {
+      key: "status",
+      label: "Status",
+      render: (value, row) => (
+        <div className="relative">
+          <select
+            className="bg-white border border-green-300 p-2 rounded-lg shadow-xl focus:ring focus:ring-green-300 w-full cursor-pointer"
+            value={value}
+            onChange={(e) =>
+              handleStatusSelect(row._id, Number(e.target.value))
+            }
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ),
+    },
+  ];
+
+  const actions = [
+    {
+      icon: <MdDelete size={20} />,
+      onClick: (row) => deleteCompanyById(row.id),
+      className: "bg-red-500 hover:bg-red-600",
+    },
+    {
+      icon: <FaInfoCircle size={20} />,
+      onClick: (row) => handleUpdateCompany(row, "update"),
+      className: "bg-blue-500 hover:bg-blue-600",
+    },
   ];
 
   // --- Function
@@ -130,7 +157,6 @@ const CompanyData = () => {
         status: selectedStatus,
       };
       const response = await updateCompany(companyId, reqBody);
-      console.log("RESP", response);
       setCompanies((prevCompanies) =>
         prevCompanies.map((company) =>
           company._id === companyId
@@ -144,7 +170,7 @@ const CompanyData = () => {
   };
 
   const handleUpdateCompany = (company, params) => {
-    setCompanyToUpdate(company); // Menyimpan produk yang dipilih
+    setCompanyToUpdate(company);
     modalOpen(params, true);
   };
 
@@ -187,8 +213,6 @@ const CompanyData = () => {
     e.preventDefault();
 
     try {
-      // Ensure all required fields are filled
-      console.log("ini data adede", companiesDataAdd);
       if (
         !companiesDataAdd.name ||
         !companiesDataAdd.address ||
@@ -202,13 +226,13 @@ const CompanyData = () => {
       if (!validation.isValid) {
         return toast.error("GAGAL:", validation.message);
       }
-
-      // Send product data to the backend
       const reqBody = {
         name: companiesDataAdd.name,
         address: companiesDataAdd.address,
         id_type: companiesDataAdd.id_type,
         status: 1,
+        logo: companiesDataAdd.logo,
+        header: companiesDataAdd.header,
         phone: companiesDataAdd.phone,
         email: companiesDataAdd.email,
       };
@@ -216,7 +240,6 @@ const CompanyData = () => {
       if (response.status == 201) {
         modalOpen("add", false);
         toast.success("Company berhasil ditambahkan!");
-
         setCompaniesDataAdd({
           name: "",
           address: "",
@@ -240,7 +263,7 @@ const CompanyData = () => {
     if (companyToUpdate) {
       setCompaniesDataUpdate({
         id: companyToUpdate._id || "",
-        name: companyToUpdate.name || "", // Menyimpan URL gambar lama
+        name: companyToUpdate.name || "",
         address: companyToUpdate.address || "",
         id_type: companyToUpdate.id_type || "",
         phone: companyToUpdate.phone || "",
@@ -318,30 +341,10 @@ const CompanyData = () => {
         .includes(searchQuery.toLowerCase())
   );
 
-  const startIndex = currentPage * itemsPerPage;
-
-  const selectedData = filteredCompanyList.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
-
-  const dataForExport = selectedData.map((company, index) => ({
-    no: index + 1,
-    name: company.name,
-    address: company.address,
-    status:
-      company.status === 0
-        ? "Active"
-        : company.status === 1
-        ? "Inactive"
-        : "Bankrupt",
-  }));
-
   // UPLOADS
   const handleImageChange = async (e, params) => {
     const file = e.target.files[0];
     if (!file) return;
-
     try {
       let pathPrefix = "";
       switch (params) {
@@ -360,24 +363,21 @@ const CompanyData = () => {
       const response = await uploadImageCompress(file, params, pathPrefix);
       const uploadedImageUrl = response.data.metadata.shortenedUrl;
       if (response.status == 201) {
-        // 🔹 Update state based on `params`
-        if (params === "add" || params === "update") {
+        if (params == "add" || params == "update") {
           const stateUpdater =
-            params === "add" ? setCompaniesDataAdd : setCompaniesDataUpdate;
-          stateUpdater((prevState) => ({
-            ...prevState,
-            logo: uploadedImageUrl,
-          }));
+            params == "add" ? setCompaniesDataAdd : setCompaniesDataUpdate;
+          stateUpdater((prevState) => {
+            const newState = { ...prevState, logo: uploadedImageUrl };
+            return newState;
+          });
         } else if (["header"].includes(params)) {
           setCompaniesDataUpdate((prevState) => ({
             ...prevState,
             [params]: uploadedImageUrl,
           }));
         }
-
-        console.log(`✅ Image uploaded successfully: ${uploadedImageUrl}`);
       } else {
-        console.log(`❌ Upload Failed: ${response.error}`);
+        console.error(`❌ Upload Failed: ${response.error}`);
       }
     } catch (error) {
       console.error("❌ Compression or upload failed:", error);
@@ -387,6 +387,32 @@ const CompanyData = () => {
   if (isLoading === true) {
     return <Loading />;
   }
+  const columns = [
+    { key: "id", label: "No" },
+    { key: "name", label: "Nama Perusahaan" },
+    { key: "address", label: "Alamat" },
+    {
+      key: "status",
+      label: "Status",
+      render: (value, row) => (
+        <div className="relative">
+          <select
+            className="appearance-none bg-white border border-gray-300 p-2 rounded-lg shadow-sm focus:ring focus:ring-green-300 w-full pr-10"
+            value={value}
+            onChange={(e) =>
+              console.log("Status Changed", row.id, e.target.value)
+            }
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="w-full h-screen pt-16 relative">
@@ -407,74 +433,13 @@ const CompanyData = () => {
               <h1>Data perusahaan tidak ditemukan!</h1>
             ) : (
               <>
-                <h1 className="flex flex-row gap-3">
-                  <span>Export To:</span>
-                  <ExportData
-                    data={dataForExport}
-                    columns={columns}
-                    fileName="Perusahaan"
-                  />
-                </h1>
-                <table className="table w-full border border-gray-300">
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Nama Perusahaan</th>
-                      <th>Alamat</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedData.map((company, index) => (
-                      <tr key={company._id}>
-                        <td>{startIndex + index + 1}</td>
-                        <td>{company.name}</td>
-                        <td>{company.address}</td>
-                        <td>
-                          <select
-                            className="select bg-white"
-                            value={company.status}
-                            onChange={(e) =>
-                              handleStatusSelect(
-                                company._id,
-                                Number(e.target.value)
-                              )
-                            }
-                          >
-                            <option value={0}>Active</option>
-                            <option value={1}>Inactive</option>
-                            <option value={2}>Bankrupt</option>
-                          </select>
-                        </td>
-                        <td>
-                          <div className="flex flex-row items-center justify-center gap-1">
-                            <DangerIcon
-                              onClick={() => deleteCompanyById(company._id)}
-                              content={<MdDelete />}
-                            />
-                            <SubmitIcon
-                              onClick={() =>
-                                handleUpdateCompany(company, "update")
-                              }
-                              content={<FaInfoCircle />}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <ReactPaginate
-                  previousLabel={"← Prev"}
-                  nextLabel={"Next →"}
-                  pageCount={Math.ceil(selectedData.length / itemsPerPage)}
-                  onPageChange={({ selected }) => setCurrentPage(selected)}
-                  containerClassName={"flex gap-2 justify-center mt-4"}
-                  pageLinkClassName={"border px-3 py-1"}
-                  previousLinkClassName={"border px-3 py-1"}
-                  nextLinkClassName={"border px-3 py-1"}
-                  activeClassName={"bg-blue-500 text-white"}
+                <Table
+                  fileName="Data Perusahaan"
+                  ExportHeaderTable={ExportHeaderTable}
+                  columns={HeaderTable}
+                  data={filteredCompanyList}
+                  actions={actions}
+                  statusOptions={statusOptions}
                 />
               </>
             )}
@@ -490,41 +455,14 @@ const CompanyData = () => {
       >
         <form onSubmit={handleSubmitAdd}>
           <p className="font-semibold mt-4">Logo Perusahaan</p>
-          {/* <div className="upload-container">
-            <label className="upload-label">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageChange(e, "add")}
-                style={{ display: "none" }}
-              />
-              <div className="upload-content cursor-pointer w-fit">
-                {companiesDataAdd.logo ? (
-                  <Image
-                    src={companiesDataAdd.logo}
-                    alt="Uploaded"
-                    className="uploaded-image"
-                    width={80}
-                    height={80}
-                  />
-                ) : (
-                  <div className="border-2 border-slate-500 w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                    <div className="icon-container flex flex-col items-center">
-                      <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
-                      <p className="text-sm text-[#FDDC05]">New Image</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </label>
-          </div> */}
+
           <ImageUpload
             image={companiesDataAdd.logo}
             onImageChange={handleImageChange}
             params="add"
             name="_id"
             value={companiesDataAdd._id}
-            onValueChange={handleChangeUpdate}
+            onValueChange={handleImageChange}
           />
           <p className="font-semibold mt-4">Nama Perusahaan</p>
           <input
@@ -612,35 +550,14 @@ const CompanyData = () => {
                 <form onSubmit={handleSubmitUpdate}>
                   <p className="font-semibold mt-4">Logo Perusahaan</p>
                   <div className="upload-container">
-                    {console.log("DATA", companiesDataUpdate)}
-                    <label className="upload-label">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageChange(e, "update")}
-                        style={{ display: "none" }}
-                      />
-                      <div className="upload-content cursor-pointer w-fit">
-                        {companiesDataUpdate.logo ? (
-                          <Image
-                            src={companiesDataUpdate.logo}
-                            alt="Uploaded"
-                            className="uploaded-image"
-                            width={80}
-                            height={80}
-                          />
-                        ) : (
-                          <div className="border-2 border-slate-500 w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                            <div className="icon-container flex flex-col items-center">
-                              <LiaCloudUploadAltSolid className="text-5xl text-[#FDDC05]" />
-                              <p className="text-sm text-[#FDDC05]">
-                                New Image
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </label>
+                    <ImageUpload
+                      image={companiesDataUpdate.logo}
+                      onImageChange={handleImageChange}
+                      params="update"
+                      name="_id"
+                      value={companiesDataUpdate._id}
+                      onValueChange={handleChangeUpdate}
+                    />
                   </div>
                   <p className="font-semibold mt-4">Nama Perusahaan</p>
                   <input
@@ -652,14 +569,6 @@ const CompanyData = () => {
                     required
                   />
                   <p className="font-semibold mt-4 mb-2">Address Perusahaan</p>
-                  {/* <input
-                      type="text"
-                      name="stock"
-                      value={companiesDataUpdate.address}
-                      onChange={handleChangeUpdate}
-                      className="border rounded-md p-2 w-full bg-white"
-                      required
-                    /> */}
                   <MapPicker
                     name="address"
                     value={companiesDataUpdate.address}

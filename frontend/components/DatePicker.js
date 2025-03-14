@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker, MonthPicker, YearPicker } from "@mui/x-date-pickers";
 
 export default function DatePickers({ filterBy, value, onChange }) {
   const [selectedDate, setSelectedDate] = useState(value || new Date());
@@ -14,35 +15,24 @@ export default function DatePickers({ filterBy, value, onChange }) {
   };
 
   return (
-    <div className="border p-2 rounded bg-white">
-      {filterBy === "daily" && (
-        <DatePicker
-          selected={selectedDate}
-          onChange={handleChange}
-          dateFormat="yyyy-MM-dd"
-          className="border p-2 rounded bg-white"
-        />
-      )}
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <div className="border p-2 rounded bg-white">
+        {filterBy === "daily" && (
+          <DatePicker
+            value={selectedDate}
+            onChange={handleChange}
+            format="yyyy-MM-dd"
+          />
+        )}
 
-      {filterBy === "monthly" && (
-        <DatePicker
-          selected={selectedDate}
-          onChange={handleChange}
-          dateFormat="yyyy-MM"
-          showMonthYearPicker
-          className="border p-2 rounded bg-white"
-        />
-      )}
+        {filterBy === "monthly" && (
+          <MonthPicker value={selectedDate} onChange={handleChange} />
+        )}
 
-      {filterBy === "yearly" && (
-        <DatePicker
-          selected={selectedDate}
-          onChange={handleChange}
-          dateFormat="yyyy"
-          showYearPicker
-          className="border p-2 rounded bg-white"
-        />
-      )}
-    </div>
+        {filterBy === "yearly" && (
+          <YearPicker value={selectedDate} onChange={handleChange} />
+        )}
+      </div>
+    </LocalizationProvider>
   );
 }

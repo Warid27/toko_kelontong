@@ -5,7 +5,6 @@ import { getStoreImage } from "@/libs/fetching/store";
 import { tokenDecoded } from "@/utils/tokenDecoded";
 
 const StoreIcon = ({ role, store_id = null }) => {
-  // ✅ Menerima props sebagai objek
   const [storeIcon, setStoreIcon] = useState(null);
 
   useEffect(() => {
@@ -16,7 +15,7 @@ const StoreIcon = ({ role, store_id = null }) => {
         id_store = store_id;
       } else {
         const userData = tokenDecoded();
-        id_store = userData?.id_store || null; // ✅ Mencegah error jika userData tidak ada
+        id_store = userData?.id_store || null; 
       }
 
       if (!id_store) {
@@ -25,7 +24,7 @@ const StoreIcon = ({ role, store_id = null }) => {
       }
 
       try {
-        const storeIcon = await getStoreImage(id_store, "icon"); // ✅ Kirim `id_store` jika dibutuhkan
+        const storeIcon = await getStoreImage(id_store, "icon");
         setStoreIcon(storeIcon);
       } catch (error) {
         console.error("Error fetching store image:", error);
@@ -34,7 +33,7 @@ const StoreIcon = ({ role, store_id = null }) => {
     };
 
     getStoreIconFunction();
-  }, [role]); // ✅ Tambahkan `role` ke dependensi
+  }, [role]);
 
   return (
     <div className="relative upload-content flex overflow-hidden w-12 h-12 rounded-full border-2 border-white">
@@ -44,7 +43,7 @@ const StoreIcon = ({ role, store_id = null }) => {
           src={storeIcon}
           alt="Uploaded"
           className="object-cover"
-          width={48} // ✅ Sesuaikan dengan ukuran container
+          width={48} 
           height={48}
         />
       ) : (

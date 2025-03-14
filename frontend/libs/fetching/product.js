@@ -111,3 +111,37 @@ export const listProductStatus = async () => {
     console.error("Error fetching products:", error);
   }
 };
+
+export const updateProduct = async (productId, requestBody) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.put(
+      `/api/product/${productId}`,
+      requestBody,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Error fetching product:", error);
+  }
+};
+
+export const deleteProduct = async (id_product) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.delete(`/api/product/${id_product}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error update product:", error);
+  }
+};

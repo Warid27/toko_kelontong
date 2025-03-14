@@ -81,28 +81,5 @@ const SearchBar = ({ searchQuery, setSearchQuery }) => {
   );
 };
 
-// const AddButton = ({ modalOpen }) => {
-//   return (
-//     <motion.div
-//       className="flex flex-row justify-end mt-8"
-//       initial={{ y: 20, opacity: 0 }}
-//       animate={{ y: 0, opacity: 1 }}
-//       transition={{ duration: 0.4, ease: "easeOut" }}
-//     >
-//       <button
-//         onClick={() => modalOpen("add", true)}
-//         className="px-6 py-3 bg-green-400/80 backdrop-blur-lg border border-green-300/30
-//                hover:bg-green-500 hover:shadow-green-400/50 text-black font-bold
-//                rounded-xl shadow-lg hover:scale-105 transform transition-all
-//                duration-300 ease-out flex items-center gap-2 relative overflow-hidden
-//                active:scale-95
-//                "
-//       >
-//         <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 opacity-30 blur-lg"></span>
-//         <span className="relative z-10">+ Tambah Data</span>
-//       </button>
-//     </motion.div>
-//   );
-// };
 
 export default Header;

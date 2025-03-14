@@ -2,10 +2,17 @@
 
 import { useRef } from "react";
 
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
+import { toast } from "react-toastify";
+
+import pdfMake from "pdfmake/build/pdfmake";
+import pdfFonts from "pdfmake/build/vfs_fonts"; // ✅ No `* as pdfFonts`
+
+pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs; // ✅ Ensures vfs is assigned
+
+// Component
+import { AddMenu } from "@/components/form/menu";
 
 // Icon
 import { FaFilePdf } from "react-icons/fa6";
@@ -13,8 +20,6 @@ import { IoPrint } from "react-icons/io5";
 import { SiGooglesheets } from "react-icons/si";
 
 const ExportData = ({ data, columns, fileName }) => {
-  const tableRef = useRef(null);
-
   // Export to CSV
   const exportToCSV = () => {
     const csvData = Papa.unparse({
@@ -24,32 +29,80 @@ const ExportData = ({ data, columns, fileName }) => {
 
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, `${fileName}.csv`);
+    toast.success("File Excel berhasil didownload!");
   };
 
   // Export to PDF
   const exportToPDF = () => {
-    const doc = new jsPDF();
     const title = fileName;
-    const pageWidth = doc.internal.pageSize.getWidth();
+    const columnsHeaders = columns.map((col) => col.label);
+    const tableBody = data.map((row) => columns.map((col) => row[col.key]));
 
-    // Set title in center
-    doc.setFontSize(16);
-    const textWidth = doc.getTextWidth(title);
-    doc.text(title, (pageWidth - textWidth) / 2, 15);
+    // Adjust column widths dynamically
+    const columnCount = columns.length;
+    let widths;
 
-    autoTable(doc, {
-      startY: 25, // Move table below the title
-      head: [columns.map((col) => col.label)],
-      body: data.map((row) => columns.map((col) => row[col.key])),
-      styles: { halign: "center" }, // Center align table content
-    });
+    if (columnCount === 1) {
+      widths = ["100%"]; // Single column takes full width
+    } else if (columnCount === 2) {
+      widths = ["15%", "85%"]; // "No" column smaller
+    } else {
+      widths = [
+        "10%",
+        ...Array(columnCount - 1).fill(`${90 / (columnCount - 1)}%`),
+      ];
+      // "No" column takes 10%, the rest share 90%
+    }
 
-    doc.save(`${fileName}.pdf`);
+    const docDefinition = {
+      content: [
+        { text: title, style: "title" },
+        {
+          table: {
+            headerRows: 1,
+            widths: widths, // Apply dynamic column widths
+            body: [
+              columnsHeaders.map((header) => ({
+                text: header,
+                style: "tableHeader",
+              })), // Apply header styling
+              ...tableBody.map((row) =>
+                row.map((cell) => ({ text: cell, style: "tableCell" }))
+              ),
+            ],
+          },
+          layout: "lightHorizontalLines", // Table styling
+        },
+      ],
+      styles: {
+        title: {
+          fontSize: 16,
+          bold: true,
+          alignment: "center",
+          margin: [0, 0, 0, 10],
+        },
+        tableHeader: {
+          bold: true,
+          fontSize: 12,
+          alignment: "center", // Center-align headers
+        },
+        tableCell: {
+          fontSize: 11,
+          alignment: "center", // Center-align body text
+        },
+      },
+      pageSize: "A4", // Ensure full-page scaling
+      pageMargins: [40, 20, 40, 20], // Adjust margins for full width
+    };
+
+    pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
+    toast.success("File PDF berhasil didownload!");
   };
 
   // Print Table
   const printTable = () => {
     const printWindow = window.open("", "_blank");
+
     printWindow.document.write(`
       <html>
         <head>
@@ -59,6 +112,9 @@ const ExportData = ({ data, columns, fileName }) => {
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th, td { border: 1px solid black; padding: 8px; text-align: center; }
             th { background-color: #f2f2f2; }
+            img { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; }
+            .image-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+            .image-url { font-size: 12px; color: #555; word-wrap: break-word; max-width: 150px; }
           </style>
         </head>
         <body>
@@ -74,7 +130,20 @@ const ExportData = ({ data, columns, fileName }) => {
                 .map(
                   (row) =>
                     `<tr>${columns
-                      .map((col) => `<td>${row[col.key]}</td>`)
+                      .map((col) => {
+                        if (col.key === "avatar") {
+                          let imageUrl = row[col.key];
+
+                          return `
+                            <td>
+                              <div class="image-container">
+                                <img src="${imageUrl}" alt="Avatar" onerror="this.src='https://placehold.co/500x500';" />
+                                <span class="image-url">${imageUrl}</span>
+                              </div>
+                            </td>`;
+                        }
+                        return `<td>${row[col.key] || "-"}</td>`; // Handle null/undefined values
+                      })
                       .join("")}</tr>`
                 )
                 .join("")}
@@ -84,20 +153,19 @@ const ExportData = ({ data, columns, fileName }) => {
         </body>
       </html>
     `);
+
     printWindow.document.close();
   };
 
   return (
-    <div className="flex gap-2 mb-4">
-      <button className="addBtn" onClick={exportToCSV}>
-        <SiGooglesheets />
-      </button>
-      <button className="addBtn" onClick={exportToPDF}>
-        <FaFilePdf />
-      </button>
-      <button className="addBtn" onClick={printTable}>
-        <IoPrint />
-      </button>
+    <div className="flex gap-2 flex-row items-center">
+      <AddMenu
+        onClick={exportToCSV}
+        content={<SiGooglesheets />}
+        isActive={true}
+      />
+      <AddMenu onClick={exportToPDF} content={<FaFilePdf />} isActive={true} />
+      <AddMenu onClick={printTable} content={<IoPrint />} isActive={true} />
     </div>
   );
 };

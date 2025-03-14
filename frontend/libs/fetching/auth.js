@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 
 export const loginServices = async (reqBody) => {
   try {
+    localStorage.clear();
     const response = await client.post("/login", reqBody);
 
     if (response.status === 200) {
@@ -19,6 +20,22 @@ export const loginServices = async (reqBody) => {
     }
   } catch (error) {
     console.error("Login error:", error);
+    throw error; // Rethrow the error for further handling
+  }
+};
+
+export const registerService = async (reqBody) => {
+  try {
+    localStorage.clear();
+    const response = await client.post("/register", reqBody);
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      Swal.fire("Gagal", response.data.message || "Register gagal", "error");
+    }
+  } catch (error) {
+    console.error("Register error:", error);
     throw error; // Rethrow the error for further handling
   }
 };

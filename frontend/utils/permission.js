@@ -33,7 +33,6 @@ export const rolePermissions = {
     "item_campaign",
     "extras",
     "size",
-    "order_cust",
     "order",
     "stock",
     "pembelian",

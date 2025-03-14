@@ -54,7 +54,7 @@ export const updateStore = async (id_store, reqBody) => {
   }
 };
 
-export const addStore = async (id_store, reqBody) => {
+export const addStore = async (reqBody) => {
   try {
     const token = localStorage.getItem("token");
     const response = await client.post("/store/addstore", reqBody, {
@@ -83,5 +83,20 @@ export const getStoreImage = async (id_store, params) => {
     return data;
   } catch (error) {
     console.error("Error fetching users:", error);
+  }
+};
+
+export const deleteStore = async (id_store) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.delete(`/api/store/${id_store}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error update store:", error);
   }
 };

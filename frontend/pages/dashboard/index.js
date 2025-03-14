@@ -37,7 +37,9 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    checkAuth();
+    setTimeout(() => {
+      checkAuth();
+    }, 100);
   }, []);
 
   const handleLogout = (setUnauthorized = true) => {

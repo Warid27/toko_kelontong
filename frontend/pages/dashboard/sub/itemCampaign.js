@@ -14,7 +14,6 @@ import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchUserList } from "@/libs/fetching/user";
 import { fetchStoreList } from "@/libs/fetching/store";
 import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
-import ReactPaginate from "react-paginate";
 
 const ItemCampaign = () => {
   const [itemCampaign, setItemCampaign] = useState([]);
@@ -385,17 +384,7 @@ const ItemCampaign = () => {
                     ))}
                   </tbody>
                 </table>
-                <ReactPaginate
-                  previousLabel={"← Prev"}
-                  nextLabel={"Next →"}
-                  pageCount={Math.ceil(itemCampaign.length / itemsPerPage)}
-                  onPageChange={({ selected }) => setCurrentPage(selected)}
-                  containerClassName={"flex gap-2 justify-center mt-4"}
-                  pageLinkClassName={"border px-3 py-1"}
-                  previousLinkClassName={"border px-3 py-1"}
-                  nextLinkClassName={"border px-3 py-1"}
-                  activeClassName={"bg-blue-500 text-white"}
-                />
+                
               </>
             )}
           </div>
@@ -509,28 +498,30 @@ const ItemCampaign = () => {
           />
           <p className="font-semibold mt-4">Start Date</p>
           <DateTimePicker
-            onChange={(date) => handleChangeUpdate(date, "start_date")}
-            value={
-              itemCampaignDataUpdate.start_date
-                ? new Date(itemCampaignDataUpdate.start_date)
-                : null
-            }
-            name="start_date"
+            value={startDate}
+            onChange={(date) => {
+              setStartDate(date);
+              handleChangeAdd(date, "start_date");
+
+              // Ensure end date is not before start date
+              if (endDate && date && endDate < date) {
+                setEndDate(date);
+                handleChangeAdd(date, "end_date");
+              }
+            }}
+            format="yyyy-MM-dd"
+            className="border p-2 rounded bg-white w-full"
           />
           <p className="font-semibold mt-4">End Date</p>
           <DateTimePicker
-            onChange={(date) => handleChangeUpdate(date, "end_date")}
-            value={
-              itemCampaignDataUpdate.end_date
-                ? new Date(itemCampaignDataUpdate.end_date)
-                : null
-            }
-            minDate={
-              itemCampaignDataUpdate.start_date
-                ? new Date(itemCampaignDataUpdate.start_date)
-                : null
-            }
-            name="end_date"
+            value={endDate}
+            onChange={(date) => {
+              setEndDate(date);
+              handleChangeAdd(date, "end_date");
+            }}
+            format="yyyy-MM-dd"
+            minDate={startDate} // Prevent selecting a date before Start Date
+            className="border p-2 rounded bg-white w-full"
           />
           <p className="font-semibold mt-4 mb-2">Value</p>
           <div className="relative mt-4">

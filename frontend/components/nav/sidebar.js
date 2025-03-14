@@ -23,6 +23,22 @@ import {
   TbChevronDown,
   TbBuildingWarehouse,
   TbUserSquare,
+  TbReport,
+  TbBuildingStore,
+  TbShoppingCart,
+  TbCategory,
+  TbRuler,
+  TbReceiptTax,
+  TbChartLine,
+  TbList,
+  TbTruckDelivery,
+  TbBuildings,
+  TbDiscount,
+  TbCashBanknote,
+  TbTag,
+  TbFileReport,
+  TbShoppingBag,
+  TbSettings,
 } from "react-icons/tb";
 
 const Sidebar = ({ setSelectedLink, selectedLink }) => {
@@ -73,22 +89,22 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
   }, []); // Run only once on component mount
 
   const menuConfig = [
-    { label: "Analisis", icon: <TbReportAnalytics />, key: "analytics" },
-    { label: "Report", icon: <TbReportAnalytics />, key: "report" },
-    { label: "Pembayaran", icon: <TbCash />, key: "payment" },
-    { label: "Tipe", icon: <TbBuilding />, key: "type" },
-    { label: "Perusahaan", icon: <TbBuilding />, key: "company" },
-    { label: "Toko", icon: <TbBuilding />, key: "store" },
+    { label: "Analisis", icon: <TbChartLine />, key: "analytics" },
+    { label: "Report", icon: <TbFileReport />, key: "report" },
+    { label: "Pembayaran", icon: <TbCashBanknote />, key: "payment" },
+    { label: "Tipe", icon: <TbTag />, key: "type" },
+    { label: "Perusahaan", icon: <TbBuildings />, key: "company" },
+    { label: "Toko", icon: <TbBuildingStore />, key: "store" },
     {
       label: "Gudang",
       icon: TbChevronDown,
       key: "gudang",
       submenu: [
         { label: "Persediaan", icon: <TbBuildingWarehouse />, key: "stock" },
-        { label: "Pembelian", icon: <TbBuildingWarehouse />, key: "pembelian" },
+        { label: "Pembelian", icon: <TbShoppingCart />, key: "pembelian" },
         {
           label: "Tabel Pembelian",
-          icon: <TbBriefcase />,
+          icon: <TbList />,
           key: "pembelian_list",
         },
       ],
@@ -99,7 +115,7 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
       key: "sales",
       submenu: [
         { label: "Sales", icon: <TbReportMoney />, key: "sales" },
-        { label: "Sales Promo", icon: <TbMoneybag />, key: "sales_campaign" },
+        { label: "Sales Promo", icon: <TbDiscount />, key: "sales_campaign" },
       ],
     },
 
@@ -109,16 +125,20 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
       key: "product",
       submenu: [
         { label: "Product", icon: <TbBox />, key: "product" },
-        { label: "Category Product", icon: <TbBox />, key: "category_product" },
-        { label: "Product Promo", icon: <TbMoneybag />, key: "item_campaign" },
-        { label: "Varian", icon: <TbShoppingBagPlus />, key: "extras" },
-        { label: "Ukuran", icon: <TbPercentage />, key: "size" },
+        {
+          label: "Category Product",
+          icon: <TbCategory />,
+          key: "category_product",
+        },
+        { label: "Product Promo", icon: <TbDiscount />, key: "item_campaign" },
+        { label: "Varian", icon: <TbSettings />, key: "extras" },
+        { label: "Ukuran", icon: <TbRuler />, key: "size" },
       ],
     },
-    { label: "Pesanan Masuk", icon: <TbBox />, key: "order_cust" },
-    { label: "Order", icon: <TbBox />, key: "order" },
+    { label: "Pesanan Masuk", icon: <TbTruckDelivery />, key: "order_cust" },
+    { label: "Order", icon: <TbShoppingBag />, key: "order" },
     { label: "Pengguna", icon: <TbUsersGroup />, key: "user" },
-    { label: "Kasir UI", icon: <TbBox />, key: "kasir" },
+    { label: "Kasir UI", icon: <TbCash />, key: "kasir" },
   ];
 
   const filteredMenuConfig = useMemo(() => {
@@ -210,7 +230,7 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
                 >
                   {item.submenu.map((subItem) => (
                     <motion.li
-                      key={item.key}
+                      key={subItem.key}
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.98 }}
                     >

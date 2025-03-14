@@ -36,10 +36,43 @@ export const fetchCategoryAdd = async (name_category) => {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-    const data = response.data;
 
-    return data;
+    return response;
   } catch (error) {
     console.error("Error fetching category:", error);
+  }
+};
+
+export const updateCategory = async (categoryId, requestBody) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.put(
+      `/api/category/${categoryId}`,
+      requestBody,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Error fetching category:", error);
+  }
+};
+
+export const deleteCategory = async (id_category) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.delete(`/api/category/${id_category}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error update category:", error);
   }
 };
