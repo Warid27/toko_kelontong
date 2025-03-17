@@ -13,7 +13,11 @@ import ImageUpload from "@/components/form/uploadImage"; // Assuming this exists
 import client from "@/libs/axios";
 import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchStoreList } from "@/libs/fetching/store";
-import { fetchUserList, addUserData } from "@/libs/fetching/user";
+import {
+  fetchUserList,
+  addUserData,
+  updateUserData,
+} from "@/libs/fetching/user";
 import { uploadImageCompress } from "@/libs/fetching/upload-service"; // Assuming this exists
 import Loading from "@/components/loading";
 
@@ -214,7 +218,7 @@ const User = () => {
         });
         if (response.status === 200) {
           toast.success("User deleted successfully");
-          setUsers((prevUsers) => prevUsers.filter((p) => p._id !== id));
+          setUsers((prevUsers) => prevUsers.filter((p) => p._id != id));
         }
       } catch (error) {
         toast.error("Failed to delete user");
@@ -237,7 +241,7 @@ const User = () => {
       // Convert empty strings to null
       const reqBody = Object.fromEntries(
         Object.entries(userDataAdd).filter(
-          ([_, value]) => value !== "" && value !== null
+          ([_, value]) => value != "" && value != null
         )
       );
 
@@ -285,12 +289,9 @@ const User = () => {
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
-      const response = await client.put(
-        `/api/user/${userDataUpdate.id}`,
-        { ...userDataUpdate, password: userDataUpdate.password || undefined }, // Avoid sending empty password
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const reqBody = { ...userDataUpdate };
+      const response = await updateUserData(reqBody, userDataUpdate.id);
+
       if (response.status === 200) {
         toast.success("User updated successfully");
         setUsers((prevUsers) =>
@@ -554,64 +555,69 @@ const User = () => {
               placeholder="Pilih Rule..."
               required
             />
-            {userDataUpdate.rule && userDataUpdate.rule !== "1" && (
-              <>
-                <p className="font-semibold mt-4 mb-2">Company</p>
-                <Select
-                  options={companyList.map((c) => ({
-                    value: c._id,
-                    label: c.name,
-                  }))}
-                  value={
-                    companyList
-                      .map((c) => ({ value: c._id, label: c.name }))
-                      .find((opt) => opt.value === userDataUpdate.id_company) ||
-                    null
-                  }
-                  onChange={(selectedOption) => {
-                    setCompanyID(
-                      userDataUpdate.id_company
-                        ? userDataUpdate.id_company
-                        : selectedOption
-                        ? selectedOption.value
-                        : null
-                    );
-                    setUserDataUpdate((prevState) => ({
-                      ...prevState,
-                      id_company: selectedOption ? selectedOption.value : "",
-                    }));
-                  }}
-                  isSearchable
-                  placeholder="Pilih Company..."
-                />
-                {userDataUpdate.rule !== "2" && companyID != null && (
-                  <>
-                    <p className="font-semibold mt-4 mb-2">Store</p>
-                    <Select
-                      options={storeList.map((s) => ({
-                        value: s._id,
-                        label: s.name,
-                      }))}
-                      value={
-                        storeList
-                          .map((s) => ({ value: s._id, label: s.name }))
-                          .find(
-                            (opt) => opt.value === userDataUpdate.id_store
-                          ) || null
-                      }
-                      onChange={(selectedOption) =>
-                        setUserDataUpdate((prevState) => ({
-                          ...prevState,
-                          id_store: selectedOption ? selectedOption.value : "",
-                        }))
-                      }
-                      isSearchable
-                      placeholder="Pilih Store..."
-                    />
-                  </>
-                )}
-              </>
-            )}
+            {userDataUpdate.rule &&
+              userDataUpdate.rule != "1" &&
+              userDataUpdate.rule != "5" && (
+                <>
+                  <p className="font-semibold mt-4 mb-2">Company</p>
+                  <Select
+                    options={companyList.map((c) => ({
+                      value: c._id,
+                      label: c.name,
+                    }))}
+                    value={
+                      companyList
+                        .map((c) => ({ value: c._id, label: c.name }))
+                        .find(
+                          (opt) => opt.value === userDataUpdate.id_company
+                        ) || null
+                    }
+                    onChange={(selectedOption) => {
+                      setCompanyID(
+                        userDataUpdate.id_company
+                          ? userDataUpdate.id_company
+                          : selectedOption
+                          ? selectedOption.value
+                          : null
+                      );
+                      setUserDataUpdate((prevState) => ({
+                        ...prevState,
+                        id_company: selectedOption ? selectedOption.value : "",
+                      }));
+                    }}
+                    isSearchable
+                    placeholder="Pilih Company..."
+                  />
+                  {userDataUpdate.rule != "2" && companyID != null && (
+                    <>
+                      <p className="font-semibold mt-4 mb-2">Store</p>
+                      <Select
+                        options={storeList.map((s) => ({
+                          value: s._id,
+                          label: s.name,
+                        }))}
+                        value={
+                          storeList
+                            .map((s) => ({ value: s._id, label: s.name }))
+                            .find(
+                              (opt) => opt.value === userDataUpdate.id_store
+                            ) || null
+                        }
+                        onChange={(selectedOption) =>
+                          setUserDataUpdate((prevState) => ({
+                            ...prevState,
+                            id_store: selectedOption
+                              ? selectedOption.value
+                              : "",
+                          }))
+                        }
+                        isSearchable
+                        placeholder="Pilih Store..."
+                      />
+                    </>
+                  )}
+                </>
+              )}
             <div className="flex justify-end mt-5">
               <CloseButton onClick={() => modalOpen("update", false)} />
               <SubmitButton />

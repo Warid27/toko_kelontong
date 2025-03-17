@@ -1,174 +1,185 @@
-// import React, { useEffect, useState } from "react";
-// import { IoSearchOutline } from "react-icons/io5";
-// import Image from "next/image";
-// import { MdKeyboardArrowDown } from "react-icons/md";
-// import client from "@/libs/axios";
-// import { FaInfoCircle } from "react-icons/fa";
-// import Swal from "sweetalert2";
-// import { MdDelete } from "react-icons/md";
-// import { FaRegEdit } from "react-icons/fa";
-// import { Modal } from "@/components/Modal";
-// import Cookies from "js-cookie";
-// import ContentRenderer from "@/components/nav/renderContents";
-// import { fetchPembelianList } from "@/libs/fetching/pembelian";
-// import { fetchTableList } from "@/libs/fetching/table";
-// import ReactPaginate from "react-paginate";
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
-// const PembelianList = ({ setSelectedLink }) => {
-//   const [listPembelian, setListPembelian] = useState([]);
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [tableList, setTableList] = useState([]);
-//   const [pembelianToUpdate, setPembelianToUpdate] = useState(null);
-//   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-//   const [currentPage, setCurrentPage] = useState(0);
-//   const itemsPerPage = 10;
-//   useEffect(() => {
-//     const token = localStorage.getItem("token");
-//     const id_store = localStorage.getItem("id_store");
-//   const fetching_requirement = async () => {
-//       const get_pembelian_list = async () => {
-//         const data_pembelian = await fetchPembelianList(id_store, token);
-//         setListPembelian(data_pembelian);
-//         setIsLoading(false);
-//       };
-//       const get_table_list = async () => {
-//         const data_table = await fetchTableList();
-//         setTableList(data_table);
-//         setIsLoading(false);
-//       };
-//       get_pembelian_list();
-//       get_table_list();
-//     };
-//     fetching_requirement();
-//   }, []);
+// Components
+import { Modal } from "@/components/Modal";
+import Header from "@/components/section/header";
+import Table from "@/components/form/table";
+import Loading from "@/components/loading";
 
-//   // Open info modal
-//   const handleInfoDetails = (pembelian) => {
-//     setPembelianToUpdate(pembelian);
-//     setIsInfoModalOpen(true);
-//   };
+import { FaInfoCircle } from "react-icons/fa";
 
-//   // Close info modal
-//   const closeModalInfo = () => {
-//     setIsInfoModalOpen(false);
-//   };
+// API Functions
+import { fetchPembelianList } from "@/libs/fetching/pembelian";
+import { fetchTableList } from "@/libs/fetching/table";
 
-//   const startIndex = currentPage * itemsPerPage;
-//   const selectedData = listPembelian.slice(startIndex, startIndex + itemsPerPage);
+const PembelianList = ({ setSelectedLink }) => {
+  const [listPembelian, setListPembelian] = useState([]);
+  const [tableList, setTableList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [pembelianToUpdate, setPembelianToUpdate] = useState(null);
 
-//   if (isLoading) {
-//     return (
-//       <div className="w-full h-screen pt-16 flex justify-center items-center">
-//         <div className="animate-spin rounded-full h-16 w-16 bpembelian-t-2 bpembelian-b-2 bpembelian-gray-900"></div>
-//       </div>
-//     );
-//   }
+  const token = localStorage.getItem("token");
+  const id_store = localStorage.getItem("id_store") || null;
 
-//   return (
-//     <div className="w-full h-screen pt-16">
-//       <div className="justify-between w-full bg-white shadow-lg p-4">
-//         <div className="flex flex-row justify-between">
-//           <div className="flex flex-col">
-//             <p className="text-2xl font-bold">Daftar Pembelianan</p>
-//             <p>Detail daftar pembelianan</p>
-//           </div>
-//         </div>
-//       </div>
-//       <div className="p-4 mt-4">
-//         <div className="bg-white rounded-lg">
-//           <div className="overflow-x-auto">
-//             {listPembelian.length === 0 ? (
-//               <h1>Data Pembelianan tidak ditemukan!</h1>
-//             ) : (
-//               <>
-//               <table className="table w-full bpembelian bpembelian-gray-300">
-//                 <thead>
-//                   <tr>
-//                     <th>No</th>
-//                     <th>No Pemb</th>
-//                     <th>Jumlah Barang</th>
-//                     <th>Total Harga</th>
-//                     <th>Total Kuantitas</th>
-//                     <th>Status</th>
-//                     <th>Aksi</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {selectedData.map((pembelian, index) => (
-//                     <tr key={pembelian._id}>
-//                       <td>{index + 1}</td>
-//                       <td>{pembelian.no}</td>
-//                       <td>{pembelian.total_number_item}</td>
-//                       <td>{pembelian.total_price}</td>
-//                       <td>{pembelian.total_quantity}</td>
-//                       <td>{pembelian.status == "2" ? "pending" : "selesai"}</td>
-//                       <td>
-//                         <button
-//                           className="p-3 rounded-lg text-2xl"
-//                           onClick={() => handleInfoDetails(pembelian)}
-//                         >
-//                           <FaInfoCircle />
-//                         </button>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//               <ReactPaginate
-//                 previousLabel={"← Prev"}
-//                 nextLabel={"Next →"}
-//                 pageCount={Math.ceil(listPembelian.length / itemsPerPage)}
-//                 onPageChange={({ selected }) => setCurrentPage(selected)}
-//                 containerClassName={"flex gap-2 justify-center mt-4"}
-//                 pageLinkClassName={"border px-3 py-1"}
-//                 previousLinkClassName={"border px-3 py-1"}
-//                 nextLinkClassName={"border px-3 py-1"}
-//                 activeClassName={"bg-blue-500 text-white"}
-//               />
-//               </>
-//             )}
-//           </div>
-//         </div>
-//       </div>
+  // Fetch initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [pembelianData, tableData] = await Promise.all([
+          fetchPembelianList(id_store, token),
+          fetchTableList(),
+        ]);
+        setListPembelian(pembelianData);
+        setTableList(tableData);
+      } catch (error) {
+        toast.error("Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [id_store, token]);
 
-//       {/* Info Modal */}
-//       {isInfoModalOpen && (
-//         <Modal onClose={closeModalInfo} title={"Pembelian Detail"}>
-//           {pembelianToUpdate?.pembelianDetails?.map((detail, index) => (
-//             <div key={index}>
-//               <div>Detail {index + 1}</div>
-//               <div className="grid grid-cols-[auto_auto_1fr] gap-y-2 font-sans">
-//                 <span className="text-left font-bold pr-2">Kode Produk</span>
-//                 <span className="font-bold px-2">:</span>
-//                 <span className="text-gray-700">
-//                   {detail.product_code || "-"}
-//                 </span>
-//                 <span className="text-left font-bold pr-2">Nama Barang</span>
-//                 <span className="font-bold px-2">:</span>
-//                 <span className="text-gray-700">{detail.name || "-"}</span>
-//                 <span className="text-left font-bold pr-2">Harga Barang</span>
-//                 <span className="font-bold px-2">:</span>
-//                 <span className="text-gray-700">
-//                   {detail.item_price || "-"}
-//                 </span>
-//                 <span className="text-left font-bold pr-2">Jumlah Barang</span>
-//                 <span className="font-bold px-2">:</span>
-//                 <span className="text-gray-700">
-//                   {detail.item_quantity || "-"}
-//                 </span>
-//                 <span className="text-left font-bold pr-2">Diskon</span>
-//                 <span className="font-bold px-2">:</span>
-//                 <span className="text-gray-700">
-//                   {detail.item_discount || "-"}
-//                 </span>
-//               </div>
-//               <hr />
-//             </div>
-//           ))}
-//         </Modal>
-//       )}
-//     </div>
-//   );
-// };
+  // Modal control
+  const modalOpen = (type, bool) => {
+    if (type === "info") setIsInfoModalOpen(bool);
+  };
 
-// export default PembelianList;
+  // Handle info details
+  const handleInfoDetails = (pembelian) => {
+    setPembelianToUpdate(pembelian);
+    modalOpen("info", true);
+  };
+
+  // Table configuration
+  const ExportHeaderTable = [
+    { label: "No", key: "no" },
+    { label: "No Pembelian", key: "no" },
+    { label: "Jumlah Barang", key: "total_number_item" },
+    { label: "Total Harga", key: "total_price" },
+    { label: "Total Kuantitas", key: "total_quantity" },
+    { label: "Status", key: "status" },
+  ];
+
+  const HeaderTable = [
+    { label: "No Pembelian", key: "no" },
+    { label: "Jumlah Barang", key: "total_number_item" },
+    {
+      label: "Total Harga",
+      key: "total_price",
+      render: (value) =>
+        new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+        }).format(value),
+    },
+    { label: "Total Kuantitas", key: "total_quantity" },
+    {
+      label: "Status",
+      key: "status",
+      render: (value) => (value === 2 ? "Pending" : "Selesai"),
+    },
+  ];
+
+  const actions = [
+    {
+      icon: <FaInfoCircle size={20} />,
+      onClick: (row) => handleInfoDetails(row),
+      className: "bg-blue-500 hover:bg-blue-600",
+    },
+  ];
+
+  const statusOptions = [
+    { value: 1, label: "Selesai" },
+    { value: 2, label: "Pending" },
+  ];
+  // Filter pembelian list based on search query
+  const filteredPembelianList = listPembelian.filter((pembelian) =>
+    pembelian.no.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (isLoading) return <Loading />;
+
+  return (
+    <div className="w-full h-screen pt-16 relative">
+      <Header
+        title="Daftar Pembelian"
+        subtitle="Detail Daftar Pembelian"
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isSearch={true}
+      />
+
+      <div className="p-4 mt-4">
+        <div className="bg-white rounded-lg">
+          {filteredPembelianList.length === 0 ? (
+            <h1 className="p-4 text-center text-gray-500">
+              Data Pembelian tidak ditemukan!
+            </h1>
+          ) : (
+            <Table
+              fileName="Daftar Pembelian"
+              ExportHeaderTable={ExportHeaderTable}
+              columns={HeaderTable}
+              data={filteredPembelianList.map((pembelian, index) => ({
+                ...pembelian,
+                no: index + 1,
+              }))}
+              actions={actions}
+              itemsPerPage={10}
+              statusOptions={statusOptions}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Info Modal */}
+      <Modal
+        isOpen={isInfoModalOpen}
+        onClose={() => modalOpen("info", false)}
+        title="Detail Pembelian"
+        width="large"
+      >
+        {pembelianToUpdate?.pembelianDetails?.map((detail, index) => (
+          <div key={index} className="mb-4">
+            <div className="font-bold">Detail {index + 1}</div>
+            <div className="grid grid-cols-[auto_auto_1fr] gap-y-2 font-sans">
+              <span className="text-left font-bold pr-2">Kode Produk</span>
+              <span className="font-bold px-2">:</span>
+              <span className="text-gray-700">
+                {detail.product_code || "-"}
+              </span>
+              <span className="text-left font-bold pr-2">Nama Barang</span>
+              <span className="font-bold px-2">:</span>
+              <span className="text-gray-700">{detail.name || "-"}</span>
+              <span className="text-left font-bold pr-2">Harga Barang</span>
+              <span className="font-bold px-2">:</span>
+              <span className="text-gray-700">
+                {new Intl.NumberFormat("id-ID", {
+                  style: "currency",
+                  currency: "IDR",
+                }).format(detail.item_price || 0)}
+              </span>
+              <span className="text-left font-bold pr-2">Jumlah Barang</span>
+              <span className="font-bold px-2">:</span>
+              <span className="text-gray-700">
+                {detail.item_quantity || "-"}
+              </span>
+              <span className="text-left font-bold pr-2">Diskon</span>
+              <span className="font-bold px-2">:</span>
+              <span className="text-gray-700">
+                {detail.item_discount || "-"}
+              </span>
+            </div>
+            <hr className="my-2" />
+          </div>
+        ))}
+      </Modal>
+    </div>
+  );
+};
+
+export default PembelianList;

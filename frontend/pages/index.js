@@ -11,7 +11,7 @@ import {
   InputFile,
   TextArea,
 } from "@/components/form/input";
-import { SubmitButton } from "@/components/form/button";
+import { SubmitButton, AddButton } from "@/components/form/button";
 
 // React Imports
 import React, { useState, useEffect } from "react";
@@ -208,12 +208,7 @@ export default function Home() {
             <p className="text-4xl font-bold">Selamat Datang</p>
             <p className="text-lg">Di Website Toko Kelontong</p>
           </div>
-          <button
-            onClick={scrollToMain}
-            className="mt-4 px-6 py-3 cursor-pointer bg-[#ff6600] text-white font-semibold rounded-full shadow-lg hover:bg-[#e65c00] transition"
-          >
-            Selengkapnya
-          </button>
+          <AddButton content="Selengkapnya" onClick={scrollToMain} />
         </div>
       </div>
 
@@ -228,12 +223,11 @@ export default function Home() {
           Discover tranquility at Ngopi, a sanctuary for unwinding, where your
           evenings are perfected with relaxation and rich flavors.
         </p>
-        <button
+        <AddButton
+          content="Explore Features"
           onClick={() => router.push("/features")}
-          className="mt-4 px-6 py-3 cursor-pointer bg-[#ff6600] text-white font-semibold rounded-full shadow-lg hover:bg-[#e65c00] transition"
-        >
-          Explore Features
-        </button>
+        />
+
         <div className="flex flex-row flex-wrap justify-center gap-3 mt-12 w-full overflow-hidden">
           {[...Array(5)].map((_, index) => (
             <div

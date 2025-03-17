@@ -30,11 +30,6 @@ table * {
   text-align: center;
 }
 
-/* NAVBAR */
-.navbar {
-  background: var(--bg-primary);
-}
-
 /* === BUTTON === */
 .addBtn,
 .submitBtn,
@@ -166,8 +161,12 @@ table * {
 /* === BUTTON === */
 
 /* Remove spinners for WebKit browsers (Chrome, Safari, Edge) */
-input[type="number"].spinner-none::-webkit-inner-spin-button,
-input[type="number"].spinner-none::-webkit-outer-spin-button {
+.spinner-none::-webkit-inner-spin-button,
+.spinner-none::-webkit-outer-spin-button {
   -webkit-appearance: none !important;
-  margin: 0;
+  appearance: none !important;
+  margin: 0 !important;
+}
+.spinner-none {
+  -moz-appearance: textfield !important;
 }

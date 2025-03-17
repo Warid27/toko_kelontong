@@ -11,11 +11,11 @@ const Card = ({
   hargaDiskon,
   nama,
   diskon,
-  stock,
+  stock = null,
 }) => {
   const stockClass =
-    stock === "not set" ? "" : Number(stock) <= 0 ? "opacity-50" : "";
-
+    stock === null ? "" : Number(stock) <= 0 ? "opacity-50" : "";
+  console.log("SETOK", stock);
   return (
     <motion.div
       className={`card bg-base-300 w-${lebar} shadow-xl cursor-pointer overflow-hidden relative ${stockClass}`}
@@ -45,9 +45,7 @@ const Card = ({
         />
       </figure>
       <div className="card-body bg-white p-4 text-left">
-        {stock === 0 && stock < 1 && (
-          <p className="font-bold text-red-500">Produk Habis</p>
-        )}
+        {stock <= 0 && <p className="font-bold text-red-500">Produk Habis</p>}
         <h2 className="card-title text-lg font-semibold">{nama}</h2>
         <div className={`relative ${hargaDiskon ? "mt-3 ms-2" : ""}`}>
           {hargaDiskon && (

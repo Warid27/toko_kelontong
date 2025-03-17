@@ -308,7 +308,7 @@ router.post("/sales-chart", authenticate, async (c) => {
 
 router.post("/totalsales", authenticate, async (c) => {
   try {
-    const { id_store, id_company, filterRekapBy, filterBy, selectedDate} =
+    const { id_store, id_company, filterRekapBy, filterBy, selectedDate } =
       await c.req.json();
 
     if (
@@ -342,10 +342,7 @@ router.post("/totalsales", authenticate, async (c) => {
       start_date = new Date(date.getFullYear(), 0, 1);
       end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
     } else {
-      return c.json(
-        { success: false, message: "Invalid filterBy value" },
-        400
-      );
+      return c.json({ success: false, message: "Invalid filterBy value" }, 400);
     }
 
     let filter = {};
@@ -390,7 +387,6 @@ router.post("/totalsales", authenticate, async (c) => {
     return c.json({ success: false, message: error.message }, 500);
   }
 });
-
 
 // router.post("/totalsales", authenticate, async (c) => {
 //   try {
@@ -523,10 +519,7 @@ router.post("/transaksi-history", authenticate, async (c) => {
       start_date = new Date(date.getFullYear(), 0, 1);
       end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
     } else {
-      return c.json(
-        { success: false, message: "Invalid filterBy value" },
-        400
-      );
+      return c.json({ success: false, message: "Invalid filterBy value" }, 400);
     }
 
     const matchQuery = {
@@ -687,10 +680,7 @@ router.post("/sales-count", authenticate, async (c) => {
       start_date = new Date(date.getFullYear(), 0, 1);
       end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
     } else {
-      return c.json(
-        { success: false, message: "Invalid filterBy value" },
-        400
-      );
+      return c.json({ success: false, message: "Invalid filterBy value" }, 400);
     }
 
     const salesCount = await SalesModels.aggregate([
@@ -808,10 +798,7 @@ router.post("/profitsales", authenticate, async (c) => {
       start_date = new Date(date.getFullYear(), 0, 1);
       end_date = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
     } else {
-      return c.json(
-        { success: false, message: "Invalid filterBy value" },
-        400
-      );
+      return c.json({ success: false, message: "Invalid filterBy value" }, 400);
     }
 
     const sales = await SalesModels.aggregate([

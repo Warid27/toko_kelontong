@@ -1,33 +1,42 @@
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+
+// Icons
 import { IoSearchOutline } from "react-icons/io5";
-import Image from "next/image";
-import { MdKeyboardArrowDown } from "react-icons/md";
-import client from "@/libs/axios";
-import { Modal } from "@/components/Modal";
-import { HiDotsHorizontal } from "react-icons/hi";
-import Swal from "sweetalert2";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
+
+// Components
+import { SubmitButton, CloseButton } from "@/components/form/button";
+import Table from "@/components/form/table";
+import { Modal } from "@/components/Modal";
+import Header from "@/components/section/header";
+import Loading from "@/components/loading";
 import DateTimePicker from "@/components/DateTimePicker";
-import Select from "react-select";
+
+// Libraries
 import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchUserList } from "@/libs/fetching/user";
 import { fetchStoreList } from "@/libs/fetching/store";
-import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
+import { fetchItemCampaignList, addItemCampaign, updateItemCampaign, deleteItemCampaign } from "@/libs/fetching/itemCampaign";
+import client from "@/libs/axios";
+
+// Packages
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const ItemCampaign = () => {
   const [itemCampaign, setItemCampaign] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
-  const [itemCampaignToUpdate, setItemCampaignToUpdate] = useState(null); // Untuk menyimpan produk yang akan diupdate
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Untuk mengontrol tampilan modal update
-  const [loading, setLoading] = useState(false); // Untuk loading saat update status
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [itemCampaignToUpdate, setItemCampaignToUpdate] = useState(null);
+
   const [storeList, setStoreList] = useState([]);
   const [companyList, setCompanyList] = useState([]);
   const [userList, setUserList] = useState([]);
-  const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 10;
   const [searchQuery, setSearchQuery] = useState("");
 
   const [itemCampaignDataAdd, setItemCampaignDataAdd] = useState({
@@ -36,7 +45,6 @@ const ItemCampaign = () => {
     value: "",
     start_date: new Date(),
     end_date: new Date(),
-    status: "",
   });
 
   const [itemCampaignDataUpdate, setItemCampaignDataUpdate] = useState({
@@ -46,97 +54,94 @@ const ItemCampaign = () => {
     value: "",
     start_date: new Date(),
     end_date: new Date(),
-    status: "",
   });
-  const id_store =
-    localStorage.getItem("id_store") == "undefined"
-      ? null
-      : localStorage.getItem("id_store");
-  const id_company =
-    localStorage.getItem("id_company") == "undefined"
-      ? null
-      : localStorage.getItem("id_company");
-  const id_user =
-    localStorage.getItem("id_user") == "undefined"
-      ? null
-      : localStorage.getItem("id_user");
+
+  const id_store = localStorage.getItem("id_store") === "undefined" ? null : localStorage.getItem("id_store");
+  const id_company = localStorage.getItem("id_company") === "undefined" ? null : localStorage.getItem("id_company");
+  const id_user = localStorage.getItem("id_user") === "undefined" ? null : localStorage.getItem("id_user");
   const token = localStorage.getItem("token");
 
-  // --- Function
+  // Header Table
+  const ExportHeaderTable = [
+    { label: "No", key: "no" },
+    { label: "Nama Item Campaign", key: "item_campaign_name" },
+    { label: "Rules", key: "rules" },
+    { label: "Start Date", key: "start_date" },
+    { label: "End Date", key: "end_date" },
+    { label: "Value", key: "value" },
+  ];
+
+  const HeaderTable = [
+    { label: "Nama Item Campaign", key: "item_campaign_name" },
+    { label: "Rules", key: "rules" },
+    { label: "Start Date", key: "start_date" },
+    { label: "End Date", key: "end_date" },
+    { 
+      label: "Value", 
+      key: "value",
+      render: (value) => `${(value * 100)}%`, // Tampilkan value sebagai persentase
+    },
+  ];
+
+  const actions = [
+    {
+      icon: <MdDelete size={20} />,
+      onClick: (row) => deleteItemCampaignById(row._id),
+      className: "bg-red-500 hover:bg-red-600",
+    },
+    {
+      icon: <FaRegEdit size={20} />,
+      onClick: (row) => handleUpdateItemCampaign(row),
+      className: "bg-blue-500 hover:bg-blue-600",
+    },
+  ];
+
+  // --- Functions
   const modalOpen = (param, bool) => {
-    const setters = {
-      add: setIsModalOpen,
-      update: setIsUpdateModalOpen,
-    };
-    if (setters[param]) {
-      setters[param](bool);
-    }
+    const setters = { add: setIsModalOpen, update: setIsUpdateModalOpen };
+    if (setters[param]) setters[param](bool);
   };
 
   useEffect(() => {
     const fetching_requirement = async () => {
-      const get_user_list = async () => {
-        const data_user = await fetchUserList();
-        setUserList(data_user);
-        setIsLoading(false);
-      };
-      const get_company_list = async () => {
-        const data_company = await fetchCompanyList();
-        setCompanyList(data_company);
-        setIsLoading(false);
-      };
-      const get_store_list = async () => {
-        const data_store = await fetchStoreList();
-        setStoreList(data_store);
-        setIsLoading(false);
-      };
-      const get_itemCampaign_list = async () => {
-        const data_itemCampaign = await fetchItemCampaignList();
-        setItemCampaign(data_itemCampaign);
-        setIsLoading(false);
-      };
-      get_user_list();
-      get_company_list();
-      get_store_list();
-      get_itemCampaign_list();
+      const get_user_list = async () => { const data = await fetchUserList(); setUserList(data); };
+      const get_company_list = async () => { const data = await fetchCompanyList(); setCompanyList(data); };
+      const get_store_list = async () => { const data = await fetchStoreList(); setStoreList(data); };
+      const get_itemCampaign_list = async () => { const data = await fetchItemCampaignList(); setItemCampaign(data); };
+      await Promise.all([get_user_list(), get_company_list(), get_store_list(), get_itemCampaign_list()]);
+      setIsLoading(false);
     };
     fetching_requirement();
   }, []);
 
-  const handleUpdateItemCampaign = (itemCampaign, params) => {
-    setItemCampaignToUpdate(itemCampaign); // Menyimpan produk yang dipilih
-    modalOpen(params, true);
+  const handleUpdateItemCampaign = (itemCampaign) => {
+    setItemCampaignToUpdate(itemCampaign);
+    modalOpen("update", true);
   };
 
   const deleteItemCampaignById = async (id) => {
-    const result = await Swal.fire({
+    Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Yes, delete it!",
       cancelButtonText: "No, cancel!",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const response = await client.delete(`/api/itemcampaign/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.status === 200) {
-          Swal.fire("Berhasil", "ItemCampaign berhasil dihapus!", "success");
-          setItemCampaign((prevItemCampaigns) =>
-            prevItemCampaigns.filter((p) => p._id !== id)
-          );
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await deleteItemCampaign(id);
+          if (response.status === 200) {
+            toast.success("Item Campaign berhasil dihapus!");
+            setItemCampaign((prev) => prev.filter((p) => p._id !== id));
+          }
+        } catch (error) {
+          toast.error("Gagal menghapus Item Campaign: " + error.message);
         }
-      } catch (error) {
-        console.error("Gagal menghapus ItemCampaign:", error.message);
-        Swal.fire("Gagal", "ItemCampaign tidak dapat dihapus!", "error");
       }
-    }
+    });
   };
 
   const handleChangeAdd = (value, name) => {
@@ -148,10 +153,7 @@ const ItemCampaign = () => {
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
-    console.log("datanya cok asuk", itemCampaignDataAdd);
-
     try {
-      // Ensure all required fields are filled
       if (
         !itemCampaignDataAdd.item_campaign_name ||
         !itemCampaignDataAdd.rules ||
@@ -159,41 +161,37 @@ const ItemCampaign = () => {
         !itemCampaignDataAdd.start_date ||
         !itemCampaignDataAdd.end_date
       ) {
-        alert("Please fill all required fields.");
+        toast.error("Please fill all required fields.");
         return;
       }
-
-      let value = itemCampaignDataAdd.value;
-
-      value = itemCampaignDataAdd.value / 100;
-
-      // Send product data to the backend
-      const response = await client.post(
-        "/itemcampaign/additemcampaign",
-        {
-          item_campaign_name: itemCampaignDataAdd.item_campaign_name,
-          rules: itemCampaignDataAdd.rules,
-          value: value,
-          start_date: itemCampaignDataAdd.start_date,
-          end_date: itemCampaignDataAdd.end_date,
-          id_store: id_store,
-          id_company: id_company,
-          id_user: id_user,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      // Auto Reload
-      modalOpen("add", false);
-      Swal.fire("Berhasil", "Item Campaign berhasil ditambahkan!", "success");
-      setItemCampaign((prevItemCampaigns) => [
-        ...prevItemCampaigns,
-        response.data,
-      ]);
+      const value = parseFloat(itemCampaignDataAdd.value) / 100; // Konversi persentase ke desimal
+      const reqBody = {
+        item_campaign_name: itemCampaignDataAdd.item_campaign_name,
+        rules: itemCampaignDataAdd.rules,
+        value: value,
+        start_date: itemCampaignDataAdd.start_date,
+        end_date: itemCampaignDataAdd.end_date,
+        id_store: id_store,
+        id_company: id_company,
+        id_user: id_user,
+      };
+      const response = await addItemCampaign(reqBody);
+      if (response.status === 201) {
+        modalOpen("add", false);
+        toast.success("Item Campaign berhasil ditambahkan!");
+        setItemCampaignDataAdd({
+          item_campaign_name: "",
+          rules: "",
+          value: "",
+          start_date: new Date(),
+          end_date: new Date(),
+        });
+        setItemCampaign((prev) => [...prev, response.data]);
+      } else {
+        toast.error("Gagal: " + response.error);
+      }
     } catch (error) {
-      console.error("Error adding ItemCampaign:", error);
+      toast.error("Error adding Item Campaign: " + error.message);
     }
   };
 
@@ -201,11 +199,11 @@ const ItemCampaign = () => {
     if (itemCampaignToUpdate) {
       setItemCampaignDataUpdate({
         id: itemCampaignToUpdate._id || "",
-        item_campaign_name: itemCampaignToUpdate.item_campaign_name || "", // Menyimpan URL gambar lama
+        item_campaign_name: itemCampaignToUpdate.item_campaign_name || "",
         rules: itemCampaignToUpdate.rules || "",
-        value: itemCampaignToUpdate.value * 100 || "",
-        start_date: itemCampaignToUpdate.start_date || "",
-        end_date: itemCampaignToUpdate.end_date || "",
+        value: (itemCampaignToUpdate.value * 100) || "", // Konversi desimal ke persentase
+        start_date: itemCampaignToUpdate.start_date ? new Date(itemCampaignToUpdate.start_date) : new Date(),
+        end_date: itemCampaignToUpdate.end_date ? new Date(itemCampaignToUpdate.end_date) : new Date(),
       });
     }
   }, [itemCampaignToUpdate]);
@@ -213,55 +211,39 @@ const ItemCampaign = () => {
   const handleChangeUpdate = (value, name) => {
     setItemCampaignDataUpdate((prevState) => ({
       ...prevState,
-      [name]: value instanceof Date ? value.toISOString() : value, // 🔹 Hanya ubah `Date` ke ISO
+      [name]: value instanceof Date ? value.toISOString() : value,
     }));
   };
 
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
-
-    const formData = new FormData();
-    for (const key in itemCampaignDataUpdate) {
-      formData.append(key, itemCampaignDataUpdate[key]);
-    }
-
     try {
-      let value = itemCampaignDataUpdate.value;
-
-      value = itemCampaignDataUpdate.value / 100;
-
-      const response = await client.put(
-        `/api/itemcampaign/${itemCampaignDataUpdate.id}`,
-        {
-          item_campaign_name: itemCampaignDataUpdate.item_campaign_name || "", // Menyimpan URL gambar lama
-          rules: itemCampaignDataUpdate.rules || "",
-          value: value || "",
-          start_date: itemCampaignDataUpdate.start_date || "",
-          end_date: itemCampaignDataUpdate.end_date || "",
-          id_store: id_store,
-          id_company: id_company,
-          id_user: id_user,
-        },
-
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Auto Reload
-      modalOpen("update", false);
-      Swal.fire("Berhasil", "item campaign berhasil diupdate!", "success");
-      setItemCampaign((prevItemCampaigns) =>
-        prevItemCampaigns.map((itemCampaign) =>
-          itemCampaign._id === itemCampaignDataUpdate.id
-            ? response.data
-            : itemCampaign
-        )
-      );
+      setLoading(true);
+      const value = parseFloat(itemCampaignDataUpdate.value) / 100; // Konversi persentase ke desimal
+      const reqBody = {
+        item_campaign_name: itemCampaignDataUpdate.item_campaign_name,
+        rules: itemCampaignDataUpdate.rules,
+        value: value,
+        start_date: itemCampaignDataUpdate.start_date,
+        end_date: itemCampaignDataUpdate.end_date,
+        id_store: id_store,
+        id_company: id_company,
+        id_user: id_user,
+      };
+      const response = await updateItemCampaign(itemCampaignDataUpdate.id, reqBody);
+      if (response.status === 200) {
+        modalOpen("update", false);
+        toast.success("Item Campaign berhasil diupdate!");
+        setItemCampaign((prev) =>
+          prev.map((item) => (item._id === itemCampaignDataUpdate.id ? response.data : item))
+        );
+      } else {
+        toast.error("Gagal: " + response.error);
+      }
     } catch (error) {
-      console.error("Error updating ItemCampaign:", error);
+      toast.error("Error updating Item Campaign: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -269,132 +251,46 @@ const ItemCampaign = () => {
     item.item_campaign_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const startIndex = currentPage * itemsPerPage;
-  const selectedData = filteredItemCampaignList.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const dataForExport = filteredItemCampaignList.map((item, index) => ({
+    no: index + 1,
+    item_campaign_name: item.item_campaign_name,
+    rules: item.rules,
+    start_date: item.start_date,
+    end_date: item.end_date,
+    value: `${(item.value * 100)}%`,
+  }));
 
-  if (isLoading) {
-    return (
-      <div className="w-full h-screen pt-16 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
+  if (isLoading) return <Loading />;
 
   return (
-    <div className="w-full h-screen pt-16">
-      <div className="justify-between w-full bg-white shadow-lg p-4">
-        <div className="flex flex-row justify-between">
-          <div className="flex flex-col">
-            <p className="text-2xl font-bold">Daftar Item Campaign</p>
-            <p>Detail Daftar Item Campaign</p>
-          </div>
-          <div className="relative mt-2 flex flex-row space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Cari diskon..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 pr-4 py-2 border border-gray-300 rounded-md w-full max-w-xs bg-white"
-              />
-              <IoSearchOutline className="absolute left-2 top-2.5 text-xl text-gray-500" />
-            </div>
-            <div className="avatar">
-              <div className="w-10 h-10 rounded-full">
-                <Image
-                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                />
-              </div>
-            </div>
-            <button className="button btn-ghost btn-sm rounded-lg">
-              <MdKeyboardArrowDown className="text-2xl mt-1" />
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-row justify-between mt-8">
-          <div>
-            <select className="select w-full max-w-xs bg-white border-gray-300">
-              <option value="">Best sellers</option>
-              <option value="">Ricebowl</option>
-              <option value="">Milkshake</option>
-            </select>
-          </div>
-          <div>
-            <button className="addBtn" onClick={() => modalOpen("add", true)}>
-              + Tambah ItemCampaign
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="w-full h-screen pt-16 relative">
+      <Header
+        title="Daftar Item Campaign"
+        subtitle="Detail Daftar Item Campaign"
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        modalOpen={modalOpen}
+        isSearch={true}
+        isAdd={true}
+      />
+
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          <div>
-            {filteredItemCampaignList.length === 0 ? (
-              <h1>Data campaign tidak ditemukan!</h1>
-            ) : (
-              <>
-                <table className="table w-full border border-gray-300">
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Nama Item Campaign</th>
-                      <th>Rules</th>
-                      <th>Start Date</th>
-                      <th>End Date</th>
-                      <th>Value</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedData.map((itemCampaign, index) => (
-                      <tr key={itemCampaign._id}>
-                        <td>{startIndex + index + 1}</td>
-                        <td>{itemCampaign.item_campaign_name}</td>
-                        <td>{itemCampaign.rules}</td>
-                        <td>{itemCampaign.start_date}</td>
-                        <td>{itemCampaign.end_date}</td>
-                        <td>{itemCampaign.value * 100}%</td>
-                        <td className="flex space-x-4">
-                          {" "}
-                          {/* Beri jarak antar tombol */}
-                          <button
-                            className=" p-3 rounded-lg text-2xl "
-                            onClick={() =>
-                              deleteItemCampaignById(itemCampaign._id)
-                            }
-                          >
-                            <MdDelete />
-                          </button>
-                          <button
-                            className=" p-3 rounded-lg text-2xl "
-                            onClick={() =>
-                              handleUpdateItemCampaign(itemCampaign, "update")
-                            }
-                          >
-                            <FaRegEdit />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-              </>
-            )}
-          </div>
+          {filteredItemCampaignList.length === 0 ? (
+            <h1>Data campaign tidak ditemukan!</h1>
+          ) : (
+            <Table
+              fileName="Data Item Campaign"
+              ExportHeaderTable={ExportHeaderTable}
+              columns={HeaderTable}
+              data={filteredItemCampaignList}
+              actions={actions}
+            />
+          )}
         </div>
       </div>
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => modalOpen("add", false)}
-        title={"Tambah Item Campaign"}
-      >
+
+      <Modal isOpen={isModalOpen} onClose={() => modalOpen("add", false)} title="Tambah Item Campaign" width="large">
         <form onSubmit={handleSubmitAdd}>
           <p className="font-semibold mt-4">Nama Item Campaign</p>
           <input
@@ -415,33 +311,24 @@ const ItemCampaign = () => {
             required
           />
           <p className="font-semibold mt-4">Start Date</p>
-          {/* <DateTimePicker onChange={handleChangeAdd} value={itemCampaignDataAdd.start_date} name="start_date"></DateTimePicker> */}
           <DateTimePicker
             onChange={(date) => handleChangeAdd(date, "start_date")}
-            value={
-              itemCampaignDataAdd.start_date
-                ? new Date(itemCampaignDataAdd.start_date)
-                : null
-            }
+            value={itemCampaignDataAdd.start_date ? new Date(itemCampaignDataAdd.start_date) : null}
             name="start_date"
+            format="yyyy-MM-dd HH:mm"
+            className="border p-2 rounded bg-white w-full"
           />
           <p className="font-semibold mt-4">End Date</p>
           <DateTimePicker
             onChange={(date) => handleChangeAdd(date, "end_date")}
-            value={
-              itemCampaignDataAdd.end_date
-                ? new Date(itemCampaignDataAdd.end_date)
-                : null
-            }
-            minDate={
-              itemCampaignDataAdd.start_date
-                ? new Date(itemCampaignDataAdd.start_date)
-                : null
-            }
+            value={itemCampaignDataAdd.end_date ? new Date(itemCampaignDataAdd.end_date) : null}
+            minDate={itemCampaignDataAdd.start_date ? new Date(itemCampaignDataAdd.start_date) : null}
             name="end_date"
+            format="yyyy-MM-dd HH:mm"
+            className="border p-2 rounded bg-white w-full"
           />
           <p className="font-semibold mt-4 mb-2">Value</p>
-          <div className="relative mt-4">
+          <div className="relative">
             <input
               type="number"
               name="value"
@@ -457,26 +344,14 @@ const ItemCampaign = () => {
               %
             </span>
           </div>
-
           <div className="flex justify-end mt-5">
-            <button
-              type="button"
-              className="closeBtn"
-              onClick={() => modalOpen("add", false)}
-            >
-              Batal
-            </button>
-            <button type="submit" className="submitBtn">
-              Tambah
-            </button>
+            <CloseButton onClick={() => modalOpen("add", false)} />
+            <SubmitButton />
           </div>
         </form>
       </Modal>
-      <Modal
-        isOpen={isUpdateModalOpen}
-        onClose={() => modalOpen("update", false)}
-        title={"Edit Item Campaign"}
-      >
+
+      <Modal isOpen={isUpdateModalOpen} onClose={() => modalOpen("update", false)} title="Edit Item Campaign" width="large">
         <form onSubmit={handleSubmitUpdate}>
           <p className="font-semibold mt-4">Nama Item Campaign</p>
           <input
@@ -498,40 +373,28 @@ const ItemCampaign = () => {
           />
           <p className="font-semibold mt-4">Start Date</p>
           <DateTimePicker
-            value={startDate}
-            onChange={(date) => {
-              setStartDate(date);
-              handleChangeAdd(date, "start_date");
-
-              // Ensure end date is not before start date
-              if (endDate && date && endDate < date) {
-                setEndDate(date);
-                handleChangeAdd(date, "end_date");
-              }
-            }}
-            format="yyyy-MM-dd"
+            onChange={(date) => handleChangeUpdate(date, "start_date")}
+            value={itemCampaignDataUpdate.start_date ? new Date(itemCampaignDataUpdate.start_date) : null}
+            name="start_date"
+            format="yyyy-MM-dd HH:mm"
             className="border p-2 rounded bg-white w-full"
           />
           <p className="font-semibold mt-4">End Date</p>
           <DateTimePicker
-            value={endDate}
-            onChange={(date) => {
-              setEndDate(date);
-              handleChangeAdd(date, "end_date");
-            }}
-            format="yyyy-MM-dd"
-            minDate={startDate} // Prevent selecting a date before Start Date
+            onChange={(date) => handleChangeUpdate(date, "end_date")}
+            value={itemCampaignDataUpdate.end_date ? new Date(itemCampaignDataUpdate.end_date) : null}
+            minDate={itemCampaignDataUpdate.start_date ? new Date(itemCampaignDataUpdate.start_date) : null}
+            name="end_date"
+            format="yyyy-MM-dd HH:mm"
             className="border p-2 rounded bg-white w-full"
           />
           <p className="font-semibold mt-4 mb-2">Value</p>
-          <div className="relative mt-4">
+          <div className="relative">
             <input
               type="number"
               name="value"
               value={itemCampaignDataUpdate.value}
-              onChange={(e) =>
-                handleChangeUpdate(e.target.value, e.target.name)
-              }
+              onChange={(e) => handleChangeUpdate(e.target.value, e.target.name)}
               className="border rounded-md p-2 pr-8 w-full bg-white"
               required
               max={99}
@@ -543,15 +406,8 @@ const ItemCampaign = () => {
             </span>
           </div>
           <div className="flex justify-end mt-5">
-            <button
-              onClick={() => modalOpen("update", false)}
-              className="closeBtn"
-            >
-              Batal{" "}
-            </button>
-            <button type="submit" className="submitBtn">
-              Simpan
-            </button>
+            <CloseButton onClick={() => modalOpen("update", false)} />
+            <SubmitButton />
           </div>
         </form>
       </Modal>

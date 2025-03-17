@@ -26,7 +26,7 @@ export const BaseButton = ({
         <span
           className={`absolute inset-0 ${gradient} opacity-50 hover:opacity-100 blur-lg`}
         ></span>
-        <span className="relative z-10">{content}</span>
+        <span className="relative z-10 ">{content}</span>
       </button>
     </motion.div>
   );

@@ -86,7 +86,7 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
     const intervalId = setInterval(updateStateFromLocalStorage, 1000);
 
     return () => clearInterval(intervalId);
-  }, []); // Run only once on component mount
+  }, []);
 
   const menuConfig = [
     { label: "Analisis", icon: <TbChartLine />, key: "analytics" },

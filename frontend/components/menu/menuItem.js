@@ -7,7 +7,7 @@ const MenuItem = ({ icon, label, onClick, isActive }) => {
       onClick={onClick}
       className="flex items-center py-2 px-4 cursor-pointer"
       animate={{
-        backgroundColor: isActive ? "#2A323C" : "transparent",
+        backgroundColor: isActive ? "#2A323C" : "rgba(0, 0, 0, 0)",
       }}
       whileHover={{
         backgroundColor: isActive ? "#2A323C" : "#6B7280",
@@ -19,7 +19,7 @@ const MenuItem = ({ icon, label, onClick, isActive }) => {
         className="w-full"
         whileHover={{ scale: 1.01, color: "#D1D5DB" }}
         whileTap={{ scale: 0.99 }}
-        animate={{ color: isActive ? "#D1D5DB" : "inherit" }}
+        animate={{ color: isActive ? "#D1D5DB" : "#000000" }}
       >
         <motion.div className="w-full flex items-center">
           {icon && React.cloneElement(icon, { className: "mr-2" })}

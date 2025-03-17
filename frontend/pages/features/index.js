@@ -1,153 +1,279 @@
-import React from "react";
-import { useRouter } from "next/router";
+// Component Imports
+import Footer from "@/components/Footer";
 import Topbar from "@/components/Topbar";
+import Carousel from "@/components/carousel/carousel";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
+import {
+  InputText,
+  InputNumber,
+  InputEmail,
+  InputPassword,
+  InputFile,
+  TextArea,
+} from "@/components/form/input";
+import { SubmitButton, AddButton } from "@/components/form/button";
+
+// React Imports
+import React, { useState, useEffect } from "react";
+
+// Next.js Imports
+import Image from "next/image";
+import { useRouter } from "next/router";
+import { toast } from "react-toastify";
+
+// Data Fetching Imports
+import { fetchCompanyListLogo } from "@/libs/fetching/company";
+import { listStoreStatus } from "@/libs/fetching/store";
+import { listProductStatus } from "@/libs/fetching/product";
+import { sendMessage } from "@/libs/fetching/contact-service";
+
+// Icon Imports
+import { MdSpeed, MdTrendingUp, MdBarChart, MdReceipt } from "react-icons/md";
 
 const Features = () => {
+  const [companyData, setCompanyData] = useState([]);
+  const [storeData, setStoreData] = useState([]);
+  const [productData, setProductData] = useState([]);
   const router = useRouter();
+  const motiveLength = 8;
+  const baseURL = "http://localhost:8080";
+
+  const [contactData, setContactData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const handleChangeContact = (e) => {
+    const { name, value } = e.target;
+    setContactData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
+  useEffect(() => {
+    const fetchingRequirements = async () => {
+      const storeLength = async () => {
+        try {
+          const response = await listStoreStatus();
+          if (response?.data) {
+            setStoreData(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching company logos:", error);
+        }
+      };
+
+      const productLength = async () => {
+        try {
+          const response = await listProductStatus();
+          if (response?.data) {
+            setProductData(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching company logos:", error);
+        }
+      };
+
+      const fetchCompanyLogo = async () => {
+        try {
+          const response = await fetchCompanyListLogo();
+          if (response?.data) {
+            setCompanyData(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching company logos:", error);
+        }
+      };
+
+      fetchCompanyLogo();
+      storeLength();
+      productLength();
+    };
+    fetchingRequirements();
+  }, []);
+
+  const stats = [
+    { count: `${companyData.length}+`, label: "Company" },
+    { count: `${storeData.length}+`, label: "Store" },
+    { count: `${productData.length}+`, label: "Product" },
+    // { count: "40+", label: "Global Achievement" },
+  ];
+
+  const scrollToMain = () => {
+    const mainSection = document.getElementById("main");
+    if (mainSection) {
+      mainSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+
+    const { name, email, message } = contactData;
+
+    if (!name || !email || !message) {
+      toast.error("Please fill all required fields.");
+      return;
+    }
+
+    try {
+      const reqBody = { name, email, message };
+
+      const response = await sendMessage(reqBody);
+
+      if (response.status === 200) {
+        toast.success("Pesan terkirim!");
+        setContactData({
+          name: "",
+          email: "",
+          message: "",
+        });
+      } else {
+        toast.error(
+          `Pesan Gagal Dikirim: ${response.statusText || "Unknown error"}`
+        );
+      }
+    } catch (error) {
+      console.error("Pesan Gagal Dikirim:", error);
+      toast.error("Terjadi kesalahan saat mengirim pesan.");
+    }
+  };
 
   return (
-    <div>
-      <Topbar homePage={true} />
-
-      <p>Features</p>
-      <div>
-        Հայերեն Shqip ‫العربية Български Català 中文简体 Hrvatski Česky Dansk
-        Nederlands English Eesti Filipino Suomi Français ქართული Deutsch
-        Ελληνικά ‫עברית हिन्दी Magyar Indonesia Italiano Latviski Lietuviškai
-        македонски Melayu Norsk Polski Português Româna Pyccкий Српски
-        Slovenčina Slovenščina Español Svenska ไทย Türkçe Українська Tiếng Việt
-        Lorem Ipsum "Neque porro quisquam est qui dolorem ipsum quia dolor sit
-        amet, consectetur, adipisci velit..." "There is no one who loves pain
-        itself, who seeks after it and wants to have it, simply because it is
-        pain..." What is Lorem Ipsum? Lorem Ipsum is simply dummy text of the
-        printing and typesetting industry. Lorem Ipsum has been the industry's
-        standard dummy text ever since the 1500s, when an unknown printer took a
-        galley of type and scrambled it to make a type specimen book. It has
-        survived not only five centuries, but also the leap into electronic
-        typesetting, remaining essentially unchanged. It was popularised in the
-        1960s with the release of Letraset sheets containing Lorem Ipsum
-        passages, and more recently with desktop publishing software like Aldus
-        PageMaker including versions of Lorem Ipsum. Why do we use it? It is a
-        long established fact that a reader will be distracted by the readable
-        content of a page when looking at its layout. The point of using Lorem
-        Ipsum is that it has a more-or-less normal distribution of letters, as
-        opposed to using 'Content here, content here', making it look like
-        readable English. Many desktop publishing packages and web page editors
-        now use Lorem Ipsum as their default model text, and a search for 'lorem
-        ipsum' will uncover many web sites still in their infancy. Various
-        versions have evolved over the years, sometimes by accident, sometimes
-        on purpose (injected humour and the like). Where does it come from?
-        Contrary to popular belief, Lorem Ipsum is not simply random text. It
-        has roots in a piece of classical Latin literature from 45 BC, making it
-        over 2000 years old. Richard McClintock, a Latin professor at
-        Hampden-Sydney College in Virginia, looked up one of the more obscure
-        Latin words, consectetur, from a Lorem Ipsum passage, and going through
-        the cites of the word in classical literature, discovered the
-        undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33
-        of "de Finibus Bonorum et Malorum" (The Extremes of Good and Evil) by
-        Cicero, written in 45 BC. This book is a treatise on the theory of
-        ethics, very popular during the Renaissance. The first line of Lorem
-        Ipsum, "Lorem ipsum dolor sit amet..", comes from a line in section
-        1.10.32. The standard chunk of Lorem Ipsum used since the 1500s is
-        reproduced below for those interested. Sections 1.10.32 and 1.10.33 from
-        "de Finibus Bonorum et Malorum" by Cicero are also reproduced in their
-        exact original form, accompanied by English versions from the 1914
-        translation by H. Rackham. Where can I get some? There are many
-        variations of passages of Lorem Ipsum available, but the majority have
-        suffered alteration in some form, by injected humour, or randomised
-        words which don't look even slightly believable. If you are going to use
-        a passage of Lorem Ipsum, you need to be sure there isn't anything
-        embarrassing hidden in the middle of text. All the Lorem Ipsum
-        generators on the Internet tend to repeat predefined chunks as
-        necessary, making this the first true generator on the Internet. It uses
-        a dictionary of over 200 Latin words, combined with a handful of model
-        sentence structures, to generate Lorem Ipsum which looks reasonable. The
-        generated Lorem Ipsum is therefore always free from repetition, injected
-        humour, or non-characteristic words etc. 5 paragraphs words bytes lists
-        Start with 'Lorem ipsum dolor sit amet...' Donate: If you use this site
-        regularly and would like to help keep the site on the Internet, please
-        consider donating a small sum to help pay for the hosting and bandwidth
-        bill. There is no minimum donation, any sum is appreciated - click here
-        to donate using PayPal. Thank you for your support. Donate bitcoin:
-        16UQLq1HZ3CNwhvgrarV6pMoA2CDjb4tyF Translations: Can you help translate
-        this site into a foreign language ? Please email us with details if you
-        can help. There is a set of mock banners available here in three colours
-        and in a range of standard banner sizes: BannersBannersBanners NodeJS
-        Python Interface GTK Lipsum Rails .NET The standard Lorem Ipsum passage,
-        used since the 1500s "Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
-        ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-        reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-        pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa
-        qui officia deserunt mollit anim id est laborum." Section 1.10.32 of "de
-        Finibus Bonorum et Malorum", written by Cicero in 45 BC "Sed ut
-        perspiciatis unde omnis iste natus error sit voluptatem accusantium
-        doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo
-        inventore veritatis et quasi architecto beatae vitae dicta sunt
-        explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut
-        odit aut fugit, sed quia consequuntur magni dolores eos qui ratione
-        voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum
-        quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam
-        eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat
-        voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam
-        corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?
-        Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse
-        quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo
-        voluptas nulla pariatur?" 1914 translation by H. Rackham "But I must
-        explain to you how all this mistaken idea of denouncing pleasure and
-        praising pain was born and I will give you a complete account of the
-        system, and expound the actual teachings of the great explorer of the
-        truth, the master-builder of human happiness. No one rejects, dislikes,
-        or avoids pleasure itself, because it is pleasure, but because those who
-        do not know how to pursue pleasure rationally encounter consequences
-        that are extremely painful. Nor again is there anyone who loves or
-        pursues or desires to obtain pain of itself, because it is pain, but
-        because occasionally circumstances occur in which toil and pain can
-        procure him some great pleasure. To take a trivial example, which of us
-        ever undertakes laborious physical exercise, except to obtain some
-        advantage from it? But who has any right to find fault with a man who
-        chooses to enjoy a pleasure that has no annoying consequences, or one
-        who avoids a pain that produces no resultant pleasure?" Section 1.10.33
-        of "de Finibus Bonorum et Malorum", written by Cicero in 45 BC "At vero
-        eos et accusamus et iusto odio dignissimos ducimus qui blanditiis
-        praesentium voluptatum deleniti atque corrupti quos dolores et quas
-        molestias excepturi sint occaecati cupiditate non provident, similique
-        sunt in culpa qui officia deserunt mollitia animi, id est laborum et
-        dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio.
-        Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil
-        impedit quo minus id quod maxime placeat facere possimus, omnis voluptas
-        assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et
-        aut officiis debitis aut rerum necessitatibus saepe eveniet ut et
-        voluptates repudiandae sint et molestiae non recusandae. Itaque earum
-        rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus
-        maiores alias consequatur aut perferendis doloribus asperiores
-        repellat." 1914 translation by H. Rackham "On the other hand, we
-        denounce with righteous indignation and dislike men who are so beguiled
-        and demoralized by the charms of pleasure of the moment, so blinded by
-        desire, that they cannot foresee the pain and trouble that are bound to
-        ensue; and equal blame belongs to those who fail in their duty through
-        weakness of will, which is the same as saying through shrinking from
-        toil and pain. These cases are perfectly simple and easy to distinguish.
-        In a free hour, when our power of choice is untrammelled and when
-        nothing prevents our being able to do what we like best, every pleasure
-        is to be welcomed and every pain avoided. But in certain circumstances
-        and owing to the claims of duty or the obligations of business it will
-        frequently occur that pleasures have to be repudiated and annoyances
-        accepted. The wise man therefore always holds in these matters to this
-        principle of selection: he rejects pleasures to secure other greater
-        pleasures, or else he endures pains to avoid worse pains."
-        help@lipsum.com Privacy Policy · Freestar
-      </div>
+    <div className="bg-[#F7F7F7] min-h-screen flex flex-col relative">
       <ScrollToTopButton />
 
-      <button
-        onClick={() => router.push("/")}
-        className="mt-4 px-6 py-3 cursor-pointer bg-[#ff6600] text-white font-semibold rounded-full shadow-lg hover:bg-[#e65c00] transition"
-      >
-        HOME
-      </button>
+      <header className="w-full fixed z-50">
+        <Topbar homePage={true} />
+      </header>
+
+      {/* Floating Elements Wrapper (Move Before Content) */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-40 overflow-hidden">
+        <Image
+          src={`${baseURL}/uploads/store/motive/default-motive.png`}
+          width={150}
+          height={150}
+          className="absolute top-16 left-0 -translate-x-1/2 -translate-y-1/2"
+          alt="MOTIVE"
+        />
+        <Image
+          src={`/header-motive-tokel.png`}
+          width={150}
+          height={150}
+          className="absolute top-20 right-0 translate-x-1/2"
+          alt="MOTIVE"
+        />
+        {Array.from({ length: motiveLength }).map((_, index) => {
+          const topValue = `${(index + 1) * 20 + 5}rem`;
+
+          return (
+            <Image
+              key={index}
+              src={`${baseURL}/uploads/store/motive/default-motive.png`}
+              width={150}
+              height={150}
+              style={{ top: topValue }}
+              className={`absolute ${
+                index % 2 === 0
+                  ? "left-0 -translate-x-1/2"
+                  : "right-0 translate-x-1/2"
+              }`}
+              alt="MOTIVE"
+            />
+          );
+        })}
+      </div>
+
+      {/* Banner Section */}
+      <div className="h-16"></div>
+      <div className="flex justify-center max-h-[70vh] overflow-hidden relative z-30">
+        <Image
+          src="/toko-kelontong-header.png"
+          alt="header"
+          width={500}
+          height={300}
+          className="w-full object-cover z-20"
+        />
+        <div className="z-30 justify-center items-center w-full h-full absolute flex flex-col  text-white bg-black bg-opacity-50 px-32 py-12 rounded-md">
+          <div className="flex flex-col gap-3 justify-center items-center">
+            <p className="text-8xl font-bold text-center">Features</p>
+            <p className="text-2xl max-w-[65%] text-center">
+              TokoKu: A sanctuary for everyday essentials, where your shopping
+              experience is perfected with convenience and quality products.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div id="main"></div>
+
+      <section className="p-10 mt-20 flex flex-col items-center gap-2 relative">
+        <div></div>
+        <div>
+          <div>
+            <MdSpeed />
+            <h1>Performance</h1>
+            <p>
+              Track key performance indicators (KPIs) such as total revenue,
+              conversion rates, and customer engagement. Get real-time insights
+              into sales trends and identify areas for improvement.
+            </p>
+          </div>
+          <div>
+            <MdTrendingUp />
+            <h1>Best Selling</h1>
+            <p>
+              Discover the top-performing products based on sales volume,
+              revenue, and customer demand. This feature helps you identify
+              which items drive the most profit and optimize inventory
+              accordingly.
+            </p>
+          </div>
+          <div>
+            <MdBarChart />
+            <h1>Sales</h1>
+            <p>
+              Monitor overall sales performance with detailed breakdowns by time
+              period, product category, or region. Gain a comprehensive view of
+              sales trends to make informed business decisions.
+            </p>
+          </div>
+          <div>
+            <MdReceipt />
+            <h1>Transaction History</h1>
+            <p>
+              Access a complete log of past transactions, including purchase
+              details, payment methods, and timestamps. This ensures
+              transparency and helps with financial tracking, refunds, and
+              customer service.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer Motive */}
+      <div className="flex justify-center max-h-[30vh] min-h-[30vh] overflow-hidden mt-24 relative w-full z-40">
+        <Image
+          src={`${baseURL}/uploads/store/motive/default-footer-motive.png`}
+          width={400}
+          height={100}
+          className="absolute rounded-md max-w-full min-w-full object-cover z-10"
+          alt="FOOTER MOTIVE"
+        />
+      </div>
+
+      {/* Footer (Now Flexible & Always at Bottom) */}
+      <footer className="w-full mt-auto z-40">
+        <Footer
+          logo={"/icon_kelontong.svg"}
+          keterangan="Experience the epitome of dependable and secure shopping through Toko Kelontong, a premier marketplace for daily necessities that sets new benchmarks in reliability and quality standards."
+          address="Jl. Palagan Tentara Pelajar Blok B No.6 Sariharjo, Ngaglik, Tambak Rejo, Sariharjo, Kec. Ngaglik, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55581"
+          phone="+62 822-2506-8682"
+        />
+      </footer>
     </div>
   );
 };

@@ -7,6 +7,14 @@ import { tokenDecoded } from "@/utils/tokenDecoded";
 import { toast } from "react-toastify";
 import Loading from "@/components/loading";
 import ThreeDModel from "@/components/form/ThreeDModels";
+import {
+  InputText,
+  InputNumber,
+  InputEmail,
+  InputPassword,
+  InputFile,
+  TextArea,
+} from "@/components/form/input";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -95,7 +103,7 @@ const Login = () => {
         transition={{ duration: 0.6 }}
       >
         <motion.h2
-          className="text-4xl font-bold mb-6 text-green-400"
+          className="text-4xl font-bold mb-8 text-green-400"
           initial={{ y: -10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -104,47 +112,21 @@ const Login = () => {
         </motion.h2>
 
         <form className="w-full max-w-sm" onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label
-              className="text-sm font-bold text-gray-300"
-              htmlFor="username"
-            >
-              Username
-            </label>
-            <input
-              className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-400 outline-none"
-              id="username"
-              placeholder="Enter your username"
+          <div className="mb-6 flex flex-col items-center gap-10">
+            <InputText
+              label="Username"
+              name="username"
               value={username}
+              text_color="text-white"
               onChange={(e) => setUsername(e.target.value)}
-              required
             />
-          </div>
-
-          <div className="mb-4 relative">
-            <label
-              className="text-sm font-bold text-gray-300"
-              htmlFor="password"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-400 outline-none"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-400 hover:text-white transition"
-              >
-                {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
-              </button>
-            </div>
+            <InputPassword
+              label="Password"
+              name="password"
+              text_color="text-white"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
 
           {errorMessage && (

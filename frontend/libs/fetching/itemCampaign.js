@@ -39,3 +39,27 @@ export const getItemCampaign = async (id_item_campaign) => {
     console.error("Error fetching item Campaign:", error);
   }
 };
+
+export const addItemCampaign = async (data) => {
+  const token = localStorage.getItem("token");
+  const response = await client.post("/itemcampaign/additemcampaign", data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response;
+};
+
+export const updateItemCampaign = async (id, data) => {
+  const token = localStorage.getItem("token");
+  const response = await client.put(`/api/itemcampaign/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response;
+};
+
+export const deleteItemCampaign = async (id) => {
+  const token = localStorage.getItem("token");
+  const response = await client.delete(`/api/itemcampaign/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response;
+};

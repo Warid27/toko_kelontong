@@ -5,9 +5,28 @@ export const BaseMenu = ({
   content,
   type = "button",
   isActive = false,
+  size = "small",
+  bgColor = "var(--bg-tertiary)", // Default background color
 }) => {
-  const bgColor = isActive ? "var(--bg-primary)" : "var(--bg-tertiary)";
-  const gradient = `bg-gradient-to-r bg-[${bgColor}]`;
+  const gradient = `bg-gradient-to-r from-[${bgColor}] to-[${bgColor}]`;
+  let sized;
+  let text_size;
+  switch (size) {
+    case "big":
+      sized = "w-24 h-24";
+      text_size = "text-3xl";
+      break;
+    case "medium":
+      sized = "w-24 h-12";
+      text_size = "text-lg";
+      break;
+    case "small":
+      sized = "w-12 h-12";
+      text_size = "text-3xl";
+      break;
+    default:
+      break;
+  }
 
   return (
     <motion.div
@@ -19,8 +38,8 @@ export const BaseMenu = ({
       <button
         onClick={onClick}
         type={type}
-        className={`w-12 h-12 bg-[${bgColor}] backdrop-blur-lg border border-[${bgColor}] 
-                   hover:bg-[${bgColor}] hover:shadow-black text-white font-bold 
+        style={{ backgroundColor: isActive ? "var(--bg-primary)" : bgColor }} // ✅ Use inline styles
+        className={`${sized}  backdrop-blur-lg border text-white font-bold 
                    rounded-xl shadow-md hover:scale-105 transform transition-all 
                    duration-300 ease-out flex items-center justify-center relative overflow-hidden
                    active:scale-95 active:shadow-black/50`}
@@ -28,14 +47,24 @@ export const BaseMenu = ({
         <span
           className={`absolute inset-0 ${gradient} opacity-50 hover:opacity-100 blur-lg`}
         ></span>
-        <span className="relative z-10 text-3xl">{content}</span>
+        <span className={`relative z-10 ${text_size}`}>{content}</span>
       </button>
     </motion.div>
   );
 };
 
-export const AddMenu = ({ onClick, content = "?", isActive = false }) => (
-  <BaseMenu onClick={onClick} content={content} isActive={isActive} />
+export const AddMenu = ({
+  onClick,
+  content = "?",
+  size = "small",
+  isActive = false,
+}) => (
+  <BaseMenu
+    onClick={onClick}
+    size={size}
+    content={content}
+    isActive={isActive}
+  />
 );
 
 export const SubmitMenu = ({ content = "Submit" }) => (

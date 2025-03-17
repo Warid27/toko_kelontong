@@ -10,6 +10,7 @@ const FloatingLabelInput = ({
   value,
   onChange,
   isTextArea = false,
+  text_color = "text-gray-900",
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const textAreaRef = useRef(null);
@@ -50,7 +51,7 @@ const FloatingLabelInput = ({
           onChange={onChange}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(value !== "")}
-          className={`break-words peer border-b-2 border-gray-300 w-full bg-transparent text-gray-900 placeholder-transparent focus:outline-none focus:border-blue-500 p-2 resize-none ${
+          className={`break-words peer border-b-2 border-gray-300 w-full bg-transparent ${text_color} placeholder-transparent focus:outline-none focus:border-blue-500 p-2 resize-none ${
             isScrollable ? "overflow-y-auto" : "overflow-hidden"
           }`}
           placeholder={label}
@@ -65,7 +66,7 @@ const FloatingLabelInput = ({
           onChange={onChange}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(value !== "")}
-          className="peer placeholder-transparent bg-transparent border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-blue-600 w-full px-3 py-1"
+          className={`peer placeholder-transparent bg-transparent border-b-2 border-gray-300 ${text_color} focus:outline-none focus:border-blue-600 w-full px-3 py-1`}
           placeholder={label}
           required
         />
@@ -89,7 +90,13 @@ const FloatingLabelInput = ({
 };
 
 // Password Input with Toggle Visibility
-export const InputPassword = ({ label, name, value, onChange }) => {
+export const InputPassword = ({
+  label,
+  name,
+  value,
+  onChange,
+  text_color = "text-gray-900",
+}) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -105,7 +112,7 @@ export const InputPassword = ({ label, name, value, onChange }) => {
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(value !== "")}
         placeholder={label}
-        className="peer placeholder-transparent bg-transparent border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-blue-600 w-full px-3 py-1"
+        className={`peer placeholder-transparent bg-transparent border-b-2 border-gray-300 ${text_color} focus:outline-none focus:border-blue-600 w-full px-3 py-1`}
         required
       />
 

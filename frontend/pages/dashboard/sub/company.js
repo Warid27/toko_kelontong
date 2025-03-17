@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 
 // Icons
@@ -455,7 +454,6 @@ const CompanyData = () => {
       >
         <form onSubmit={handleSubmitAdd}>
           <p className="font-semibold mt-4">Logo Perusahaan</p>
-
           <ImageUpload
             image={companiesDataAdd.logo}
             onImageChange={handleImageChange}
@@ -517,7 +515,6 @@ const CompanyData = () => {
             className="border rounded-md p-2 w-full bg-white"
             required
           />
-
           <div className="flex justify-end mt-5">
             <CloseButton onClick={() => modalOpen("add", false)} />
             <SubmitButton />

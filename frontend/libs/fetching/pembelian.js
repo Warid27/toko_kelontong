@@ -1,7 +1,9 @@
 import client from "@/libs/axios";
 
-export const fetchPembelianList = async (id_store, token) => {
+export const fetchPembelianList = async (id_store) => {
   try {
+    const token = localStorage.getItem("token");
+
     const response = await client.post(
       "/pembelian/listpembelian",
       { id_store },
@@ -17,8 +19,10 @@ export const fetchPembelianList = async (id_store, token) => {
     console.error("Error fetching pembelian:", error);
   }
 };
-export const fetchPembelianAdd = async (data_pembelian, token) => {
+export const fetchPembelianAdd = async (data_pembelian) => {
   try {
+    const token = localStorage.getItem("token");
+
     const response = await client.post(
       "/pembelian/addpembelian",
       data_pembelian,

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
 import { DatePicker, MonthPicker, YearPicker } from "@mui/x-date-pickers";
 
 export default function DatePickers({ filterBy, value, onChange }) {

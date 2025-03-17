@@ -457,8 +457,8 @@ router.put("/reserve", async (c) => {
 router.put("/stock", authenticate, async (c) => {
   try {
     const body = await c.req.json();
-    const id = body.id_product;
 
+    const id = body.id_product;
     const validationError = validateIdFormat(id);
     if (validationError) {
       return c.json(validationError, 400);
@@ -499,15 +499,6 @@ router.put("/stock", authenticate, async (c) => {
     if (error) {
       return c.json({ error }, status);
     }
-
-    // // 🔥 Broadcast update stok ke client yang terhubung
-    // broadcast({
-    //   type: "update-stock",
-    //   data: {
-    //     id_product: dataStock.id_product,
-    //     amount: dataStock.amount,
-    //   },
-    // });
 
     return c.json({ message: "Stock updated successfully.", data }, status);
   } catch (error) {
@@ -832,17 +823,24 @@ router.put("/user/:id", authenticate, async (c) => {
     // Validate ID format
     const validationError = validateIdFormat(id);
     if (validationError) return c.json(validationError, 400);
+
+    // Convert empty strings to null for id_company and id_store
+    if (body.id_company === "") {
+      body.id_company = null;
+    }
+    if (body.id_store === "") {
+      body.id_store = null;
+    }
+
     // Hash the password if it exists in the request body
-    if (body.password != null && body.password !== "") {
+    if (body.password) {
       try {
-        const hashedPassword = await hashPassword(body.password);
-        body.password = hashedPassword; // Replace plain text password with hashed password
+        body.password = await hashPassword(body.password); // Replace plain text password with hashed password
       } catch (hashError) {
         return c.json({ error: "Failed to hash password" }, 500);
       }
     } else {
-      // Remove the password field if it's empty or null
-      delete body.password;
+      delete body.password; // Remove password field if it's empty/null
     }
 
     // Call handleUpdate with validated inputs

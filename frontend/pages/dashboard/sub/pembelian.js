@@ -10,17 +10,19 @@ import { FaMinus, FaPlus } from "react-icons/fa6";
 import { CgNotes } from "react-icons/cg";
 
 // Components
-import { SubmitButton, CloseButton } from "@/components/form/button";
+import { SubmitButton, CloseButton, AddButton } from "@/components/form/button";
 import { Modal } from "@/components/Modal";
 import Header from "@/components/section/header";
 import Card from "@/components/Card";
 import Loading from "@/components/loading";
+import { AddMenu } from "@/components/form/menu";
 
 // API Functions
 import { fetchProductsList, fetchGetProducts } from "@/libs/fetching/product";
 import { fetchPembelianAdd } from "@/libs/fetching/pembelian";
-import client from "@/libs/axios";
+import { updateStock } from "@/libs/fetching/stock";
 import { toast } from "react-toastify";
+import { tokenDecoded } from "@/utils/tokenDecoded";
 
 const Pembelian = () => {
   const [products, setProducts] = useState([]);
@@ -36,7 +38,6 @@ const Pembelian = () => {
   const [infoBuyer, setInfoBuyer] = useState({ keterangan: "" });
   const [searchQuery, setSearchQuery] = useState("");
 
-  const token = localStorage.getItem("token");
   const id_store = localStorage.getItem("id_store") || null;
   const id_company = localStorage.getItem("id_company") || null;
 
@@ -79,15 +80,22 @@ const Pembelian = () => {
   };
 
   // Handle product selection
-  const handleCardClick = async (product) => {
+  const handleCardClick = async (product, id) => {
     try {
-      const response = await fetchGetProducts(product._id, "all");
-      setSelectedProduct(response.data);
-      setQuantity(1);
-      setSelectedExtra(null);
-      setSelectedSize(null);
-      modalOpen("add", false);
-      modalOpen("info", true);
+      const selectedProductFromState = products.find(
+        (p) => p._id === product._id
+      );
+
+      if (selectedProductFromState) {
+        setSelectedProduct(selectedProductFromState);
+        setQuantity(1);
+        setSelectedExtra(null);
+        setSelectedSize(null);
+        modalOpen("add", false);
+        modalOpen("info", true);
+      } else {
+        console.warn("Product not found in the current state!");
+      }
     } catch (error) {
       toast.error("Failed to fetch product details");
     }
@@ -125,17 +133,17 @@ const Pembelian = () => {
 
   // Handle adding item to cart
   const addToCart = () => {
-    if (quantity < 1) return;
+    if (quantity < 1) return toast.error("Quantity cannot below than 1!");
 
     const existingIndex = pembelianItems.findIndex(
       (item) =>
-        item.product.id === selectedProduct._id &&
-        item.selectedExtra?._id === selectedExtra &&
-        item.selectedSize?._id === selectedSize
+        item.product.id == selectedProduct.id &&
+        item.selectedExtra?._id == selectedExtra &&
+        item.selectedSize?._id == selectedSize
     );
 
     let updatedItems = [...pembelianItems];
-    if (existingIndex !== -1) {
+    if (existingIndex != -1) {
       updatedItems[existingIndex].quantity += quantity;
     } else {
       const newItem = {
@@ -193,8 +201,20 @@ const Pembelian = () => {
         0
       );
       const pembelianCode = `PEM/${moment().format("YYYYMMDDHHmmss")}`;
-      const id_user = localStorage.getItem("id_user") || "UNKNOWN_USER";
 
+      const userData = tokenDecoded();
+      const id_user = userData.id;
+
+      const pembelianDetails = pembelianItems.map((item) => ({
+        id_product: item.product.id,
+        id_company: item.product.id_company,
+        id_store: item.product.id_store,
+        name: item.product.name,
+        product_code: item.product.code,
+        item_price: Number(item.product.buy_price),
+        item_quantity: item.quantity,
+        item_discount: 0,
+      }));
       const pembelianData = {
         no: pembelianCode,
         id_user,
@@ -205,38 +225,24 @@ const Pembelian = () => {
         total_discount: 0,
         keterangan: infoBuyer.keterangan || "",
         total_number_item: pembelianItems.length,
-        pembelianDetails: pembelianItems.map((item) => ({
-          id_product: item.product.id,
-          id_company: item.product.id_company,
-          id_store: item.product.id_store,
-          name: item.product.name,
-          product_code: item.product.code,
-          item_price: Number(item.product.buy_price),
-          item_quantity: item.quantity,
-          item_discount: 0,
-        })),
+        pembelianDetails: pembelianDetails,
       };
 
-      const response = await fetchPembelianAdd(pembelianData, token);
+      const response = await fetchPembelianAdd(pembelianData);
       if (response.status === 201) {
         for (const item of pembelianItems) {
-          await client.put(
-            "/api/stock",
-            {
-              amount: item.quantity,
-              params: "in",
-              id_product: item.product.id,
-            },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+          const reqBody = {
+            amount: item.quantity,
+            params: "in",
+            id_product: item.product.id,
+          };
+          await updateStock(reqBody);
         }
         clearPembelian();
         toast.success("Purchase completed successfully");
       }
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to complete purchase"
-      );
+      toast.error(error || "Failed to complete purchase");
     }
   };
 
@@ -253,9 +259,30 @@ const Pembelian = () => {
     setInfoBuyer((prev) => ({ ...prev, [name]: value }));
   };
 
-  const filteredProducts = products.filter((product) =>
-    product.name_product.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Updated search filtering logic
+  const filteredPembelianItems = pembelianItems.filter((item) => {
+    const searchLower = searchQuery.toLowerCase().trim();
+
+    if (!searchLower) return true;
+
+    return (
+      // Search by product name
+      item.product.name.toLowerCase().includes(searchLower) ||
+      // Search by product code
+      item.product.code.toLowerCase().includes(searchLower) ||
+      // Search by size if available
+      (item.selectedSize?.name &&
+        item.selectedSize.name.toLowerCase().includes(searchLower)) ||
+      // Search by extra if available
+      (item.selectedExtra?.name &&
+        item.selectedExtra.name.toLowerCase().includes(searchLower)) ||
+      // Search by price (if the search query is a number)
+      (!isNaN(searchLower) &&
+        item.product.buy_price.toString().includes(searchLower)) ||
+      // Search by quantity (if the search query is a number)
+      (!isNaN(searchLower) && item.quantity.toString() === searchLower)
+    );
+  });
 
   if (isLoading) return <Loading />;
 
@@ -276,11 +303,11 @@ const Pembelian = () => {
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-semibold">Pesanan</h2>
           </div>
-          {pembelianItems.length === 0 ? (
+          {filteredPembelianItems.length === 0 ? (
             <p>Keranjang Anda kosong.</p>
           ) : (
             <ul className="space-y-4">
-              {pembelianItems.map((item, index) => (
+              {filteredPembelianItems.map((item, index) => (
                 <li
                   key={index}
                   className="flex items-center border p-4 rounded-lg bg-white shadow-md"
@@ -328,7 +355,7 @@ const Pembelian = () => {
                           )
                         }
                         min="1"
-                        className="text-center bg-transparent text-lg w-8 outline-none border-none"
+                        className="text-center spinner-none bg-transparent text-lg w-8 outline-none border-none"
                       />
                       <div className="flex flex-col items-center ml-2 -space-y-2.5">
                         <button
@@ -362,15 +389,26 @@ const Pembelian = () => {
           )}
         </div>
 
-        <div className="mb-6">
-          <button
-            className={`${
-              infoBuyer.keterangan ? "bg-[#FDDC05]" : "bg-[#D3D3D3]"
-            } text-black font-semibold rounded-full px-4 py-2 flex items-center space-x-2 hover:bg-[#FDDC05] transition-all duration-200 shadow-lg`}
-            onClick={() => modalOpen("note", true)}
-          >
-            <CgNotes className="w-5 h-5" /> <span>+ Tambah Catatan</span>
-          </button>
+        <div className="mb-6 flex flex-col w-fit">
+          {infoBuyer.keterangan ? (
+            <AddButton
+              onClick={() => modalOpen("note", true)}
+              content={
+                <div className="flex items-center justify-center gap-2">
+                  <CgNotes className="w-5 h-5" /> <span>+ Add Note</span>
+                </div>
+              }
+            />
+          ) : (
+            <CloseButton
+              onClick={() => modalOpen("note", true)}
+              content={
+                <div className="flex items-center justify-center gap-2">
+                  <CgNotes className="w-5 h-5" /> <span>+ Add Note</span>
+                </div>
+              }
+            />
+          )}
           {infoBuyer.keterangan && (
             <p className="text-gray-500 text-sm mt-2">Catatan terisi</p>
           )}
@@ -387,12 +425,11 @@ const Pembelian = () => {
             )}
           </p>
           <div className="flex justify-end">
-            <button
-              onClick={handlePembelian}
-              className="py-2 px-4 rounded-lg w-1/2 font-bold bg-[#FDDC05] text-black"
-            >
-              Bayar
-            </button>
+            {pembelianItems.length === 0 ? (
+              <CloseButton onClick={() => {}} content="Bayar" />
+            ) : (
+              <SubmitButton onClick={handlePembelian} content="Bayar" />
+            )}
           </div>
         </div>
       </div>
@@ -404,12 +441,12 @@ const Pembelian = () => {
         width="large"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.length === 0 ? (
+          {products.length === 0 ? (
             <h1 className="col-span-full text-center">
               Produk tidak ditemukan!
             </h1>
           ) : (
-            filteredProducts.map((product) => (
+            products.map((product) => (
               <div key={product._id} onClick={() => handleCardClick(product)}>
                 <Card
                   lebar={50}
@@ -446,34 +483,46 @@ const Pembelian = () => {
           <p className="font-semibold mt-4 mb-2">Extras</p>
           <div className="flex flex-wrap space-x-2">
             {selectedProduct?.id_extras?.extrasDetails.map((extra) => (
-              <button
-                key={extra._id}
-                className={`p-2 rounded-md ${
-                  selectedExtra === extra._id
-                    ? "bg-[#FDDC05] text-black font-semibold"
-                    : "bg-white border-[#FDDC05] border-2"
-                }`}
+              <AddMenu
                 onClick={() => setSelectedExtra(extra._id)}
-              >
-                {extra.name}
-              </button>
+                content={extra.name}
+                isActive={selectedExtra === extra._id}
+              />
+              // <button
+              //   key={extra._id}
+              //   className={`p-2 rounded-md ${
+              //     selectedExtra === extra._id
+              //       ? "bg-[#FDDC05] text-black font-semibold"
+              //       : "bg-white border-[#FDDC05] border-2"
+              //   }`}
+              //   onClick={() => setSelectedExtra(extra._id)}
+              // >
+              //   {extra.name}
+              // </button>
             ))}
           </div>
 
           <p className="font-semibold mt-4 mb-2">Size</p>
           <div className="flex flex-wrap space-x-2">
             {selectedProduct?.id_size?.sizeDetails.map((size) => (
-              <button
-                key={size._id}
-                className={`p-2 rounded-md ${
-                  selectedSize === size._id
-                    ? "bg-[#FDDC05] text-black font-semibold"
-                    : "bg-white border-[#FDDC05] border-2"
-                }`}
+              <AddMenu
+                size="medium"
                 onClick={() => setSelectedSize(size._id)}
-              >
-                {size.name}
-              </button>
+                content={size.name}
+                isActive={selectedSize === size._id}
+              />
+
+              // <button
+              //   key={size._id}
+              //   className={`p-2 rounded-md ${
+              //     selectedSize === size._id
+              //       ? "bg-[#FDDC05] text-black font-semibold"
+              //       : "bg-white border-[#FDDC05] border-2"
+              //   }`}
+              //   onClick={() => setSelectedSize(size._id)}
+              // >
+              //   {size.name}
+              // </button>
             ))}
           </div>
 
@@ -499,9 +548,8 @@ const Pembelian = () => {
             </button>
           </div>
 
-          <div className="flex justify-end mt-5">
-            <CloseButton onClick={() => modalOpen("info", false)} />
-            <SubmitButton onClick={addToCart} label="Tambah ke Keranjang" />
+          <div className="flex justify-center mt-5">
+            <SubmitButton onClick={addToCart} content="Tambah ke Keranjang" />
           </div>
         </div>
       </Modal>
@@ -523,7 +571,7 @@ const Pembelian = () => {
           <CloseButton onClick={() => modalOpen("note", false)} />
           <SubmitButton
             onClick={() => modalOpen("note", false)}
-            label="Simpan"
+            content="Simpan"
           />
         </div>
       </Modal>

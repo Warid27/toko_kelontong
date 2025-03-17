@@ -46,7 +46,7 @@ router.post("/getpembelian", authenticate, async (c) => {
 router.post("/addpembelian", authenticate, async (c) => {
   try {
     const body = await c.req.json();
-
+    console.log("BODIIII", body);
     const pembelian = new PembelianModels(body);
     await pembelian.save();
 

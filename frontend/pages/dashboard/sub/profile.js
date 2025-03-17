@@ -4,11 +4,14 @@ import React, { useEffect, useState } from "react";
 import { IoSearchOutline } from "react-icons/io5";
 import { FaUserEdit, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { MdOutlineChangeCircle } from "react-icons/md";
+import { RiLockPasswordLine } from "react-icons/ri";
 
 // Package
 import Image from "next/image";
 import client from "@/libs/axios";
 import Swal from "sweetalert2";
+import { motion } from "framer-motion";
+import Loading from "@/components/loading"
 
 // Components
 import { fetchUserGet } from "@/libs/fetching/user";
@@ -18,9 +21,9 @@ import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import { Modal } from "@/components/Modal";
 
 const Profile = () => {
-  const [storeList, setStoreList] = useState([]); // State for list of companies
-  const [companyList, setCompanyList] = useState([]); // State for list of companies
-  const [showPassword, setShowPassword] = useState(false); // State for showing password
+  const [storeList, setStoreList] = useState([]);
+  const [companyList, setCompanyList] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [userToUpdate, setUserToUpdate] = useState(null);
@@ -36,30 +39,63 @@ const Profile = () => {
   });
   const [currentPassword, setCurrentPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+      },
+    },
+  };
+
+  const buttonVariants = {
+    idle: { scale: 1 },
+    hover: { scale: 1.05, boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.2)" },
+    tap: { scale: 0.95 },
+  };
 
   useEffect(() => {
     const fetching_requirement = async () => {
       const get_store_list = async () => {
         const data_store = await fetchStoreList();
         setStoreList(data_store);
-        setIsLoading(false);
       };
       const get_company_list = async () => {
         const data_company = await fetchCompanyList();
         setCompanyList(data_company);
-        setIsLoading(false);
       };
       const get_user_get = async () => {
         const data_user = await fetchUserGet();
         setUserToUpdate(data_user);
-        setIsLoading(false);
       };
-      get_store_list();
-      get_company_list();
-      get_user_get();
+      
+      await Promise.all([
+        get_store_list(),
+        get_company_list(),
+        get_user_get()
+      ]);
+      
+      setIsLoading(false);
     };
     fetching_requirement();
   }, []);
+
   useEffect(() => {
     if (userToUpdate) {
       setUserDataUpdate({
@@ -68,7 +104,7 @@ const Profile = () => {
         avatar: userToUpdate.avatar,
         password: "",
         rule: userToUpdate.rule,
-        status: userToUpdate.status !== undefined ? userToUpdate.status : 1, // Default to 1
+        status: userToUpdate.status !== undefined ? userToUpdate.status : 1,
         id_company: userToUpdate.id_company,
         id_store: userToUpdate.id_store,
       });
@@ -82,21 +118,12 @@ const Profile = () => {
       [name]: value,
     }));
   };
-  // const handleChangePass = (e) => {
-  //   const { name, value } = e.target;
-  //   setCurrentPassword((prevState) => ({
-  //     ...prevState,
-  //     [name]: value,
-  //   }));
-  // };
 
-  // UPLOADS
   const handleImageChange = async (e, params) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
-      // 🔹 Set correct upload path
       let pathPrefix = "";
       switch (params) {
         case "avatar":
@@ -111,7 +138,6 @@ const Profile = () => {
 
       if (response.status == 201) {
         const uploadedImageUrl = response.data.metadata.shortenedUrl;
-        // 🔹 Update state based on `params`
         if (params === "avatar") {
           setUserDataUpdate((prevState) => ({
             ...prevState,
@@ -119,27 +145,50 @@ const Profile = () => {
           }));
         }
 
-        console.log(`✅ Image uploaded successfully: ${uploadedImageUrl}`);
+        Swal.fire({
+          title: 'Image Uploaded!',
+          text: 'Your profile picture has been updated',
+          icon: 'success',
+          background: '#f0f9ff',
+          iconColor: '#3b82f6',
+          confirmButtonColor: '#3b82f6'
+        });
       } else {
-        console.log(`❌ Upload Failed: ${response.error}`);
+        Swal.fire('Upload Failed', response.error, 'error');
       }
     } catch (error) {
-      console.error("❌ Compression or upload failed:", error);
+      console.error("Compression or upload failed:", error);
+      Swal.fire('Upload Failed', 'There was an error uploading your image', 'error');
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    console.log("data", userDataUpdate);
-    console.log("password", currentPassword);
-    if (!userDataUpdate.username) {
-      Swal.fire("Error", "Please fill in all required fields!", "error");
+    
+    if (!userDataUpdate.username && userDataUpdate.password === "" && repeatPassword === "") {
+      Swal.fire({
+        title: 'Error',
+        text: 'Please fill in all required fields!',
+        icon: 'error',
+        background: '#fff1f2',
+        iconColor: '#ef4444',
+        confirmButtonColor: '#ef4444'
+      });
       return;
     }
+    
     if (userDataUpdate.password !== repeatPassword) {
-      Swal.fire("Error", "password and repeated password not same!", "error");
+      Swal.fire({
+        title: 'Error',
+        text: 'Password and repeated password do not match!',
+        icon: 'error',
+        background: '#fff1f2',
+        iconColor: '#ef4444',
+        confirmButtonColor: '#ef4444'
+      });
       return;
     }
+    
     try {
       const response = await client.post("/login/checkpass", {
         username: userDataUpdate.username,
@@ -147,24 +196,52 @@ const Profile = () => {
       });
 
       if (response.status === 200) {
-        console.log(response);
         await handleSubmitUpdate(e);
-        Swal.fire("Success", "Profile updated successfully!", "success");
+        Swal.fire({
+          title: 'Password Updated!',
+          text: 'Your password has been changed successfully',
+          icon: 'success',
+          background: '#f0f9ff',
+          iconColor: '#3b82f6',
+          confirmButtonColor: '#3b82f6'
+        });
       } else {
-        Swal.fire("Error", "Password cannot be updating!", "error");
+        Swal.fire({
+          title: 'Error',
+          text: 'Current password is incorrect!',
+          icon: 'error',
+          background: '#fff1f2',
+          iconColor: '#ef4444',
+          confirmButtonColor: '#ef4444'
+        });
       }
     } catch (error) {
       console.error("Error updating password:", error);
-      Swal.fire("Error", "Password cannot be updating!", "error");
+      Swal.fire({
+        title: 'Error',
+        text: 'Password cannot be updated!',
+        icon: 'error',
+        background: '#fff1f2',
+        iconColor: '#ef4444',
+        confirmButtonColor: '#ef4444'
+      });
     }
   };
 
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
     if (!userDataUpdate.username) {
-      Swal.fire("Error", "Please fill in all required fields!", "error");
+      Swal.fire({
+        title: 'Error',
+        text: 'Please fill in all required fields!',
+        icon: 'error',
+        background: '#fff1f2',
+        iconColor: '#ef4444',
+        confirmButtonColor: '#ef4444'
+      });
       return;
     }
+    
     try {
       const token = localStorage.getItem("token");
       const response = await client.put(
@@ -172,7 +249,16 @@ const Profile = () => {
         userDataUpdate,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      Swal.fire("Success", "Profile updated successfully!", "success");
+      
+      Swal.fire({
+        title: 'Success!',
+        text: 'Profile updated successfully!',
+        icon: 'success',
+        background: '#f0f9ff',
+        iconColor: '#3b82f6',
+        confirmButtonColor: '#3b82f6'
+      });
+      
       setCurrentPassword("");
       setRepeatPassword("");
       modalOpen("change", false);
@@ -180,11 +266,16 @@ const Profile = () => {
       setIsEditMode(false);
     } catch (error) {
       console.error("Error updating user:", error);
-      Swal.fire("Error", "Profile could not be updated!", "error");
+      Swal.fire({
+        title: 'Error',
+        text: 'Profile could not be updated!',
+        icon: 'error',
+        background: '#fff1f2',
+        iconColor: '#ef4444',
+        confirmButtonColor: '#ef4444'
+      });
     }
   };
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const modalOpen = (param, bool) => {
     const setters = {
@@ -194,17 +285,6 @@ const Profile = () => {
       setters[param](bool);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="w-full h-screen pt-16 flex justify-center items-center">
-        <div
-          className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900"
-          aria-label="Loading"
-        ></div>
-      </div>
-    );
-  }
 
   // Map user roles to their corresponding names
   const ruleMapping = {
@@ -229,274 +309,502 @@ const Profile = () => {
   const userStatus = userDataUpdate.status;
   const nameStatus = statusMapping[userStatus] || "-";
 
-  return (
-    <div className="w-full h-screen pt-16">
-      {/* Header */}
-      <div className="justify-between w-full bg-white shadow-lg p-4">
-        <div className="flex flex-row justify-between">
-          <div className="flex flex-col">
-            <p className="text-2xl font-bold">Daftar Profile</p>
-            <p>Detail Daftar Profile</p>
-          </div>
-        </div>
-      </div>
-      {/* User Profile */}
-      <div className="p-4">
-        {/* Profile Header */}
-        <div className="flex items-center w-full max-w-4xl justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="upload-container">
-              <label className="upload-label">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageChange(e, "avatar")}
-                  style={{ display: "none" }}
-                  disabled={!isEditMode}
-                />
-                <div
-                  className={`relative upload-content flex overflow-hidden w-20 h-20 rounded-full border-2 border-primary ${
-                    isEditMode ? "cursor-pointer group" : ""
-                  }`}
-                >
-                  {/* Overlay appears only when isEditMode is true */}
-                  <div
-                    className={`absolute top-0 left-0 w-full h-full rounded-full bg-slate-500/50 flex items-center justify-center transition-opacity duration-300 ${
-                      isEditMode
-                        ? "opacity-0 group-hover:opacity-100"
-                        : "hidden"
-                    }`}
-                  >
-                    <MdOutlineChangeCircle className="w-3/4 h-3/4 text-black" />
-                  </div>
+  // Role color mapping
+  const roleColorMapping = {
+    "Superadmin": "bg-emerald-100 text-emerald-800",
+    "Admin": "bg-green-100 text-green-800",
+    "Manajer": "bg-teal-100 text-teal-800",
+    "Kasir": "bg-lime-100 text-lime-800",
+    "-": "bg-gray-100 text-gray-800",
+  };
 
-                  {/* Avatar Image */}
-                  {userDataUpdate.avatar ? (
-                    <Image
-                      src={userDataUpdate.avatar}
-                      alt="Uploaded"
-                      className="uploaded-image object-cover"
-                      width={80}
-                      height={80}
+  // Status color mapping
+  const statusColorMapping = {
+    "Active": "bg-green-100 text-green-800",
+    "Inactive": "bg-red-100 text-red-800",
+  };
+
+  if (isLoading === true) {
+    return <Loading />;
+  }
+
+  return (
+    <motion.div 
+      className="w-full min-h-screen bg-gray-50 pt-16"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Header */}
+      <motion.div 
+        className="bg-gradient-to-r bg-white shadow-lg p-6 text-black"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <div className="flex flex-row justify-between max-w-6xl mx-auto">
+          <motion.div 
+            className="flex flex-col"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <motion.p 
+              className="text-3xl font-extrabold"
+              variants={itemVariants}
+            >
+              Profile Dashboard
+            </motion.p>
+            <motion.p
+              variants={itemVariants}
+              className="text-gray-600"
+            >
+              Manage your personal information
+            </motion.p>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Main Content */}
+      <motion.div 
+        className="max-w-6xl mx-auto p-6"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Profile Card */}
+        <motion.div 
+          className="bg-white rounded-xl shadow-lg overflow-hidden mb-6"
+          variants={itemVariants}
+        >
+          {/* Profile Header */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6">
+            <div className="flex flex-col md:flex-row items-center md:justify-between">
+              <div className="flex flex-col md:flex-row items-center mb-4 md:mb-0">
+                <motion.div
+                  className="upload-container relative mb-4 md:mb-0 md:mr-6"
+                  whileHover={{ scale: isEditMode ? 1.05 : 1 }}
+                  whileTap={{ scale: isEditMode ? 0.95 : 1 }}
+                >
+                  <label className="upload-label">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(e, "avatar")}
+                      style={{ display: "none" }}
+                      disabled={!isEditMode}
                     />
-                  ) : (
-                    <Image
-                      src="/User-avatar.png"
-                      alt="avatar"
-                      width={80} // Fix size to match the container
-                      height={80}
-                      className="object-cover"
-                    />
+                    <div
+                      className={`relative upload-content flex overflow-hidden w-24 h-24 rounded-full border-2 ${
+                        isEditMode ? "border-emerald-500 cursor-pointer group" : "border-gray-200"
+                      }`}
+                    >
+                      {/* Overlay appears only when isEditMode is true */}
+                      <motion.div
+                        className={`absolute top-0 left-0 w-full h-full rounded-full bg-emerald-500/70 flex items-center justify-center ${
+                          isEditMode ? "group-hover:opacity-100" : "hidden"
+                        }`}
+                        initial={{ opacity: 0 }}
+                        whileHover={{ opacity: 1 }}
+                      >
+                        <MdOutlineChangeCircle className="w-12 h-12 text-white" />
+                      </motion.div>
+
+                      {/* Avatar Image */}
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 100 }}
+                        className="w-full h-full flex overflow-hidden"
+                      >
+                        {userDataUpdate.avatar ? (
+                          <Image
+                            src={userDataUpdate.avatar}
+                            alt="Profile"
+                            className="uploaded-image object-cover"
+                            width={96}
+                            height={96}
+                          />
+                        ) : ( // YUD ERROR
+                          <Image
+                            src="/User-avatar.png"
+                            alt="avatar"
+                            width={96}
+                            height={96}
+                            className="object-cover"
+                          />
+                        )}
+                      </motion.div>
+                    </div>
+                  </label>
+                </motion.div>
+                <div className="text-center md:text-left">
+                <motion.h1 
+                  className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  {userDataUpdate.username || "NAMA USER"}
+                </motion.h1>
+                  <motion.div 
+                    className="flex flex-wrap justify-center md:justify-start gap-2 mt-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${roleColorMapping[nameRule]}`}>
+                      {nameRule}
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColorMapping[nameStatus]}`}>
+                      {nameStatus}
+                    </span>
+                  </motion.div>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+              <motion.button
+                  onClick={() => modalOpen("change", true)}
+                  className="flex items-center justify-center space-x-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white py-2 px-4 rounded-lg shadow-md"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  disabled={isEditMode}
+                >
+                  <RiLockPasswordLine className="text-lg" />
+                  <span>Change Password</span>
+                </motion.button>
+                <motion.button
+                  onClick={() => setIsEditMode(true)}
+                  className={`flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-2 px-4 rounded-lg shadow-md ${
+                    isEditMode ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  variants={buttonVariants}
+                  whileHover={!isEditMode ? "hover" : "idle"}
+                  whileTap={!isEditMode ? "tap" : "idle"}
+                  disabled={isEditMode}
+                >
+                  <FaUserEdit className="text-lg" />
+                  <span>Edit Profile</span>
+                </motion.button>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Form */}
+          <motion.form
+            className="p-6"
+            onSubmit={handleSubmitUpdate}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Username */}
+              <motion.div variants={itemVariants}>
+                <label
+                  className="block text-gray-700 text-sm font-semibold mb-2"
+                  htmlFor="username"
+                >
+                  Username
+                </label>
+                <div className="relative">
+                <input
+                  className={`shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
+                    isEditMode ? "border-emerald-300 bg-emerald-50" : ""
+                  }`}
+                  placeholder="Username"
+                  type="text"
+                  name="username"
+                  value={userDataUpdate.username || "-"}
+                  disabled={!isEditMode}
+                  onChange={handleChangeUpdate}
+                />
+                  {isEditMode && (
+                    <motion.div 
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-emerald-500"
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                  >
+                      <FaUserEdit />
+                    </motion.div>
                   )}
                 </div>
-              </label>
+              </motion.div>
+
+              {/* Company */}
+              <motion.div variants={itemVariants}>
+                <label
+                  className="block text-gray-700 text-sm font-semibold mb-2"
+                  htmlFor="company"
+                >
+                  Perusahaan
+                </label>
+                <div className="relative">
+                  <select
+                    id="company"
+                    className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    value={userDataUpdate.id_company || "-"}
+                    disabled={true}
+                    name="id_company"
+                  >
+                    <option value="-" disabled>
+                      Belum memiliki Perusahaan
+                    </option>
+                    {companyList.length === 0 ? (
+                      <option value="default">No company available</option>
+                    ) : (
+                      companyList.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Store */}
+              <motion.div variants={itemVariants}>
+                <label
+                  className="block text-gray-700 text-sm font-semibold mb-2"
+                  htmlFor="store"
+                >
+                  Toko
+                </label>
+                <div className="relative">
+                  <select
+                    id="store"
+                    className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    value={userDataUpdate.id_store || "-"}
+                    disabled={true}
+                    name="id_store"
+                  >
+                    <option value="-" disabled>
+                      Belum memiliki Toko
+                    </option>
+                    {storeList.length === 0 ? (
+                      <option value="default">No store available</option>
+                    ) : (
+                      storeList.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Rule */}
+              <motion.div variants={itemVariants}>
+                <label
+                  className="block text-gray-700 text-sm font-semibold mb-2"
+                  htmlFor="rule"
+                >
+                  Rule
+                </label>
+                <input
+                  className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="rule"
+                  type="text"
+                  name="rule"
+                  value={nameRule}
+                  disabled={true}
+                />
+              </motion.div>
+
+              {/* Status */}
+              <motion.div variants={itemVariants}>
+                <label
+                  className="block text-gray-700 text-sm font-semibold mb-2"
+                  htmlFor="status"
+                >
+                  Status
+                </label>
+                <input
+                  className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="status"
+                  type="text"
+                  name="status"
+                  value={nameStatus}
+                  disabled={true}
+                />
+              </motion.div>
             </div>
-            <h1 className="text-2xl font-bold">
-              {userDataUpdate.username || "NAMA USER"}
-            </h1>
-          </div>
-          <button
-            onClick={() => modalOpen("change", true)}
-            className="addBtn flex items-center space-x-2"
-          >
-            Change Password
-          </button>
-          <button
-            onClick={() => setIsEditMode(true)}
-            className={`addBtn flex items-center space-x-2 ${
-              isEditMode ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={isEditMode}
-          >
-            <FaUserEdit />
-            <span>Edit Profile</span>
-          </button>
-        </div>
-        <form
-          className="grid grid-cols-2 gap-6 w-full max-w-4xl mt-10"
-          onSubmit={handleSubmitUpdate}
-        >
-          {/* Username */}
-          <div>
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="username"
-            >
-              Username
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="Username"
-              type="text"
-              name="username"
-              value={userDataUpdate.username || "-"}
-              disabled={!isEditMode}
-              onChange={handleChangeUpdate}
-            />
-          </div>
-          <div>
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="company"
-            >
-              Perusahaan
-            </label>
-            <select
-              id="company"
-              className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={userDataUpdate.id_company || "-"}
-              disabled={true}
-              name="id_company"
-            >
-              <option value="-" disabled>
-                Belum memiliki Perusahaan
-              </option>
 
-              {companyList.length === 0 ? (
-                <option value="default">No company available</option>
-              ) : (
-                companyList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="store"
-            >
-              Toko
-            </label>
-            <select
-              id="store"
-              className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={userDataUpdate.id_store || "-"}
-              disabled={true}
-              name="id_store"
-            >
-              <option value="-" disabled>
-                Belum memiliki Toko
-              </option>
-
-              {storeList.length === 0 ? (
-                <option value="default">No store available</option>
-              ) : (
-                storeList.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="rule"
-            >
-              Rule
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="rule"
-              type="text"
-              name="rule"
-              value={nameRule}
-              disabled={true}
-            />
-          </div>
-
-          <div>
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="status"
-            >
-              Status
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="status"
-              type="text"
-              name="status"
-              value={nameStatus}
-              disabled={true}
-            />
-          </div>
-
-          {/* Repeat similar blocks for other fields */}
-          {/* Edit and Update Buttons */}
-          <div></div>
-          <div className="flex justify-end space-x-2">
-            {isEditMode ? (
-              <>
-                <button
+            {/* Action Buttons */}
+            {isEditMode && (
+              <motion.div 
+                className="flex justify-end space-x-4 mt-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <motion.button
                   type="button"
-                  className="closeBtn"
+                  className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-all duration-200"
                   onClick={() => setIsEditMode(false)}
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
                 >
                   Cancel
-                </button>
-                <button type="submit" className="submitBtn">
-                  Update
-                </button>
-              </>
-            ) : (
-              <div></div>
+                </motion.button>
+                <motion.button 
+                  type="submit" 
+                  className="px-6 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                >
+                  Update Profile
+                </motion.button>
+              </motion.div>
             )}
-          </div>
-        </form>
-      </div>
+          </motion.form>
+        </motion.div>
+      </motion.div>
+
+      {/* Password Change Modal */}
       {isModalOpen && (
-        <Modal
-          onClose={() => modalOpen("change", false)}
-          title={"Change Password"}
+        <motion.div
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         >
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="current password"
-            type={showPassword ? "text" : "password"}
-            name="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-          />
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="password"
-            type={showPassword ? "text" : "password"}
-            name="password"
-            value={userDataUpdate.password}
-            onChange={handleChangeUpdate}
-          />
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="repeat password"
-            type={showPassword ? "text" : "password"}
-            name="password"
-            value={repeatPassword}
-            onChange={(e) => setRepeatPassword(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+          <motion.div
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            transition={{ type: "spring", damping: 15 }}
           >
-            {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
-          </button>
-          <button
-            type="submit"
-            onClick={(e) => handleChangePassword(e)}
-            className="submitBtn"
-          >
-            Submit
-          </button>
-        </Modal>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Change Password</h2>
+              <button
+                onClick={() => modalOpen("change", false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <motion.div
+              className="space-y-4"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.div className="relative" variants={itemVariants}>
+                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter your current password"
+                    type={showPassword ? "text" : "password"}
+                    name="currentPassword"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+                  >
+                    {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                  </button>
+                </div>
+              </motion.div>
+              
+              <motion.div className="relative" variants={itemVariants}>
+                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                  New Password
+                </label>
+                <input
+                  className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter new password"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={userDataUpdate.password}
+                  onChange={handleChangeUpdate}
+                />
+              </motion.div>
+              
+              <motion.div className="relative" variants={itemVariants}>
+                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Confirm new password"
+                  type={showPassword ? "text" : "password"}
+                  name="repeatPassword"
+                  value={repeatPassword}
+                  onChange={(e) => setRepeatPassword(e.target.value)}
+                />
+              </motion.div>
+              
+              <motion.div className="mt-8" variants={itemVariants}>
+              <motion.button
+                type="button"
+                onClick={(e) => handleChangePassword(e)}
+                className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                Update Password
+              </motion.button>
+              </motion.div>
+            </motion.div>
+            
+            <motion.div 
+              className="mt-4 text-sm text-gray-500"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <p>Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.</p>
+            </motion.div>
+          </motion.div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 };
 
