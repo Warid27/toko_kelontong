@@ -1,4 +1,3 @@
-// ContentRenderer.jsx
 import React from "react";
 import Analytics from "@/pages/dashboard/sub/analytics";
 import ProductMenu from "@/pages/dashboard/sub/menu";
@@ -23,12 +22,30 @@ import Pembelian from "@/pages/dashboard/sub/pembelian";
 import Report from "@/pages/dashboard/sub/report";
 import { rolePermissions } from "@/utils/permission";
 
-const ContentRenderer = ({ selectedLink, setSelectedLink, userRole }) => {
-  // Check if the user has permission to access the selectedLink
-  const hasPermission = rolePermissions[userRole]?.includes(selectedLink);
+const ContentRenderer = ({
+  selectedLink,
+  setSelectedLink,
+  userRole,
+  filteredMenuConfig,
+}) => {
+  // Flatten the filteredMenuConfig to include both top-level items and submenu items
+  const allowedKeys = filteredMenuConfig.flatMap((item) =>
+    item.submenu ? item.submenu.map((subItem) => subItem.key) : item.key
+  );
+
+  // Check permissions
+  const hasMenuPermission = allowedKeys.includes(selectedLink);
+  const hasRolePermission =
+    rolePermissions[userRole]?.includes(selectedLink) || false;
+
+  // Special case for "profile": only requires role permission, not menu permission
+  const hasPermission =
+    selectedLink === "profile"
+      ? hasRolePermission
+      : hasMenuPermission && hasRolePermission;
 
   if (!hasPermission) {
-    return <div className="text-red-500 p-4">Access Denied</div>;
+    return <div className="text-red-500 p-4 text-3xl">Access Denied</div>;
   }
 
   switch (selectedLink) {
@@ -49,7 +66,6 @@ const ContentRenderer = ({ selectedLink, setSelectedLink, userRole }) => {
     case "report":
       return <Report />;
     case "product":
-      console.log("PRODUCT MENU", ProductMenu);
       return <ProductMenu />;
     case "extras":
       return <Extras />;

@@ -340,7 +340,7 @@ router.post("/file", authenticate, async (c) => {
     const currentDate = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
     const safeFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     const fileExt = originalFileName.split(".").pop().toLowerCase();
-    
+
     let convertedBuffer;
     let fileType;
     let finalFileName;
@@ -352,19 +352,22 @@ router.post("/file", authenticate, async (c) => {
       const csvData = csvBuffer.toString();
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Sheet1");
-      
+
       csvData.split("\n").forEach((row, index) => {
         worksheet.addRow(row.split(","));
       });
-      
+
       convertedBuffer = await workbook.xlsx.writeBuffer();
-      fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      fileType =
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
       finalFileName = `excel/${safeFileName.split(".")[0]}-${currentDate}.xlsx`;
     } else {
       console.log("📌 [INFO] Processing original Excel file");
       convertedBuffer = await uploadedFile.arrayBuffer();
       fileType = uploadedFile.type;
-      finalFileName = `excel/${safeFileName.split(".")[0]}-${currentDate}-${crypto.randomUUID().substring(0, 8)}.xlsx`;
+      finalFileName = `excel/${
+        safeFileName.split(".")[0]
+      }-${currentDate}-${crypto.randomUUID().substring(0, 8)}.xlsx`;
     }
 
     // 📌 3. Upload file to MinIO
@@ -386,12 +389,12 @@ router.post("/file", authenticate, async (c) => {
     const worksheet = workbook.getWorksheet(1);
     const data = [];
     const headers = [];
-    
+
     worksheet.getRow(1).eachCell((cell, colNumber) => {
       headers[colNumber - 1] = cell.value?.toString() || `Column${colNumber}`;
     });
     console.log("📌 [INFO] Extracted headers:", headers);
-    
+
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber > 1) {
         const rowData = {};
@@ -436,7 +439,10 @@ router.post("/file", authenticate, async (c) => {
       const imageName = row.image?.toLowerCase();
       return {
         ...row,
-        image_url: imageName && imageURLs[imageName] ? imageURLs[imageName] : "https://placehold.co/600x400",
+        image_url:
+          imageName && imageURLs[imageName]
+            ? imageURLs[imageName]
+            : "https://placehold.co/600x400",
         id_store,
         id_company,
       };
@@ -458,7 +464,6 @@ router.post("/file", authenticate, async (c) => {
     return c.json({ message: "Upload failed!", error: error.message }, 500);
   }
 });
-
 
 // Add Product by Batch
 router.post("/addbatch", authenticate, async (c) => {

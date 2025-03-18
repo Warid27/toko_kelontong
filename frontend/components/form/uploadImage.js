@@ -14,7 +14,27 @@ const ImageUpload = ({
   className,
 }) => {
   const [preview, setPreview] = useState(image);
-
+  let Sized;
+  let fitSize;
+  if (
+    params == "avatar" ||
+    params == "add" ||
+    params == "update" ||
+    params == "add_product" ||
+    params == "update_product"
+  ) {
+    Sized = "w-48 h-48";
+    fitSize = "w-fit";
+  } else if (params == "banner" || params == "header") {
+    fitSize = "w-full";
+    Sized = "w-full h-48";
+  } else if (params == "motive") {
+    fitSize = "w-fit";
+    Sized = "w-64 h-64";
+  } else if (params == "footer_motive") {
+    fitSize = "w-fit";
+    Sized = "w-96 h-64";
+  }
   useEffect(() => {
     if (image) setPreview(image);
   }, [image]);
@@ -37,7 +57,7 @@ const ImageUpload = ({
 
   return (
     <div className={`upload-container ${className}`}>
-      <label className="upload-label cursor-pointer block w-fit">
+      <label className={`upload-label cursor-pointer block ${fitSize}`}>
         {name && (
           <input
             type="hidden"
@@ -57,7 +77,7 @@ const ImageUpload = ({
         <motion.div
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="border border-slate-500 rounded-lg w-48 h-48 flex items-center justify-center group relative overflow-hidden cursor-pointer"
+          className={`${Sized} border border-slate-500 rounded-lg w-48 h-48 flex items-center justify-center group relative overflow-hidden cursor-pointer`}
         >
           {preview ? (
             <>

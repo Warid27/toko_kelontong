@@ -1,17 +1,7 @@
 // Component Imports
 import Footer from "@/components/Footer";
 import Topbar from "@/components/Topbar";
-import Carousel from "@/components/carousel/carousel";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
-import {
-  InputText,
-  InputNumber,
-  InputEmail,
-  InputPassword,
-  InputFile,
-  TextArea,
-} from "@/components/form/input";
-import { SubmitButton, AddButton } from "@/components/form/button";
 
 // React Imports
 import React, { useState, useEffect } from "react";
@@ -19,16 +9,22 @@ import React, { useState, useEffect } from "react";
 // Next.js Imports
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { toast } from "react-toastify";
 
 // Data Fetching Imports
 import { fetchCompanyListLogo } from "@/libs/fetching/company";
 import { listStoreStatus } from "@/libs/fetching/store";
 import { listProductStatus } from "@/libs/fetching/product";
-import { sendMessage } from "@/libs/fetching/contact-service";
 
 // Icon Imports
-import { MdSpeed, MdTrendingUp, MdBarChart, MdReceipt } from "react-icons/md";
+import {
+  MdSpeed,
+  MdTrendingUp,
+  MdBarChart,
+  MdReceipt,
+  MdShoppingCart,
+  MdInsertChart,
+  MdAssignment,
+} from "react-icons/md";
 
 const Features = () => {
   const [companyData, setCompanyData] = useState([]);
@@ -37,20 +33,6 @@ const Features = () => {
   const router = useRouter();
   const motiveLength = 8;
   const baseURL = "http://localhost:8080";
-
-  const [contactData, setContactData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
-
-  const handleChangeContact = (e) => {
-    const { name, value } = e.target;
-    setContactData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
 
   useEffect(() => {
     const fetchingRequirements = async () => {
@@ -93,53 +75,6 @@ const Features = () => {
     };
     fetchingRequirements();
   }, []);
-
-  const stats = [
-    { count: `${companyData.length}+`, label: "Company" },
-    { count: `${storeData.length}+`, label: "Store" },
-    { count: `${productData.length}+`, label: "Product" },
-    // { count: "40+", label: "Global Achievement" },
-  ];
-
-  const scrollToMain = () => {
-    const mainSection = document.getElementById("main");
-    if (mainSection) {
-      mainSection.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-
-    const { name, email, message } = contactData;
-
-    if (!name || !email || !message) {
-      toast.error("Please fill all required fields.");
-      return;
-    }
-
-    try {
-      const reqBody = { name, email, message };
-
-      const response = await sendMessage(reqBody);
-
-      if (response.status === 200) {
-        toast.success("Pesan terkirim!");
-        setContactData({
-          name: "",
-          email: "",
-          message: "",
-        });
-      } else {
-        toast.error(
-          `Pesan Gagal Dikirim: ${response.statusText || "Unknown error"}`
-        );
-      }
-    } catch (error) {
-      console.error("Pesan Gagal Dikirim:", error);
-      toast.error("Terjadi kesalahan saat mengirim pesan.");
-    }
-  };
 
   return (
     <div className="bg-[#F7F7F7] min-h-screen flex flex-col relative">
@@ -194,7 +129,7 @@ const Features = () => {
           alt="header"
           width={500}
           height={300}
-          className="w-full object-cover z-20"
+          className="w-full object-cover"
         />
         <div className="z-30 justify-center items-center w-full h-full absolute flex flex-col  text-white bg-black bg-opacity-50 px-32 py-12 rounded-md">
           <div className="flex flex-col gap-3 justify-center items-center">
@@ -207,49 +142,184 @@ const Features = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div id="main"></div>
+      {/* Section 1 */}
+      <section className="z-30 p-10 pt-0 -translate-y-16 flex flex-row justify-center items-end gap-6 relative">
+        <div className="text-left bg-white shadow-xl rounded-lg p-5 ">
+          <h3 className="text-4xl">Analytics</h3>
+          <div className="flex justify-center mt-4">
+            <div className="overflow-hidden w-[32rem] h-[32rem] rounded-lg">
+              <Image
+                src="https://api-storage.cli.pics/toko-kelontong/product/a18c4167-1702-4a14-b2df-685a7407cd16.png"
+                alt="Analytics"
+                width={200}
+                height={200}
+                className="object-cover h-full w-full"
+              />
+            </div>
+          </div>
+        </div>
 
-      <section className="p-10 mt-20 flex flex-col items-center gap-2 relative">
-        <div></div>
-        <div>
-          <div>
-            <MdSpeed />
-            <h1>Performance</h1>
-            <p>
-              Track key performance indicators (KPIs) such as total revenue,
-              conversion rates, and customer engagement. Get real-time insights
-              into sales trends and identify areas for improvement.
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+          {[
+            {
+              icon: <MdSpeed className="text-6xl text-yellow-500" />,
+              title: "Performance",
+              description:
+                "Track key performance indicators such as revenue, conversion rates, and customer engagement. Gain real-time insights into trends.",
+            },
+            {
+              icon: <MdTrendingUp className="text-6xl text-yellow-500" />,
+              title: "Best Selling",
+              description:
+                "Identify top-performing products based on sales volume and revenue. Optimize your inventory for maximum profitability.",
+            },
+            {
+              icon: <MdBarChart className="text-6xl text-yellow-500" />,
+              title: "Sales",
+              description:
+                "Monitor sales performance across different time periods, categories, or regions to make data-driven business decisions.",
+            },
+            {
+              icon: <MdReceipt className="text-6xl text-yellow-500" />,
+              title: "Transaction History",
+              description:
+                "Access detailed logs of past transactions, including payment methods and timestamps, ensuring transparency and tracking.",
+            },
+          ].map(({ icon, title, description }, index) => (
+            <div
+              key={index}
+              className="flex flex-col items-start p-6 bg-white shadow-lg rounded-lg text-justify"
+            >
+              {icon}
+              <h1 className="font-bold text-2xl mt-2">{title}</h1>
+              <p className="text-gray-600 mt-2 text-justify">{description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Section 2 */}
+      <section className="z-30 p-10 -translate-y-16 flex flex-row justify-evenly items-center relative">
+        <div className="absolute inset-0 bg-[var(--bg-secondary)] opacity-50 -z-10"></div>
+
+        <div className="flex flex-col items-center">
+          <div className="overflow-hidden w-96 h-56 rounded-lg -translate-x-1/4">
+            <Image
+              src="https://api-storage.cli.pics/toko-kelontong/product/7e16532b-e2f3-48e1-a369-8e5f004343f5.png"
+              alt="Dashboard"
+              width={200}
+              height={200}
+              className="object-cover rounded-lg h-full w-full"
+            />
           </div>
-          <div>
-            <MdTrendingUp />
-            <h1>Best Selling</h1>
-            <p>
-              Discover the top-performing products based on sales volume,
-              revenue, and customer demand. This feature helps you identify
-              which items drive the most profit and optimize inventory
-              accordingly.
-            </p>
+          <div className="overflow-hidden w-64 h-96 rounded-lg -translate-y-1/4 translate-x-1/4">
+            <Image
+              src="https://api-storage.cli.pics/toko-kelontong/product/bcc99df7-15eb-4d59-89d0-fc7c61fcb3fb.png"
+              alt="Modal"
+              width={200}
+              height={200}
+              className="object-cover rounded-lg h-full w-full"
+            />
           </div>
-          <div>
-            <MdBarChart />
-            <h1>Sales</h1>
-            <p>
-              Monitor overall sales performance with detailed breakdowns by time
-              period, product category, or region. Gain a comprehensive view of
-              sales trends to make informed business decisions.
-            </p>
+        </div>
+        <div className="max-w-96 flex flex-col gap-8">
+          <h1 className="text-6xl font-bold flex flex-col">
+            <span>Create a Lasting</span>
+            <span className="text-[var(--bg-primary)]">Impression</span>
+          </h1>
+          <p className="text-lg">
+            Customers want to know you have their best interest in mind. And
+            that's tough to do when you don't have all the information. With
+            Pano, you'll have a wide-angle view on every customer, giving you
+            full confidence in how to respond and when.
+          </p>
+        </div>
+      </section>
+
+      {/* Section 3 */}
+      <section className="z-30 p-10 -translate-y-16 flex flex-row justify-center items-center gap-6 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+          {[
+            {
+              icon: <MdAssignment className="text-6xl text-yellow-500" />,
+              title: "Laporan Order",
+              description:
+                "Lihat riwayat pesanan secara mendetail, termasuk status, jumlah, dan pelanggan. Pantau perkembangan transaksi dengan mudah.",
+            },
+            {
+              icon: <MdShoppingCart className="text-6xl text-yellow-500" />,
+              title: "Laporan Penjualan",
+              description:
+                "Analisis total penjualan dalam periode tertentu. Identifikasi produk terlaris dan tingkatkan strategi pemasaran.",
+            },
+            {
+              icon: <MdInsertChart className="text-6xl text-yellow-500" />,
+              title: "Laporan Keuangan",
+              description:
+                "Pantau arus kas, keuntungan, dan biaya operasional dengan laporan keuangan yang akurat dan terperinci.",
+            },
+          ].map(({ icon, title, description }, index) => (
+            <div
+              key={index}
+              className={`flex flex-col items-start p-6 bg-white shadow-lg rounded-lg text-justify ${
+                index === 2 ? "md:col-span-2 mx-auto w-2/3" : ""
+              }`}
+            >
+              {icon}
+              <h1 className="font-bold text-2xl mt-2">{title}</h1>
+              <p className="text-gray-600 mt-2 text-justify">{description}</p>
+            </div>
+          ))}
+        </div>
+        <div className="text-left bg-white shadow-xl rounded-lg p-5 ">
+          <h3 className="text-4xl">Reports</h3>
+          <div className="flex justify-center mt-4">
+            <div className="overflow-hidden w-[32rem] h-[32rem] rounded-lg">
+              <Image
+                src="https://api-storage.cli.pics/toko-kelontong/product/d53a38db-a909-49a6-b3ac-708d9d20d010.png"
+                alt="Reports"
+                width={200}
+                height={200}
+                className="object-cover h-full w-full"
+              />
+            </div>
           </div>
-          <div>
-            <MdReceipt />
-            <h1>Transaction History</h1>
-            <p>
-              Access a complete log of past transactions, including purchase
-              details, payment methods, and timestamps. This ensures
-              transparency and helps with financial tracking, refunds, and
-              customer service.
-            </p>
+        </div>
+      </section>
+
+      {/* Section 2 */}
+      <section className="z-30 p-10 -translate-y-16 flex flex-row justify-evenly items-center relative">
+        <div className="absolute inset-0 bg-[var(--bg-secondary)] opacity-50 -z-10"></div>
+        <div className="max-w-96 flex flex-col gap-8">
+          <h1 className="text-6xl font-bold flex flex-col">
+            <span>Create a Lasting</span>
+            <span className="text-[var(--bg-primary)]">Impression</span>
+          </h1>
+          <p className="text-lg">
+            Customers want to know you have their best interest in mind. And
+            that's tough to do when you don't have all the information. With
+            Pano, you'll have a wide-angle view on every customer, giving you
+            full confidence in how to respond and when.
+          </p>
+        </div>
+        <div className="flex flex-col items-center translate-y-20">
+          <div className="overflow-hidden w-96 h-56 rounded-lg -translate-x-1/4">
+            <Image
+              src="https://api-storage.cli.pics/toko-kelontong/product/9e50f518-7f40-454b-826d-73273a50fb6b.png"
+              alt="Pesanan Masuk"
+              width={200}
+              height={200}
+              className="object-cover rounded-lg h-full w-full"
+            />
+          </div>
+          <div className="overflow-hidden w-96 h-[32rem] rounded-lg -translate-y-1/4 translate-x-1/4">
+            <Image
+              src="https://api-storage.cli.pics/toko-kelontong/product/134e4aa8-bdfb-4b20-bc96-5bf9ff03db14.png"
+              alt="Sales"
+              width={200}
+              height={200}
+              className="object-cover rounded-lg h-full w-full"
+            />
           </div>
         </div>
       </section>

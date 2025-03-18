@@ -1,34 +1,21 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import ExpandableMenu from "@/components/menu/expendableMenu";
 import MenuItem from "@/components/menu/menuItem";
-import { tokenDecoded } from "@/utils/tokenDecoded";
 import ContentRenderer from "@/components/nav/renderContents";
 import { rolePermissions } from "@/utils/permission";
 import { motion } from "framer-motion";
 import {
-  TbReportAnalytics,
-  TbBuilding,
-  TbAdjustments,
-  TbUser,
   TbUsersGroup,
-  TbBriefcase,
-  TbShoppingBagPlus,
-  TbLogout,
   TbReportMoney,
   TbBox,
-  TbPercentage,
-  TbWallet,
   TbCash,
-  TbMoneybag,
   TbChevronDown,
   TbBuildingWarehouse,
   TbUserSquare,
-  TbReport,
   TbBuildingStore,
   TbShoppingCart,
   TbCategory,
   TbRuler,
-  TbReceiptTax,
   TbChartLine,
   TbList,
   TbTruckDelivery,
@@ -41,52 +28,28 @@ import {
   TbSettings,
 } from "react-icons/tb";
 
-const Sidebar = ({ setSelectedLink, selectedLink }) => {
+const Sidebar = ({
+  numericRole,
+  idCompany,
+  idStore,
+  setSelectedLink,
+  selectedLink,
+}) => {
   const [expandedMenus, setExpandedMenus] = useState({});
-  const [userRole, setUserRole] = useState("kasir");
-  const [idCompany, setIdCompany] = useState(null);
-  const [idStore, setIdStore] = useState(null);
 
-  const toggleMenu = (menuKey) =>
-    setExpandedMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
-
+  // Map numericRole to userRole directly from props
   const roleMapping = {
     1: "superadmin",
     2: "admin",
     3: "manajer",
     4: "kasir",
     5: "customer",
+    null: "guest",
   };
+  const userRole = roleMapping[numericRole] || "guest";
 
-  useEffect(() => {
-    const updateStateFromLocalStorage = () => {
-      const userData = tokenDecoded();
-      const numericRole = userData.rule;
-
-      const id_company =
-        localStorage.getItem("id_company") === "undefined"
-          ? null
-          : localStorage.getItem("id_company");
-      const id_store =
-        localStorage.getItem("id_store") === "undefined"
-          ? null
-          : localStorage.getItem("id_store");
-
-      setIdCompany(id_company);
-      setIdStore(id_store);
-
-      const mappedRole = roleMapping[numericRole || ""] || "kasir";
-      setUserRole(mappedRole);
-    };
-
-    // Jalankan langsung pertama kali
-    updateStateFromLocalStorage();
-
-    // Set interval untuk cek perubahan setiap 500ms
-    const intervalId = setInterval(updateStateFromLocalStorage, 1000);
-
-    return () => clearInterval(intervalId);
-  }, []);
+  const toggleMenu = (menuKey) =>
+    setExpandedMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
 
   const menuConfig = [
     { label: "Analisis", icon: <TbChartLine />, key: "analytics" },
@@ -118,7 +81,6 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
         { label: "Sales Promo", icon: <TbDiscount />, key: "sales_campaign" },
       ],
     },
-
     {
       label: "Product",
       icon: TbChevronDown,
@@ -160,7 +122,7 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
           ].includes(item.key) &&
           !idStore
         ) {
-          return false; // Remove "Toko" if idStore is null
+          return false; // Remove items requiring idStore if it's null
         }
         return true;
       })
@@ -176,7 +138,7 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
         return rolePermissions[userRole]?.includes(item.key) ? item : null;
       })
       .filter(Boolean); // Remove null values
-  }, [menuConfig, rolePermissions, userRole, idCompany, idStore]);
+  }, [idCompany, idStore, userRole]);
 
   return (
     <div className="drawer lg:drawer-open">
@@ -199,6 +161,7 @@ const Sidebar = ({ setSelectedLink, selectedLink }) => {
           selectedLink={selectedLink}
           setSelectedLink={setSelectedLink}
           userRole={userRole}
+          filteredMenuConfig={filteredMenuConfig}
         />
       </motion.div>
       <motion.div

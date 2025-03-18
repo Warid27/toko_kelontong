@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
-import CompanySelector from "@/components/nav/sub/companySelector";
-import StoreSelector from "@/components/nav/sub/storeSelector";
+
 import Avatar from "@/components/nav/sub/avatar";
 import { tokenDecoded } from "@/utils/tokenDecoded";
 import StoreIcon from "@/components/nav/sub/storeIcon";
 import { motion } from "framer-motion";
 
-export default function Navbar({ handleLogout, setSelectedLink }) {
-  const [userRole, setUserRole] = useState(4);
+export default function Navbar({ idStore, handleLogout, setSelectedLink }) {
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     setUserRole(tokenDecoded().rule);
@@ -22,14 +21,13 @@ export default function Navbar({ handleLogout, setSelectedLink }) {
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="flex justify-between items-center w-full">
-        {userRole === 1 ? (
-          <CompanySelector />
-        ) : userRole === 2 ? (
-          <StoreSelector />
-        ) : (
-          <StoreIcon role={userRole} />
-        )}
-        <Avatar setSelectedLink={setSelectedLink} handleLogout={handleLogout} />
+        <StoreIcon idStore={idStore} role={userRole} />
+        <Avatar
+          idStore={idStore}
+          selector={userRole == 1 ? "superadmin" : userRole == 2 ? "admin" : ""}
+          setSelectedLink={setSelectedLink}
+          handleLogout={handleLogout}
+        />
       </div>
     </motion.div>
   );

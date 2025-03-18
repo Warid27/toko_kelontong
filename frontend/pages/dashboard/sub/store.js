@@ -360,10 +360,17 @@ const StoreData = () => {
     }));
   };
 
+  const statusLabels = {
+    0: "active",
+    1: "inactive",
+  };
   const filteredStoreList = stores.filter(
     (store) =>
       store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      store.address.toLowerCase().includes(searchQuery.toLowerCase())
+      store.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      statusLabels[store.status]
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase())
   );
 
   if (isLoading) return <Loading />;

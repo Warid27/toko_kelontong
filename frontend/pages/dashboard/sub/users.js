@@ -237,6 +237,7 @@ const User = () => {
       toast.error("Please fill all required fields");
       return;
     }
+
     try {
       // Convert empty strings to null
       const reqBody = Object.fromEntries(
@@ -244,6 +245,11 @@ const User = () => {
           ([_, value]) => value != "" && value != null
         )
       );
+
+      if (userDataAdd.rule == "1" || userDataAdd.rule == "5") {
+        reqBody.id_company = null;
+        reqBody.id_store = null;
+      }
 
       reqBody.status = 1;
 
@@ -290,6 +296,12 @@ const User = () => {
     e.preventDefault();
     try {
       const reqBody = { ...userDataUpdate };
+
+      if (reqBody.rule == "1" || reqBody.rule == "5") {
+        reqBody.id_company = null;
+        reqBody.id_store = null;
+      }
+
       const response = await updateUserData(reqBody, userDataUpdate.id);
 
       if (response.status === 200) {

@@ -5,7 +5,12 @@ import Image from "next/image";
 // Icons
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import { MdDelete } from "react-icons/md";
-import { FaRegEdit, FaInfoCircle, FaWpforms, FaRegFileExcel } from "react-icons/fa";
+import {
+  FaRegEdit,
+  FaInfoCircle,
+  FaWpforms,
+  FaRegFileExcel,
+} from "react-icons/fa";
 import { IoBarcodeOutline } from "react-icons/io5";
 import { IoSearchOutline } from "react-icons/io5";
 import { IoIosCloudDone } from "react-icons/io";
@@ -25,7 +30,13 @@ import BarcodeGenerator from "@/components/BarcodeGenerator";
 import { fetchExtrasList } from "@/libs/fetching/extras";
 import { fetchCategoryList } from "@/libs/fetching/category";
 import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
-import { fetchProductsList, fetchProductsAdd, AddBatchProducts, updateProduct, deleteProduct } from "@/libs/fetching/product";
+import {
+  fetchProductsList,
+  fetchProductsAdd,
+  AddBatchProducts,
+  updateProduct,
+  deleteProduct,
+} from "@/libs/fetching/product";
 import { fetchSizeList } from "@/libs/fetching/size";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import client from "@/libs/axios";
@@ -59,8 +70,14 @@ const ProductMenu = () => {
   const [folder, setFolder] = useState(null);
 
   const token = localStorage.getItem("token");
-  const id_store = localStorage.getItem("id_store") === "undefined" ? null : localStorage.getItem("id_store");
-  const id_company = localStorage.getItem("id_company") === "undefined" ? null : localStorage.getItem("id_company");
+  const id_store =
+    localStorage.getItem("id_store") === "undefined"
+      ? null
+      : localStorage.getItem("id_store");
+  const id_company =
+    localStorage.getItem("id_company") === "undefined"
+      ? null
+      : localStorage.getItem("id_company");
   const id_user = localStorage.getItem("id_user");
 
   const [productDataAdd, setProductDataAdd] = useState({
@@ -113,7 +130,10 @@ const ProductMenu = () => {
         <div className="avatar">
           <div className="mask mask-squircle h-12 w-12">
             <Image
-              src={value || "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"}
+              src={
+                value ||
+                "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+              }
               alt="Product"
               width={48}
               height={48}
@@ -131,7 +151,9 @@ const ProductMenu = () => {
           <select
             className="bg-white border border-green-300 p-2 rounded-lg shadow-xl focus:ring focus:ring-green-300 w-full cursor-pointer"
             value={value}
-            onChange={(e) => handleStatusSelect(row._id, Number(e.target.value))}
+            onChange={(e) =>
+              handleStatusSelect(row._id, Number(e.target.value))
+            }
           >
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -145,25 +167,66 @@ const ProductMenu = () => {
   ];
 
   const actions = [
-    { icon: <MdDelete size={20} />, onClick: (row) => deleteProductById(row._id), className: "bg-red-500 hover:bg-red-600" },
-    { icon: <FaRegEdit size={20} />, onClick: (row) => handleUpdateProduct(row, "update"), className: "bg-blue-500 hover:bg-blue-600" },
-    { icon: <IoBarcodeOutline size={20} />, onClick: (row) => { setBarcode(row.barcode); modalOpen("barcode", true); }, className: "bg-gray-500 hover:bg-gray-600" },
+    {
+      icon: <MdDelete size={20} />,
+      onClick: (row) => deleteProductById(row._id),
+      className: "bg-red-500 hover:bg-red-600",
+    },
+    {
+      icon: <FaRegEdit size={20} />,
+      onClick: (row) => handleUpdateProduct(row, "update"),
+      className: "bg-blue-500 hover:bg-blue-600",
+    },
+    {
+      icon: <IoBarcodeOutline size={20} />,
+      onClick: (row) => {
+        setBarcode(row.barcode);
+        modalOpen("barcode", true);
+      },
+      className: "bg-gray-500 hover:bg-gray-600",
+    },
   ];
 
   // --- Functions
   const modalOpen = (param, bool) => {
-    const setters = { add: setIsModalOpen, update: setIsUpdateModalOpen, example: setIsExampleModalOpen, barcode: setIsBarcodeModalOpen };
+    const setters = {
+      add: setIsModalOpen,
+      update: setIsUpdateModalOpen,
+      example: setIsExampleModalOpen,
+      barcode: setIsBarcodeModalOpen,
+    };
     if (setters[param]) setters[param](bool);
   };
 
   useEffect(() => {
     const fetching_requirement = async () => {
-      const get_extras_list = async () => { const data = await fetchExtrasList(); setExtrasList(data); };
-      const get_category_list = async () => { const data = await fetchCategoryList(); setCategoryList(data); };
-      const get_itemCampaign_list = async () => { const data = await fetchItemCampaignList(); setItemCampaignList(data); };
-      const get_size_list = async () => { const data = await fetchSizeList(); setSizeList(data); };
-      const get_product_list = async () => { const data = await fetchProductsList(id_store, id_company, null, {}); setProducts(data); };
-      await Promise.all([get_extras_list(), get_category_list(), get_itemCampaign_list(), get_size_list(), get_product_list()]);
+      const get_extras_list = async () => {
+        const data = await fetchExtrasList();
+        setExtrasList(data);
+      };
+      const get_category_list = async () => {
+        const data = await fetchCategoryList();
+        setCategoryList(data);
+      };
+      const get_itemCampaign_list = async () => {
+        const data = await fetchItemCampaignList();
+        setItemCampaignList(data);
+      };
+      const get_size_list = async () => {
+        const data = await fetchSizeList();
+        setSizeList(data);
+      };
+      const get_product_list = async () => {
+        const data = await fetchProductsList(id_store, id_company, null, {});
+        setProducts(data);
+      };
+      await Promise.all([
+        get_extras_list(),
+        get_category_list(),
+        get_itemCampaign_list(),
+        get_size_list(),
+        get_product_list(),
+      ]);
       setIsLoading(false);
     };
     fetching_requirement();
@@ -171,7 +234,8 @@ const ProductMenu = () => {
 
   const handleDownload = () => {
     const link = document.createElement("a");
-    link.href = "https://api-storage.cli.pics:443/toko-kelontong/file/example.rar";
+    link.href =
+      "https://api-storage.cli.pics:443/toko-kelontong/file/example.rar";
     link.download = "Example.rar";
     document.body.appendChild(link);
     link.click();
@@ -181,9 +245,15 @@ const ProductMenu = () => {
   const handleStatusSelect = async (productId, selectedStatus) => {
     try {
       setLoading(true);
-      const response = await updateProduct(productId, { status: selectedStatus });
+      const response = await updateProduct(productId, {
+        status: selectedStatus,
+      });
       if (response.status === 200) {
-        setProducts((prev) => prev.map((p) => p._id === productId ? { ...p, status: selectedStatus } : p));
+        setProducts((prev) =>
+          prev.map((p) =>
+            p._id === productId ? { ...p, status: selectedStatus } : p
+          )
+        );
       }
     } finally {
       setLoading(false);
@@ -214,7 +284,10 @@ const ProductMenu = () => {
             setProducts((prev) => prev.filter((p) => p._id !== id));
           }
         } catch (error) {
-          toast.error("Gagal menghapus produk: " + (error.response?.data?.message || error.message));
+          toast.error(
+            "Gagal menghapus produk: " +
+              (error.response?.data?.message || error.message)
+          );
         }
       }
     });
@@ -225,21 +298,32 @@ const ProductMenu = () => {
     setProductDataAdd((prev) => ({ ...prev, [name]: value }));
   };
 
-  const generateRandomBarcode = () => Math.random().toString(36).substring(2, 10).toUpperCase();
+  const generateRandomBarcode = () =>
+    Math.random().toString(36).substring(2, 10).toUpperCase();
 
   const handleGenerateBarcode = (e) => {
     e.preventDefault();
-    setProductDataAdd((prev) => ({ ...prev, barcode: generateRandomBarcode() }));
+    setProductDataAdd((prev) => ({
+      ...prev,
+      barcode: generateRandomBarcode(),
+    }));
   };
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
     try {
-      if (!productDataAdd.name_product || !productDataAdd.sell_price || !productDataAdd.buy_price) {
+      if (
+        !productDataAdd.name_product ||
+        !productDataAdd.sell_price ||
+        !productDataAdd.buy_price
+      ) {
         toast.error("Please fill all required fields.");
         return;
       }
-      if (Number(productDataAdd.sell_price) <= 0 || Number(productDataAdd.buy_price) <= 0) {
+      if (
+        Number(productDataAdd.sell_price) <= 0 ||
+        Number(productDataAdd.buy_price) <= 0
+      ) {
         toast.error("Harga tidak boleh lebih rendah dari 1!");
         return;
       }
@@ -275,7 +359,6 @@ const ProductMenu = () => {
           id_extras: "",
           id_size: "",
         });
-        console.log(response)
         setProducts((prev) => [...prev, response.data.data]);
       }
     } catch (error) {
@@ -302,15 +385,21 @@ const ProductMenu = () => {
     Array.from(folder).forEach((img) => formData.append("images", img));
     try {
       const response = await client.post("/product/file", formData, {
-        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
       });
+
       if (response.status === 200) {
         const data = response.data.data;
         const responseProduct = await AddBatchProducts(data);
         if (responseProduct.status === 201) {
           modalOpen("add", false);
           toast.success("Produk berhasil ditambahkan!");
-          const newProducts = responseProduct.data.products.map((item) => item.product);
+          const newProducts = responseProduct.data.products.map(
+            (item) => item.product
+          );
           setProducts((prev) => [...prev, ...newProducts]);
         }
       }
@@ -329,7 +418,10 @@ const ProductMenu = () => {
         if (params === "add") {
           setProductDataAdd((prev) => ({ ...prev, image: uploadedImageUrl }));
         } else if (params === "update") {
-          setProductDataUpdate((prev) => ({ ...prev, image: uploadedImageUrl }));
+          setProductDataUpdate((prev) => ({
+            ...prev,
+            image: uploadedImageUrl,
+          }));
         }
       } else {
         toast.error(`Upload Failed: ${response.error}`);
@@ -384,7 +476,9 @@ const ProductMenu = () => {
       if (response.status === 200) {
         modalOpen("update", false);
         toast.success("Produk berhasil diupdate!");
-        setProducts((prev) => prev.map((p) => p._id === productDataUpdate.id ? response.data : p));
+        setProducts((prev) =>
+          prev.map((p) => (p._id === productDataUpdate.id ? response.data : p))
+        );
       }
     } catch (error) {
       toast.error("Error updating product: " + error.message);
@@ -435,16 +529,35 @@ const ProductMenu = () => {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => modalOpen("add", false)} title="Tambah Produk" width="large">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => modalOpen("add", false)}
+        title="Tambah Produk"
+        width="large"
+      >
         <div className="flex flex-row mb-5">
-          <AddMenu onClick={() => setOpenMenu("form")} content={<FaWpforms />} isActive={openMenu === "form"} />
-          <AddMenu onClick={() => setOpenMenu("excel")} content={<FaRegFileExcel />} isActive={openMenu === "excel"} />
+          <AddMenu
+            onClick={() => setOpenMenu("form")}
+            content={<FaWpforms />}
+            isActive={openMenu === "form"}
+          />
+          <AddMenu
+            onClick={() => setOpenMenu("excel")}
+            content={<FaRegFileExcel />}
+            isActive={openMenu === "excel"}
+          />
         </div>
         {openMenu === "form" ? (
           <form onSubmit={handleSubmitAdd}>
             <p className="font-semibold">Gambar Produk</p>
-            <p className="mb-2 text-sm text-slate-500">Image format .jpg .jpeg .png and minimum size 300 x 300px</p>
-            <ImageUpload image={productDataAdd.image} onImageChange={(e) => handleImageChange(e, "add")} params="add" />
+            <p className="mb-2 text-sm text-slate-500">
+              Image format .jpg .jpeg .png and minimum size 300 x 300px
+            </p>
+            <ImageUpload
+              image={productDataAdd.image}
+              onImageChange={(e) => handleImageChange(e, "add")}
+              params="add"
+            />
             <p className="font-semibold mt-4">Nama Menu</p>
             <input
               type="text"
@@ -516,9 +629,23 @@ const ProductMenu = () => {
             <Select
               id="categoryProduct"
               className="basic-single"
-              options={categoryList.map((c) => ({ value: c._id, label: c.name_category }))}
-              value={categoryList.map((c) => ({ value: c._id, label: c.name_category })).find((opt) => opt.value === productDataAdd.id_category_product) || null}
-              onChange={(opt) => setProductDataAdd((prev) => ({ ...prev, id_category_product: opt ? opt.value : "" }))}
+              options={categoryList.map((c) => ({
+                value: c._id,
+                label: c.name_category,
+              }))}
+              value={
+                categoryList
+                  .map((c) => ({ value: c._id, label: c.name_category }))
+                  .find(
+                    (opt) => opt.value === productDataAdd.id_category_product
+                  ) || null
+              }
+              onChange={(opt) =>
+                setProductDataAdd((prev) => ({
+                  ...prev,
+                  id_category_product: opt ? opt.value : "",
+                }))
+              }
               isSearchable
               required
               placeholder="Pilih Category..."
@@ -528,9 +655,23 @@ const ProductMenu = () => {
             <Select
               id="itemCampaign"
               className="basic-single"
-              options={itemCampaignList.map((c) => ({ value: c._id, label: c.item_campaign_name }))}
-              value={itemCampaignList.map((c) => ({ value: c._id, label: c.item_campaign_name })).find((opt) => opt.value === productDataAdd.id_item_campaign) || null}
-              onChange={(opt) => setProductDataAdd((prev) => ({ ...prev, id_item_campaign: opt ? opt.value : "" }))}
+              options={itemCampaignList.map((c) => ({
+                value: c._id,
+                label: c.item_campaign_name,
+              }))}
+              value={
+                itemCampaignList
+                  .map((c) => ({ value: c._id, label: c.item_campaign_name }))
+                  .find(
+                    (opt) => opt.value === productDataAdd.id_item_campaign
+                  ) || null
+              }
+              onChange={(opt) =>
+                setProductDataAdd((prev) => ({
+                  ...prev,
+                  id_item_campaign: opt ? opt.value : "",
+                }))
+              }
               isSearchable
               placeholder="Pilih diskon..."
               noOptionsMessage={() => "No diskon available"}
@@ -542,11 +683,25 @@ const ProductMenu = () => {
           </form>
         ) : (
           <div>
-            <button onClick={() => { modalOpen("add", false); modalOpen("example", true); }}>example</button>
-            <h1 className="text-lg font-semibold text-gray-800 text-center mb-2">Upload Excel & Folder Gambar</h1>
+            <button
+              onClick={() => {
+                modalOpen("add", false);
+                modalOpen("example", true);
+              }}
+            >
+              example
+            </button>
+            <h1 className="text-lg font-semibold text-gray-800 text-center mb-2">
+              Upload Excel & Folder Gambar
+            </h1>
             <div className="upload-container">
               <label className="upload-label">
-                <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileChange} style={{ display: "none" }} />
+                <input
+                  type="file"
+                  accept=".xlsx, .xls, .csv"
+                  onChange={handleFileChange}
+                  style={{ display: "none" }}
+                />
                 {file && <p>File dipilih: {file.name}</p>}
                 <div className="upload-content">
                   {file ? (
@@ -565,20 +720,44 @@ const ProductMenu = () => {
             </div>
             <div className="upload-container mt-4">
               <label className="upload-label">
-                <input type="file" webkitdirectory="" directory="" multiple onChange={handleFolderChange} style={{ display: "none" }} />
-                {folder ? <p>{folder.length} file gambar dipilih</p> : <p>Pilih folder gambar</p>}
+                <input
+                  type="file"
+                  webkitdirectory=""
+                  directory=""
+                  multiple
+                  onChange={handleFolderChange}
+                  style={{ display: "none" }}
+                />
+                {folder ? (
+                  <p>{folder.length} file gambar dipilih</p>
+                ) : (
+                  <p>Pilih folder gambar</p>
+                )}
               </label>
             </div>
-            <button onClick={handleProductBatch} className="addBtn mt-4">Upload</button>
+            <button onClick={handleProductBatch} className="addBtn mt-4">
+              Upload
+            </button>
           </div>
         )}
       </Modal>
 
-      <Modal isOpen={isUpdateModalOpen} onClose={() => modalOpen("update", false)} title="Edit Produk" width="large">
+      <Modal
+        isOpen={isUpdateModalOpen}
+        onClose={() => modalOpen("update", false)}
+        title="Edit Produk"
+        width="large"
+      >
         <form onSubmit={handleSubmitUpdate}>
           <p className="font-semibold">Gambar Produk</p>
-          <p className="mb-2 text-sm text-slate-500">Format .jpg .jpeg .png dan minimal ukuran 300 x 300px</p>
-          <ImageUpload image={productDataUpdate.image} onImageChange={(e) => handleImageChange(e, "update")} params="update" />
+          <p className="mb-2 text-sm text-slate-500">
+            Format .jpg .jpeg .png dan minimal ukuran 300 x 300px
+          </p>
+          <ImageUpload
+            image={productDataUpdate.image}
+            onImageChange={(e) => handleImageChange(e, "update")}
+            params="update"
+          />
           <p className="font-semibold mt-4">Nama Produk</p>
           <input
             type="text"
@@ -642,9 +821,23 @@ const ProductMenu = () => {
           <Select
             id="categoryProduct"
             className="basic-single"
-            options={categoryList.map((c) => ({ value: c._id, label: c.name_category }))}
-            value={categoryList.map((c) => ({ value: c._id, label: c.name_category })).find((opt) => opt.value === productDataUpdate.id_category_product) || null}
-            onChange={(opt) => setProductDataUpdate((prev) => ({ ...prev, id_category_product: opt ? opt.value : "" }))}
+            options={categoryList.map((c) => ({
+              value: c._id,
+              label: c.name_category,
+            }))}
+            value={
+              categoryList
+                .map((c) => ({ value: c._id, label: c.name_category }))
+                .find(
+                  (opt) => opt.value === productDataUpdate.id_category_product
+                ) || null
+            }
+            onChange={(opt) =>
+              setProductDataUpdate((prev) => ({
+                ...prev,
+                id_category_product: opt ? opt.value : "",
+              }))
+            }
             isSearchable
             placeholder="Pilih Category..."
             noOptionsMessage={() => "No Category available"}
@@ -653,9 +846,23 @@ const ProductMenu = () => {
           <Select
             id="itemCampaign"
             className="basic-single"
-            options={itemCampaignList.map((c) => ({ value: c._id, label: c.item_campaign_name }))}
-            value={itemCampaignList.map((c) => ({ value: c._id, label: c.item_campaign_name })).find((opt) => opt.value === productDataUpdate.id_item_campaign) || null}
-            onChange={(opt) => setProductDataUpdate((prev) => ({ ...prev, id_item_campaign: opt ? opt.value : "" }))}
+            options={itemCampaignList.map((c) => ({
+              value: c._id,
+              label: c.item_campaign_name,
+            }))}
+            value={
+              itemCampaignList
+                .map((c) => ({ value: c._id, label: c.item_campaign_name }))
+                .find(
+                  (opt) => opt.value === productDataUpdate.id_item_campaign
+                ) || null
+            }
+            onChange={(opt) =>
+              setProductDataUpdate((prev) => ({
+                ...prev,
+                id_item_campaign: opt ? opt.value : "",
+              }))
+            }
             isSearchable
             placeholder="Pilih diskon..."
             noOptionsMessage={() => "No diskon available"}
@@ -667,8 +874,20 @@ const ProductMenu = () => {
         </form>
       </Modal>
 
-      <Modal isOpen={isExampleModalOpen} onClose={() => { modalOpen("example", false); modalOpen("add", true); }} title="Format Menambahkan Produk">
-        <motion.div className="flex justify-center p-4" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: "easeOut" }}>
+      <Modal
+        isOpen={isExampleModalOpen}
+        onClose={() => {
+          modalOpen("example", false);
+          modalOpen("add", true);
+        }}
+        title="Format Menambahkan Produk"
+      >
+        <motion.div
+          className="flex justify-center p-4"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
           <Image
             src="http://localhost:8080/api/image/39f317fa"
             width={500}
@@ -683,14 +902,31 @@ const ProductMenu = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <h1 className="text-xl font-bold mb-3">📊 Cara Mengupload Produk Menggunakan Excel:</h1>
+          <h1 className="text-xl font-bold mb-3">
+            📊 Cara Mengupload Produk Menggunakan Excel:
+          </h1>
           <ul className="list-decimal list-inside space-y-2 text-md">
-            <li>Samakan dengan format gambar di atas atau langsung unduh template yang tersedia.</li>
-            <li>Tambahkan file Excel sesuai dengan format yang sudah ditentukan.</li>
-            <li>Pastikan setiap gambar berada dalam folder yang sama dan namanya sesuai dengan kolom <span className="font-mono bg-gray-300 px-1 rounded">image</span> di Excel.</li>
+            <li>
+              Samakan dengan format gambar di atas atau langsung unduh template
+              yang tersedia.
+            </li>
+            <li>
+              Tambahkan file Excel sesuai dengan format yang sudah ditentukan.
+            </li>
+            <li>
+              Pastikan setiap gambar berada dalam folder yang sama dan namanya
+              sesuai dengan kolom{" "}
+              <span className="font-mono bg-gray-300 px-1 rounded">image</span>{" "}
+              di Excel.
+            </li>
           </ul>
         </motion.div>
-        <motion.div className="flex justify-center my-4" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4, ease: "easeOut" }}>
+        <motion.div
+          className="flex justify-center my-4"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
           <button
             onClick={handleDownload}
             className="px-6 py-3 bg-white/10 backdrop-blur-lg border border-white/20 hover:bg-white/20 transition text-black font-semibold rounded-lg shadow-lg hover:shadow-blue-500/50 flex items-center gap-2"
@@ -700,7 +936,11 @@ const ProductMenu = () => {
         </motion.div>
       </Modal>
 
-      <Modal isOpen={isBarcodeModalOpen} onClose={() => modalOpen("barcode", false)} title="Barcode Produk">
+      <Modal
+        isOpen={isBarcodeModalOpen}
+        onClose={() => modalOpen("barcode", false)}
+        title="Barcode Produk"
+      >
         <div className="flex justify-center items-center">
           <BarcodeGenerator barcode={barcode} />
         </div>

@@ -9,22 +9,10 @@ const router = new Hono();
 // Helper function to parse request body
 const parseRequestBody = async (c) => {
   try {
-    let username, password;
-    // Check if the request is JSON
-    if (
-      c.req.header("accept") === "application/json" ||
-      c.req.header("Content-Type") === "application/json"
-    ) {
-      const body = await c.req.json();
-      username = body.username;
-      password = body.password;
-    } else {
-      // Parse URL-encoded body
-      const rawBody = await c.req.text();
-      const parsedBody = new URLSearchParams(rawBody);
-      username = parsedBody.get("username");
-      password = parsedBody.get("password");
-    }
+    const body = await c.req.json();
+    const username = body.username;
+    const password = body.password;
+    
     // Validate required fields
     if (!username || !password) {
       return { error: "Username and password are required" };

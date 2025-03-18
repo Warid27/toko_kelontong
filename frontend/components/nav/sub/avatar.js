@@ -2,9 +2,12 @@ import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { TbChevronDown } from "react-icons/tb";
 import { getAvatar } from "@/libs/fetching/user";
+import CompanySelector from "@/components/nav/sub/companySelector";
+import StoreSelector from "@/components/nav/sub/storeSelector";
 
-const Avatar = ({ handleLogout, setSelectedLink }) => {
+const Avatar = ({ selector, handleLogout, setSelectedLink }) => {
   const [avatar, setAvatar] = useState(null);
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -65,11 +68,12 @@ const Avatar = ({ handleLogout, setSelectedLink }) => {
 
       {/* Dropdown Menu */}
       <div
-        className={`absolute right-0 top-16 w-56 bg-white shadow-2xl rounded-xl overflow-hidden z-20 backdrop-blur-md transition-all duration-300 ease-out transform  ${
+        className={`absolute right-0 top-16 w-56 bg-white shadow-2xl rounded-xl  z-20 backdrop-blur-md transition-all duration-300 ease-out transform ${
           dropdownOpen
             ? "scale-100 opacity-100 translate-y-0"
             : "scale-95 opacity-0 translate-y-[-10px] pointer-events-none"
         }`}
+        onClick={(e) => e.stopPropagation()} // Prevent closing on inside clicks
       >
         <ul className="divide-y divide-gray-200">
           <li>
@@ -80,6 +84,15 @@ const Avatar = ({ handleLogout, setSelectedLink }) => {
               Profile
             </button>
           </li>
+          {selector === "superadmin" ? (
+            <li>
+              <CompanySelector />
+            </li>
+          ) : selector === "admin" ? (
+            <li>
+              <StoreSelector />
+            </li>
+          ) : null}
           <li>
             <button
               onClick={handleLogout}

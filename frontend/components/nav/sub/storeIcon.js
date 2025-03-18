@@ -1,61 +1,51 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-
 import { getStoreImage } from "@/libs/fetching/store";
-import { tokenDecoded } from "@/utils/tokenDecoded";
 
-const StoreIcon = ({ role, store_id = null }) => {
+const StoreIcon = ({ idStore, role }) => {
   const [storeIcon, setStoreIcon] = useState(null);
 
+  // Fetch store icon based on storeId
+  const getStoreIconFunction = async (storeId) => {
+    if (!storeId) {
+      setStoreIcon(null);
+      return;
+    }
+
+    try {
+      const icon = await getStoreImage(storeId, "icon");
+      setStoreIcon(icon);
+    } catch (error) {
+      console.error("Error fetching store image:", error);
+      setStoreIcon(null);
+    }
+  };
+
   useEffect(() => {
-    const getStoreIconFunction = async () => {
-      let id_store = null;
+    // Use the idStore prop directly and fetch the icon if it exists
+    if (idStore && idStore !== "undefined" && idStore !== "null") {
+      getStoreIconFunction(idStore);
+    } else {
+      setStoreIcon(null);
+    }
+  }, [idStore]); // Depend on idStore prop changes
 
-      if (role === 1) {
-        id_store = store_id;
-      } else {
-        const userData = tokenDecoded();
-        id_store = userData?.id_store || null; 
-      }
-
-      if (!id_store) {
-        setStoreIcon(null);
-        return;
-      }
-
-      try {
-        const storeIcon = await getStoreImage(id_store, "icon");
-        setStoreIcon(storeIcon);
-      } catch (error) {
-        console.error("Error fetching store image:", error);
-        setStoreIcon(null);
-      }
-    };
-
-    getStoreIconFunction();
-  }, [role]);
-
-  return (
-    <div className="relative upload-content flex overflow-hidden w-12 h-12 rounded-full border-2 border-white">
-      {/* StoreIcon Image */}
-      {storeIcon ? (
+  return role ? (
+    storeIcon ? (
+      <div className="relative upload-content flex overflow-hidden w-12 h-12 rounded-full border-2 border-white">
         <Image
           src={storeIcon}
           alt="Uploaded"
           className="object-cover"
-          width={48} 
-          height={48}
-        />
-      ) : (
-        <Image
-          src="/User-storeIcon.png"
-          alt="storeIcon"
           width={48}
           height={48}
-          className="object-cover"
         />
-      )}
-    </div>
+      </div>
+    ) : (
+      <div></div>
+    )
+  ) : (
+    <div></div>
   );
 };
 

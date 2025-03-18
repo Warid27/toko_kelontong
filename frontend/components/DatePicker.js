@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
-import { DatePicker, MonthPicker, YearPicker } from "@mui/x-date-pickers";
+import { DatePicker } from "@mui/x-date-pickers";
 
 export default function DatePickers({ filterBy, value, onChange }) {
   const [selectedDate, setSelectedDate] = useState(value || new Date());
@@ -21,16 +21,24 @@ export default function DatePickers({ filterBy, value, onChange }) {
           <DatePicker
             value={selectedDate}
             onChange={handleChange}
-            format="yyyy-MM-dd"
+            format="yyyy/MM/dd"
           />
         )}
 
         {filterBy === "monthly" && (
-          <MonthPicker value={selectedDate} onChange={handleChange} />
+          <DatePicker
+            value={selectedDate}
+            onChange={handleChange}
+            views={["year", "month"]}
+          />
         )}
 
         {filterBy === "yearly" && (
-          <YearPicker value={selectedDate} onChange={handleChange} />
+          <DatePicker
+            value={selectedDate}
+            onChange={handleChange}
+            views={["year"]}
+          />
         )}
       </div>
     </LocalizationProvider>

@@ -12,25 +12,11 @@ async function hashPassword(password) {
 // Parse request body to extract username and password
 const parseRequestBody = async (c) => {
   try {
-    let username, password;
-
     // Log the raw request body
-    const rawBody = await c.req.text();
-    console.log("Raw Request Body:", rawBody);
+    const body = await c.req.json();
 
-    // Check if the request is JSON
-    if (c.req.header("Content-Type") === "application/json") {
-      const body = JSON.parse(rawBody); // Parse JSON manually
-      console.log("Parsed JSON Body:", body);
-      username = body.username;
-      password = body.password;
-    } else {
-      // Parse URL-encoded body
-      const parsedBody = new URLSearchParams(rawBody);
-      console.log("Parsed URL-Encoded Body:", Object.fromEntries(parsedBody));
-      username = parsedBody.get("username");
-      password = parsedBody.get("password");
-    }
+    const username = body.username;
+    const password = body.password;
 
     // Validate required fields
     if (!username || !password) {

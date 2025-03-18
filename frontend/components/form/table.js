@@ -50,8 +50,8 @@ const Table = ({
 
   return (
     <>
-      <div className="flex flex-row justify-between items-center">
-        <h1 className="flex flex-row gap-3 items-center mb-2">
+      <div className="p-5 flex flex-row justify-between items-center">
+        <h1 className="flex flex-row gap-3 items-center">
           <span>Export To:</span>
           <ExportData
             data={dataForExport}

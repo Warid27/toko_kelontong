@@ -11,7 +11,7 @@ import Image from "next/image";
 import client from "@/libs/axios";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
-import Loading from "@/components/loading"
+import Loading from "@/components/loading";
 
 // Components
 import { fetchUserGet } from "@/libs/fetching/user";
@@ -84,13 +84,9 @@ const Profile = () => {
         const data_user = await fetchUserGet();
         setUserToUpdate(data_user);
       };
-      
-      await Promise.all([
-        get_store_list(),
-        get_company_list(),
-        get_user_get()
-      ]);
-      
+
+      await Promise.all([get_store_list(), get_company_list(), get_user_get()]);
+
       setIsLoading(false);
     };
     fetching_requirement();
@@ -146,49 +142,57 @@ const Profile = () => {
         }
 
         Swal.fire({
-          title: 'Image Uploaded!',
-          text: 'Your profile picture has been updated',
-          icon: 'success',
-          background: '#f0f9ff',
-          iconColor: '#3b82f6',
-          confirmButtonColor: '#3b82f6'
+          title: "Image Uploaded!",
+          text: "Your profile picture has been updated",
+          icon: "success",
+          background: "#f0f9ff",
+          iconColor: "#3b82f6",
+          confirmButtonColor: "#3b82f6",
         });
       } else {
-        Swal.fire('Upload Failed', response.error, 'error');
+        Swal.fire("Upload Failed", response.error, "error");
       }
     } catch (error) {
       console.error("Compression or upload failed:", error);
-      Swal.fire('Upload Failed', 'There was an error uploading your image', 'error');
+      Swal.fire(
+        "Upload Failed",
+        "There was an error uploading your image",
+        "error"
+      );
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    
-    if (!userDataUpdate.username && userDataUpdate.password === "" && repeatPassword === "") {
+
+    if (
+      !userDataUpdate.username &&
+      userDataUpdate.password === "" &&
+      repeatPassword === ""
+    ) {
       Swal.fire({
-        title: 'Error',
-        text: 'Please fill in all required fields!',
-        icon: 'error',
-        background: '#fff1f2',
-        iconColor: '#ef4444',
-        confirmButtonColor: '#ef4444'
+        title: "Error",
+        text: "Please fill in all required fields!",
+        icon: "error",
+        background: "#fff1f2",
+        iconColor: "#ef4444",
+        confirmButtonColor: "#ef4444",
       });
       return;
     }
-    
+
     if (userDataUpdate.password !== repeatPassword) {
       Swal.fire({
-        title: 'Error',
-        text: 'Password and repeated password do not match!',
-        icon: 'error',
-        background: '#fff1f2',
-        iconColor: '#ef4444',
-        confirmButtonColor: '#ef4444'
+        title: "Error",
+        text: "Password and repeated password do not match!",
+        icon: "error",
+        background: "#fff1f2",
+        iconColor: "#ef4444",
+        confirmButtonColor: "#ef4444",
       });
       return;
     }
-    
+
     try {
       const response = await client.post("/login/checkpass", {
         username: userDataUpdate.username,
@@ -198,32 +202,32 @@ const Profile = () => {
       if (response.status === 200) {
         await handleSubmitUpdate(e);
         Swal.fire({
-          title: 'Password Updated!',
-          text: 'Your password has been changed successfully',
-          icon: 'success',
-          background: '#f0f9ff',
-          iconColor: '#3b82f6',
-          confirmButtonColor: '#3b82f6'
+          title: "Password Updated!",
+          text: "Your password has been changed successfully",
+          icon: "success",
+          background: "#f0f9ff",
+          iconColor: "#3b82f6",
+          confirmButtonColor: "#3b82f6",
         });
       } else {
         Swal.fire({
-          title: 'Error',
-          text: 'Current password is incorrect!',
-          icon: 'error',
-          background: '#fff1f2',
-          iconColor: '#ef4444',
-          confirmButtonColor: '#ef4444'
+          title: "Error",
+          text: "Current password is incorrect!",
+          icon: "error",
+          background: "#fff1f2",
+          iconColor: "#ef4444",
+          confirmButtonColor: "#ef4444",
         });
       }
     } catch (error) {
       console.error("Error updating password:", error);
       Swal.fire({
-        title: 'Error',
-        text: 'Password cannot be updated!',
-        icon: 'error',
-        background: '#fff1f2',
-        iconColor: '#ef4444',
-        confirmButtonColor: '#ef4444'
+        title: "Error",
+        text: "Password cannot be updated!",
+        icon: "error",
+        background: "#fff1f2",
+        iconColor: "#ef4444",
+        confirmButtonColor: "#ef4444",
       });
     }
   };
@@ -232,16 +236,16 @@ const Profile = () => {
     e.preventDefault();
     if (!userDataUpdate.username) {
       Swal.fire({
-        title: 'Error',
-        text: 'Please fill in all required fields!',
-        icon: 'error',
-        background: '#fff1f2',
-        iconColor: '#ef4444',
-        confirmButtonColor: '#ef4444'
+        title: "Error",
+        text: "Please fill in all required fields!",
+        icon: "error",
+        background: "#fff1f2",
+        iconColor: "#ef4444",
+        confirmButtonColor: "#ef4444",
       });
       return;
     }
-    
+
     try {
       const token = localStorage.getItem("token");
       const response = await client.put(
@@ -249,16 +253,16 @@ const Profile = () => {
         userDataUpdate,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       Swal.fire({
-        title: 'Success!',
-        text: 'Profile updated successfully!',
-        icon: 'success',
-        background: '#f0f9ff',
-        iconColor: '#3b82f6',
-        confirmButtonColor: '#3b82f6'
+        title: "Success!",
+        text: "Profile updated successfully!",
+        icon: "success",
+        background: "#f0f9ff",
+        iconColor: "#3b82f6",
+        confirmButtonColor: "#3b82f6",
       });
-      
+
       setCurrentPassword("");
       setRepeatPassword("");
       modalOpen("change", false);
@@ -267,12 +271,12 @@ const Profile = () => {
     } catch (error) {
       console.error("Error updating user:", error);
       Swal.fire({
-        title: 'Error',
-        text: 'Profile could not be updated!',
-        icon: 'error',
-        background: '#fff1f2',
-        iconColor: '#ef4444',
-        confirmButtonColor: '#ef4444'
+        title: "Error",
+        text: "Profile could not be updated!",
+        icon: "error",
+        background: "#fff1f2",
+        iconColor: "#ef4444",
+        confirmButtonColor: "#ef4444",
       });
     }
   };
@@ -292,12 +296,12 @@ const Profile = () => {
     2: "Admin",
     3: "Manajer",
     4: "Kasir",
-    "-": "Belum memiliki rule",
+    guest: "Belum memiliki rule",
   };
 
   // Determine the role name based on the user's rule
   const userRule = userDataUpdate.rule;
-  const nameRule = ruleMapping[userRule] || "-";
+  const nameRule = ruleMapping[userRule] || "guest";
 
   // Map user roles to their corresponding names
   const statusMapping = {
@@ -311,17 +315,17 @@ const Profile = () => {
 
   // Role color mapping
   const roleColorMapping = {
-    "Superadmin": "bg-emerald-100 text-emerald-800",
-    "Admin": "bg-green-100 text-green-800",
-    "Manajer": "bg-teal-100 text-teal-800",
-    "Kasir": "bg-lime-100 text-lime-800",
+    Superadmin: "bg-emerald-100 text-emerald-800",
+    Admin: "bg-green-100 text-green-800",
+    Manajer: "bg-teal-100 text-teal-800",
+    Kasir: "bg-lime-100 text-lime-800",
     "-": "bg-gray-100 text-gray-800",
   };
 
   // Status color mapping
   const statusColorMapping = {
-    "Active": "bg-green-100 text-green-800",
-    "Inactive": "bg-red-100 text-red-800",
+    Active: "bg-green-100 text-green-800",
+    Inactive: "bg-red-100 text-red-800",
   };
 
   if (isLoading === true) {
@@ -329,36 +333,33 @@ const Profile = () => {
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="w-full min-h-screen bg-gray-50 pt-16"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
       {/* Header */}
-      <motion.div 
+      <motion.div
         className="bg-gradient-to-r bg-white shadow-lg p-6 text-black"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="flex flex-row justify-between max-w-6xl mx-auto">
-          <motion.div 
+          <motion.div
             className="flex flex-col"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
-            <motion.p 
+            <motion.p
               className="text-3xl font-extrabold"
               variants={itemVariants}
             >
               Profile Dashboard
             </motion.p>
-            <motion.p
-              variants={itemVariants}
-              className="text-gray-600"
-            >
+            <motion.p variants={itemVariants} className="text-gray-600">
               Manage your personal information
             </motion.p>
           </motion.div>
@@ -366,14 +367,14 @@ const Profile = () => {
       </motion.div>
 
       {/* Main Content */}
-      <motion.div 
+      <motion.div
         className="max-w-6xl mx-auto p-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
         {/* Profile Card */}
-        <motion.div 
+        <motion.div
           className="bg-white rounded-xl shadow-lg overflow-hidden mb-6"
           variants={itemVariants}
         >
@@ -396,7 +397,9 @@ const Profile = () => {
                     />
                     <div
                       className={`relative upload-content flex overflow-hidden w-24 h-24 rounded-full border-2 ${
-                        isEditMode ? "border-emerald-500 cursor-pointer group" : "border-gray-200"
+                        isEditMode
+                          ? "border-emerald-500 cursor-pointer group"
+                          : "border-gray-200"
                       }`}
                     >
                       {/* Overlay appears only when isEditMode is true */}
@@ -425,7 +428,8 @@ const Profile = () => {
                             width={96}
                             height={96}
                           />
-                        ) : ( // YUD ERROR
+                        ) : (
+                          // YUD ERROR
                           <Image
                             src="/User-avatar.png"
                             alt="avatar"
@@ -439,31 +443,35 @@ const Profile = () => {
                   </label>
                 </motion.div>
                 <div className="text-center md:text-left">
-                <motion.h1 
-                  className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  {userDataUpdate.username || "NAMA USER"}
-                </motion.h1>
-                  <motion.div 
+                  <motion.h1
+                    className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    {userDataUpdate.username || "NAMA USER"}
+                  </motion.h1>
+                  <motion.div
                     className="flex flex-wrap justify-center md:justify-start gap-2 mt-2"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${roleColorMapping[nameRule]}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${roleColorMapping[nameRule]}`}
+                    >
                       {nameRule}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColorMapping[nameStatus]}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${statusColorMapping[nameStatus]}`}
+                    >
                       {nameStatus}
                     </span>
                   </motion.div>
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
-              <motion.button
+                <motion.button
                   onClick={() => modalOpen("change", true)}
                   className="flex items-center justify-center space-x-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white py-2 px-4 rounded-lg shadow-md"
                   variants={buttonVariants}
@@ -509,23 +517,23 @@ const Profile = () => {
                   Username
                 </label>
                 <div className="relative">
-                <input
-                  className={`shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
-                    isEditMode ? "border-emerald-300 bg-emerald-50" : ""
-                  }`}
-                  placeholder="Username"
-                  type="text"
-                  name="username"
-                  value={userDataUpdate.username || "-"}
-                  disabled={!isEditMode}
-                  onChange={handleChangeUpdate}
-                />
+                  <input
+                    className={`shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
+                      isEditMode ? "border-emerald-300 bg-emerald-50" : ""
+                    }`}
+                    placeholder="Username"
+                    type="text"
+                    name="username"
+                    value={userDataUpdate.username || "-"}
+                    disabled={!isEditMode}
+                    onChange={handleChangeUpdate}
+                  />
                   {isEditMode && (
-                    <motion.div 
+                    <motion.div
                       className="absolute inset-y-0 right-0 flex items-center pr-3 text-emerald-500"
                       initial={{ opacity: 0, x: 10 }}
                       animate={{ opacity: 1, x: 0 }}
-                  >
+                    >
                       <FaUserEdit />
                     </motion.div>
                   )}
@@ -665,7 +673,7 @@ const Profile = () => {
 
             {/* Action Buttons */}
             {isEditMode && (
-              <motion.div 
+              <motion.div
                 className="flex justify-end space-x-4 mt-8"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -681,8 +689,8 @@ const Profile = () => {
                 >
                   Cancel
                 </motion.button>
-                <motion.button 
-                  type="submit" 
+                <motion.button
+                  type="submit"
                   className="px-6 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200"
                   variants={buttonVariants}
                   whileHover="hover"
@@ -711,17 +719,30 @@ const Profile = () => {
             transition={{ type: "spring", damping: 15 }}
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Change Password</h2>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Change Password
+              </h2>
               <button
                 onClick={() => modalOpen("change", false)}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <motion.div
               className="space-y-4"
               variants={containerVariants}
@@ -750,7 +771,7 @@ const Profile = () => {
                   </button>
                 </div>
               </motion.div>
-              
+
               <motion.div className="relative" variants={itemVariants}>
                 <label className="block text-gray-700 text-sm font-semibold mb-2">
                   New Password
@@ -764,7 +785,7 @@ const Profile = () => {
                   onChange={handleChangeUpdate}
                 />
               </motion.div>
-              
+
               <motion.div className="relative" variants={itemVariants}>
                 <label className="block text-gray-700 text-sm font-semibold mb-2">
                   Confirm New Password
@@ -778,28 +799,31 @@ const Profile = () => {
                   onChange={(e) => setRepeatPassword(e.target.value)}
                 />
               </motion.div>
-              
+
               <motion.div className="mt-8" variants={itemVariants}>
-              <motion.button
-                type="button"
-                onClick={(e) => handleChangePassword(e)}
-                className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200"
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-              >
-                Update Password
-              </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={(e) => handleChangePassword(e)}
+                  className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                >
+                  Update Password
+                </motion.button>
               </motion.div>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               className="mt-4 text-sm text-gray-500"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              <p>Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.</p>
+              <p>
+                Password must be at least 8 characters and include uppercase,
+                lowercase, numbers, and special characters.
+              </p>
             </motion.div>
           </motion.div>
         </motion.div>
