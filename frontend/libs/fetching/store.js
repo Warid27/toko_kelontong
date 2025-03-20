@@ -29,6 +29,34 @@ export const fetchStoreList = async (id_company = null) => {
   }
 };
 
+export const getStoreData = async (id) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (id != null) {
+      const response = await client.post(
+        "/store/getstore",
+        { id },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status == 200) {
+        const data = response.data;
+        return data;
+      } else {
+        Swal.fire("Gagal", response.error, "error");
+      }
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching companies:", error);
+  }
+};
+
 export const listStoreStatus = async () => {
   try {
     const response = await client.post("/store/liststatus", {});

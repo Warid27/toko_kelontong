@@ -8,6 +8,7 @@ import {
 import { ProductModels } from "@models/product-models";
 import { CompanyModels } from "@models/company-models";
 import { StoreModels } from "@models/store-models";
+import { RuleAccessModels } from "@models/rule_access-models";
 import { StockModels } from "@models/stock-models";
 import { ExtrasModels } from "@models/extras-models";
 import { UserModels } from "@models/user-models";
@@ -22,7 +23,7 @@ import { TypeModels } from "@models/type-models";
 import { fileMetadataModels } from "@models/fileMetadata-models";
 
 // Middleware
-import { authenticate } from "@middleware/authMiddleware"; // Import the middleware
+import { authenticate, OPERATIONS } from "@middleware/authMiddleware";
 
 // Package
 import mongoose from "mongoose";
@@ -31,6 +32,7 @@ import path from "path"; // For constructing file paths
 import argon2 from "argon2";
 import crypto from "crypto";
 import { Buffer } from "buffer";
+import { password } from "bun";
 
 const router = new Hono();
 
@@ -166,157 +168,165 @@ const deleteImageFile = async (imagePath) => {
 
 // === MinIO ===
 
-router.post("/upload-file", authenticate, async (c) => {
-  try {
-    // Parse the form data
-    const formData = await c.req.formData();
-    const file = formData.get("file");
-    const pathPrefix = formData.get("pathPrefix");
-    const id_user = formData.get("id_user");
+router.post(
+  "/upload-file",
+  (c, next) => authenticate(c, next, "file_metadata", OPERATIONS.CREATE),
+  async (c) => {
+    try {
+      // Parse the form data
+      const formData = await c.req.formData();
+      const file = formData.get("file");
+      const pathPrefix = formData.get("pathPrefix");
+      const id_user = formData.get("id_user");
 
-    // Validate the file
-    if (!file || !(file instanceof File)) {
-      return c.json({ error: "File is required" }, 400);
-    }
+      // Validate the file
+      if (!file || !(file instanceof File)) {
+        return c.json({ error: "File is required" }, 400);
+      }
 
-    // Validate file type (only allow .rar)
-    const ext = path.extname(file.name).toLowerCase();
-    if (ext !== ".rar") {
-      return c.json({ error: "Only .rar files are allowed" }, 400);
-    }
+      // Validate file type (only allow .rar)
+      const ext = path.extname(file.name).toLowerCase();
+      if (ext !== ".rar") {
+        return c.json({ error: "Only .rar files are allowed" }, 400);
+      }
 
-    // Validate the path prefix
-    if (!pathPrefix || typeof pathPrefix !== "string") {
-      return c.json({ error: "Path prefix is required" }, 400);
-    }
+      // Validate the path prefix
+      if (!pathPrefix || typeof pathPrefix !== "string") {
+        return c.json({ error: "Path prefix is required" }, 400);
+      }
 
-    // Generate a unique file name
-    const fileName = `${crypto.randomUUID()}${ext}`;
-    const objectKey = `${pathPrefix}/${fileName}`;
+      // Generate a unique file name
+      const fileName = `${crypto.randomUUID()}${ext}`;
+      const objectKey = `${pathPrefix}/${fileName}`;
 
-    // Read the file buffer
-    const fileBuffer = await file.arrayBuffer();
+      // Read the file buffer
+      const fileBuffer = await file.arrayBuffer();
 
-    // Upload the file to MinIO
-    await minioClient.putObject(
-      MINIO_BUCKET_NAME,
-      objectKey,
-      Buffer.from(fileBuffer),
-      file.size,
-      file.type || "application/x-rar-compressed" // Set correct MIME type
-    );
+      // Upload the file to MinIO
+      await minioClient.putObject(
+        MINIO_BUCKET_NAME,
+        objectKey,
+        Buffer.from(fileBuffer),
+        file.size,
+        file.type || "application/x-rar-compressed" // Set correct MIME type
+      );
 
-    // Generate download URL
-    const downloadUrl = `${minioUrl}/${objectKey}`;
+      // Generate download URL
+      const downloadUrl = `${minioUrl}/${objectKey}`;
 
-    // Save file metadata to the database
-    const fileMetadata = new fileMetadataModels({
-      bucketName: MINIO_BUCKET_NAME,
-      objectName: objectKey,
-      fileUrl: downloadUrl,
-      id_user: id_user || null,
-    });
+      // Save file metadata to the database
+      const fileMetadata = new fileMetadataModels({
+        bucketName: MINIO_BUCKET_NAME,
+        objectName: objectKey,
+        fileUrl: downloadUrl,
+        id_user: id_user || null,
+      });
 
-    await fileMetadata.save();
+      await fileMetadata.save();
 
-    // Return success response with download link
-    return c.json(
-      {
-        success: true,
-        metadata: {
-          bucketName: fileMetadata.bucketName,
-          objectName: fileMetadata.objectName,
-          fileUrl: fileMetadata.fileUrl, // Direct download link
+      // Return success response with download link
+      return c.json(
+        {
+          success: true,
+          metadata: {
+            bucketName: fileMetadata.bucketName,
+            objectName: fileMetadata.objectName,
+            fileUrl: fileMetadata.fileUrl, // Direct download link
+          },
         },
-      },
-      201
-    );
-  } catch (error) {
-    console.error("Error uploading file:", error);
-    return c.json(
-      { error: "Failed to upload file", details: error.message },
-      500
-    );
+        201
+      );
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      return c.json(
+        { error: "Failed to upload file", details: error.message },
+        500
+      );
+    }
   }
-});
-router.post("/upload", authenticate, async (c) => {
-  try {
-    // Parse the form data
-    const formData = await c.req.formData();
-    const file = formData.get("file");
-    const pathPrefix = formData.get("pathPrefix");
-    const id_user = formData.get("id_user");
+);
+router.post(
+  "/upload",
+  (c, next) => authenticate(c, next, "file_metadata", OPERATIONS.CREATE),
+  async (c) => {
+    try {
+      // Parse the form data
+      const formData = await c.req.formData();
+      const file = formData.get("file");
+      const pathPrefix = formData.get("pathPrefix");
+      const id_user = formData.get("id_user");
 
-    // Validate the file
-    if (!file || !(file instanceof File)) {
-      return c.json({ error: "File is required" }, 400);
-    }
+      // Validate the file
+      if (!file || !(file instanceof File)) {
+        return c.json({ error: "File is required" }, 400);
+      }
 
-    // Validate the path prefix
-    if (!pathPrefix || typeof pathPrefix !== "string") {
-      return c.json({ error: "Path prefix is required" }, 400);
-    }
+      // Validate the path prefix
+      if (!pathPrefix || typeof pathPrefix !== "string") {
+        return c.json({ error: "Path prefix is required" }, 400);
+      }
 
-    // Generate a unique file name
-    const ext = path.extname(file.name); // Get the file extension
-    const fileName = `${crypto.randomUUID()}${ext}`; // Create a unique file name
-    const objectKey = `${pathPrefix}/${fileName}`; // Define the object key (including the path prefix)
+      // Generate a unique file name
+      const ext = path.extname(file.name); // Get the file extension
+      const fileName = `${crypto.randomUUID()}${ext}`; // Create a unique file name
+      const objectKey = `${pathPrefix}/${fileName}`; // Define the object key (including the path prefix)
 
-    // Read the file buffer
-    const fileBuffer = await file.arrayBuffer();
-    // Upload the file to MinIO
-    await minioClient.putObject(
-      MINIO_BUCKET_NAME,
-      objectKey, // Include the path prefix in the object key
-      Buffer.from(fileBuffer), // Convert the file buffer to a format MinIO understands
-      file.size, // File size
-      file.type // File MIME type (e.g., image/jpeg)
-    );
+      // Read the file buffer
+      const fileBuffer = await file.arrayBuffer();
+      // Upload the file to MinIO
+      await minioClient.putObject(
+        MINIO_BUCKET_NAME,
+        objectKey, // Include the path prefix in the object key
+        Buffer.from(fileBuffer), // Convert the file buffer to a format MinIO understands
+        file.size, // File size
+        file.type // File MIME type (e.g., image/jpeg)
+      );
 
-    // Generate URL
-    const publicUrl = `${minioUrl}/${objectKey}`;
+      // Generate URL
+      const publicUrl = `${minioUrl}/${objectKey}`;
 
-    // Generate a short key
-    const shortKey = generateShortKey();
+      // Generate a short key
+      const shortKey = generateShortKey();
 
-    // Construct the shortened URL
-    const shortenedUrl = `${BACKEND_URI}/api/image/${shortKey}`;
+      // Construct the shortened URL
+      const shortenedUrl = `${BACKEND_URI}/api/image/${shortKey}`;
 
-    // Save file metadata to the database
-    const fileMetadata = new fileMetadataModels({
-      bucketName: MINIO_BUCKET_NAME,
-      objectName: objectKey,
-      fileUrl: publicUrl,
-      shortenedUrl: shortenedUrl,
-      shortkey: shortKey,
-      id_user: id_user || null,
-    });
+      // Save file metadata to the database
+      const fileMetadata = new fileMetadataModels({
+        bucketName: MINIO_BUCKET_NAME,
+        objectName: objectKey,
+        fileUrl: publicUrl,
+        shortenedUrl: shortenedUrl,
+        shortkey: shortKey,
+        id_user: id_user || null,
+      });
 
-    // Save the metadata to the database
-    await fileMetadata.save();
+      // Save the metadata to the database
+      await fileMetadata.save();
 
-    // Return success response
-    return c.json(
-      {
-        success: true,
-        metadata: {
-          bucketName: fileMetadata.bucketName,
-          objectName: fileMetadata.objectName,
-          fileUrl: fileMetadata.fileUrl,
-          shortenedUrl: fileMetadata.shortenedUrl,
-          shortKey: fileMetadata.shortkey,
+      // Return success response
+      return c.json(
+        {
+          success: true,
+          metadata: {
+            bucketName: fileMetadata.bucketName,
+            objectName: fileMetadata.objectName,
+            fileUrl: fileMetadata.fileUrl,
+            shortenedUrl: fileMetadata.shortenedUrl,
+            shortKey: fileMetadata.shortkey,
+          },
         },
-      },
-      201
-    );
-  } catch (error) {
-    console.error("Error uploading image:", error);
-    return c.json(
-      { error: "Failed to upload image", details: error.message },
-      500
-    );
+        201
+      );
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      return c.json(
+        { error: "Failed to upload image", details: error.message },
+        500
+      );
+    }
   }
-});
+);
 
 router.get("/image/:shortKey", async (c) => {
   try {
@@ -345,38 +355,46 @@ router.get("/image/:shortKey", async (c) => {
 // === MinIO ===
 
 // === PRODUCT ===
-router.put("/product/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
+router.put(
+  "/product/:id",
+  (c, next) => authenticate(c, next, "product", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
 
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
-  const { error, data, status } = await handleUpdate(
-    ProductModels,
-    id,
-    body,
-    "Product"
-  );
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+    const { error, data, status } = await handleUpdate(
+      ProductModels,
+      id,
+      body,
+      "Product"
+    );
 
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/product/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/product/:id",
+  (c, next) => authenticate(c, next, "product", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const product = await ProductModels.findById(id);
-  if (!product) return c.json({ error: "Product not found" }, 404);
+    const product = await ProductModels.findById(id);
+    if (!product) return c.json({ error: "Product not found" }, 404);
 
-  const { error, message, status } = await handleDelete(
-    ProductModels,
-    id,
-    "Product",
-    product.image
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      ProductModels,
+      id,
+      "Product",
+      product.image
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 
 // === STOCK ===
 
@@ -454,368 +472,470 @@ router.put("/reserve", async (c) => {
 });
 */
 
-router.put("/stock", authenticate, async (c) => {
-  try {
-    const body = await c.req.json();
+router.put(
+  "/stock",
+  (c, next) => authenticate(c, next, "stock", OPERATIONS.UPDATE),
+  async (c) => {
+    try {
+      const body = await c.req.json();
 
-    const id = body.id_product;
-    const validationError = validateIdFormat(id);
-    if (validationError) {
-      return c.json(validationError, 400);
-    }
+      const id = body.id_product;
+      const validationError = validateIdFormat(id);
+      if (validationError) {
+        return c.json(validationError, 400);
+      }
 
-    const { params, amount } = body;
-    if (!["in", "out"].includes(params)) {
-      return c.json({ error: "Invalid params. Must be 'in' or 'out'." }, 400);
-    }
-    if (typeof amount !== "number" || amount <= 0) {
-      return c.json(
-        { error: "Invalid amount. Must be a positive number." },
-        400
+      const { params, amount } = body;
+      if (!["in", "out"].includes(params)) {
+        return c.json({ error: "Invalid params. Must be 'in' or 'out'." }, 400);
+      }
+      if (typeof amount !== "number" || amount <= 0) {
+        return c.json(
+          { error: "Invalid amount. Must be a positive number." },
+          400
+        );
+      }
+
+      const dataStock = await StockModels.findOne({ id_product: id });
+      if (!dataStock) {
+        return c.json({ error: "Stock not found." }, 404);
+      }
+
+      // Update jumlah stok
+      if (params === "out") {
+        dataStock.amount -= amount;
+      } else if (params === "in") {
+        dataStock.amount += amount;
+      }
+
+      const updateBody = { amount: dataStock.amount };
+      const id_stock = dataStock._id;
+      const { error, data, status } = await handleUpdate(
+        StockModels,
+        id_stock,
+        updateBody,
+        "stock"
       );
-    }
 
-    const dataStock = await StockModels.findOne({ id_product: id });
-    if (!dataStock) {
-      return c.json({ error: "Stock not found." }, 404);
-    }
+      if (error) {
+        return c.json({ error }, status);
+      }
 
-    // Update jumlah stok
-    if (params === "out") {
-      dataStock.amount -= amount;
-    } else if (params === "in") {
-      dataStock.amount += amount;
+      return c.json({ message: "Stock updated successfully.", data }, status);
+    } catch (error) {
+      console.error("Error updating stock:", error);
+      return c.json({ error: "An unexpected error occurred." }, 500);
     }
+  }
+);
 
-    const updateBody = { amount: dataStock.amount };
-    const id_stock = dataStock._id;
-    const { error, data, status } = await handleUpdate(
+router.delete(
+  "/stock/:id",
+  (c, next) => authenticate(c, next, "stock", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+
+    const stock = await StockModels.findById(id);
+    if (!stock) return c.json({ error: "Stock not found" }, 404);
+
+    const { error, message, status } = await handleDelete(
       StockModels,
-      id_stock,
-      updateBody,
+      id,
       "stock"
     );
-
-    if (error) {
-      return c.json({ error }, status);
-    }
-
-    return c.json({ message: "Stock updated successfully.", data }, status);
-  } catch (error) {
-    console.error("Error updating stock:", error);
-    return c.json({ error: "An unexpected error occurred." }, 500);
+    return error ? c.json({ error }, status) : c.json({ message }, status);
   }
-});
-
-router.delete("/stock/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
-
-  const stock = await StockModels.findById(id);
-  if (!stock) return c.json({ error: "Stock not found" }, 404);
-
-  const { error, message, status } = await handleDelete(
-    StockModels,
-    id,
-    "Stock"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+);
 
 // === COMPANY ===
-router.put("/company/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.put(
+  "/company/:id",
+  (c, next) => authenticate(c, next, "company", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, data, status } = await handleUpdate(
-    CompanyModels,
-    id,
-    body,
-    "Company"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    const { error, data, status } = await handleUpdate(
+      CompanyModels,
+      id,
+      body,
+      "Company"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/company/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/company/:id",
+  (c, next) => authenticate(c, next, "company", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, message, status } = await handleDelete(
-    CompanyModels,
-    id,
-    "Company"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      CompanyModels,
+      id,
+      "Company"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 
 // === STORE ===
-router.put("/store/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
-  const { error, data, status } = await handleUpdate(
-    StoreModels,
-    id,
-    body,
-    "Store"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+router.put(
+  "/store/:id",
+  (c, next) => authenticate(c, next, "store", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+    const { error, data, status } = await handleUpdate(
+      StoreModels,
+      id,
+      body,
+      "Store"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/store/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/store/:id",
+  (c, next) => authenticate(c, next, "store", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, message, status } = await handleDelete(
-    StoreModels,
-    id,
-    "Store"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      StoreModels,
+      id,
+      "Store"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
+
+// === RULE ACCESS ===
+router.put(
+  "/rule/:id",
+  (c, next) => authenticate(c, next, "rule", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+    const { error, data, status } = await handleUpdate(
+      RuleAccessModels,
+      id,
+      body,
+      "rule_access"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
+
+router.delete(
+  "/rule/:id",
+  (c, next) => authenticate(c, next, "rule", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+
+    const { error, message, status } = await handleDelete(
+      RuleAccessModels,
+      id,
+      "RuleAccess"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 
 // === EXTRAS ===
-router.put("/extras/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.put(
+  "/extras/:id",
+  (c, next) => authenticate(c, next, "extras", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, data, status } = await handleUpdate(
-    ExtrasModels,
-    id,
-    body,
-    "Extras"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    const { error, data, status } = await handleUpdate(
+      ExtrasModels,
+      id,
+      body,
+      "Extras"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/extras/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/extras/:id",
+  (c, next) => authenticate(c, next, "extras", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, message, status } = await handleDelete(
-    ExtrasModels,
-    id,
-    "Extras"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      ExtrasModels,
+      id,
+      "Extras"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 
 // Extras
-router.post("/submit-extras", authenticate, async (c) => {
-  try {
-    // Parse the request body
-    const body = await c.req.json();
 
-    // Validate required fields
-    if (!body.id_product || !body.name || !body.deskripsi) {
-      return c.json(
-        { error: "Missing required fields: id_product, name, or deskripsi" },
-        400
-      );
-    }
+router.post(
+  "/submit-extras",
+  (c, next) => authenticate(c, next, "extras", OPERATIONS.CREATE),
+  async (c) => {
+    try {
+      // Parse the request body
+      const body = await c.req.json();
 
-    // Handle optional extrasDetails
-    let extrasDetails = [];
-    if (Array.isArray(body.extrasDetails)) {
-      // Validate each detail in extrasDetails
-      const invalidDetail = body.extrasDetails.find(
-        (detail) => !detail.name || !detail.deskripsi
-      );
-      if (invalidDetail) {
+      // Validate required fields
+      if (!body.id_product || !body.name || !body.deskripsi) {
         return c.json(
-          {
-            error:
-              "Each detail in extrasDetails must have a name and deskripsi",
-          },
+          { error: "Missing required fields: id_product, name, or deskripsi" },
           400
         );
       }
-      extrasDetails = body.extrasDetails;
-    }
 
-    // Check if extras already exists for the product
-    const existingExtras = await ExtrasModels.findOne({
-      id_product: body.id_product,
-    });
+      // Handle optional extrasDetails
+      let extrasDetails = [];
+      if (Array.isArray(body.extrasDetails)) {
+        // Validate each detail in extrasDetails
+        const invalidDetail = body.extrasDetails.find(
+          (detail) => !detail.name || !detail.deskripsi
+        );
+        if (invalidDetail) {
+          return c.json(
+            {
+              error:
+                "Each detail in extrasDetails must have a name and deskripsi",
+            },
+            400
+          );
+        }
+        extrasDetails = body.extrasDetails;
+      }
 
-    // Prepare the new extras data
-    const newExtras = {
-      id_product: body.id_product,
-      name: body.name,
-      deskripsi: body.deskripsi,
-      extrasDetails: extrasDetails, // Use the validated or default extrasDetails
-    };
-    let savedExtras;
-    if (existingExtras) {
-      // Update existing extras
-      savedExtras = await ExtrasModels.findOneAndUpdate(
-        { id_product: body.id_product },
-        { $set: newExtras },
-        { new: true, runValidators: true }
+      // Check if extras already exists for the product
+      const existingExtras = await ExtrasModels.findOne({
+        id_product: body.id_product,
+      });
+
+      // Prepare the new extras data
+      const newExtras = {
+        id_product: body.id_product,
+        name: body.name,
+        deskripsi: body.deskripsi,
+        extrasDetails: extrasDetails, // Use the validated or default extrasDetails
+      };
+      let savedExtras;
+      if (existingExtras) {
+        // Update existing extras
+        savedExtras = await ExtrasModels.findOneAndUpdate(
+          { id_product: body.id_product },
+          { $set: newExtras },
+          { new: true, runValidators: true }
+        );
+      } else {
+        // Create new extras
+        const newExtrasModel = new ExtrasModels(newExtras);
+        savedExtras = await newExtrasModel.save();
+      }
+
+      // Link the extras to the product
+      if (savedExtras && savedExtras._id) {
+        await ProductModels.findByIdAndUpdate(
+          body.id_product,
+          { id_extras: savedExtras._id },
+          { new: true, runValidators: true }
+        );
+      }
+
+      // Return success response
+      return c.json(
+        { message: "Extras saved successfully", data: savedExtras },
+        200
       );
-    } else {
-      // Create new extras
-      const newExtrasModel = new ExtrasModels(newExtras);
-      savedExtras = await newExtrasModel.save();
+    } catch (error) {
+      console.error("Error:", error);
+      return c.json({ error: error.message }, 500);
     }
-
-    // Link the extras to the product
-    if (savedExtras && savedExtras._id) {
-      await ProductModels.findByIdAndUpdate(
-        body.id_product,
-        { id_extras: savedExtras._id },
-        { new: true, runValidators: true }
-      );
-    }
-
-    // Return success response
-    return c.json(
-      { message: "Extras saved successfully", data: savedExtras },
-      200
-    );
-  } catch (error) {
-    console.error("Error:", error);
-    return c.json({ error: error.message }, 500);
   }
-});
+);
 // Size
-router.post("/submit-size", authenticate, async (c) => {
-  try {
-    // Parse the request body
-    const body = await c.req.json();
+router.post(
+  "/submit-size",
+  (c, next) => authenticate(c, next, "size", OPERATIONS.CREATE),
+  async (c) => {
+    try {
+      // Parse the request body
+      const body = await c.req.json();
 
-    // Validate required fields
-    if (!body.id_product || !body.name || !body.deskripsi) {
-      return c.json(
-        { error: "Missing required fields: id_product, name, or deskripsi" },
-        400
-      );
-    }
-
-    // Handle optional sizeDetails
-    let sizeDetails = [];
-    if (Array.isArray(body.sizeDetails)) {
-      // Validate each detail in sizeDetails
-      const invalidDetail = body.sizeDetails.find(
-        (detail) => !detail.name || !detail.deskripsi
-      );
-      if (invalidDetail) {
+      // Validate required fields
+      if (!body.id_product || !body.name || !body.deskripsi) {
         return c.json(
-          {
-            error: "Each detail in sizeDetails must have a name and deskripsi",
-          },
+          { error: "Missing required fields: id_product, name, or deskripsi" },
           400
         );
       }
-      sizeDetails = body.sizeDetails;
-    }
 
-    // Check if size already exists for the product
-    const existingSize = await SizeModels.findOne({
-      id_product: body.id_product,
-    });
+      // Handle optional sizeDetails
+      let sizeDetails = [];
+      if (Array.isArray(body.sizeDetails)) {
+        // Validate each detail in sizeDetails
+        const invalidDetail = body.sizeDetails.find(
+          (detail) => !detail.name || !detail.deskripsi
+        );
+        if (invalidDetail) {
+          return c.json(
+            {
+              error:
+                "Each detail in sizeDetails must have a name and deskripsi",
+            },
+            400
+          );
+        }
+        sizeDetails = body.sizeDetails;
+      }
 
-    // Prepare the new size data
-    const newSize = {
-      id_product: body.id_product,
-      name: body.name,
-      deskripsi: body.deskripsi,
-      sizeDetails: sizeDetails, // Use the validated or default sizeDetails
-    };
-    let savedSize;
-    if (existingSize) {
-      // Update existing size
-      savedSize = await SizeModels.findOneAndUpdate(
-        { id_product: body.id_product },
-        { $set: newSize },
-        { new: true, runValidators: true }
+      // Check if size already exists for the product
+      const existingSize = await SizeModels.findOne({
+        id_product: body.id_product,
+      });
+
+      // Prepare the new size data
+      const newSize = {
+        id_product: body.id_product,
+        name: body.name,
+        deskripsi: body.deskripsi,
+        sizeDetails: sizeDetails, // Use the validated or default sizeDetails
+      };
+      let savedSize;
+      if (existingSize) {
+        // Update existing size
+        savedSize = await SizeModels.findOneAndUpdate(
+          { id_product: body.id_product },
+          { $set: newSize },
+          { new: true, runValidators: true }
+        );
+      } else {
+        // Create new size
+        const newSizeModel = new SizeModels(newSize);
+        savedSize = await newSizeModel.save();
+      }
+
+      // Link the size to the product
+      if (savedSize && savedSize._id) {
+        await ProductModels.findByIdAndUpdate(
+          body.id_product,
+          { id_size: savedSize._id },
+          { new: true, runValidators: true }
+        );
+      }
+
+      // Return success response
+      return c.json(
+        { message: "Size saved successfully", data: savedSize },
+        200
       );
-    } else {
-      // Create new size
-      const newSizeModel = new SizeModels(newSize);
-      savedSize = await newSizeModel.save();
+    } catch (error) {
+      console.error("Error:", error);
+      return c.json({ error: error.message }, 500);
     }
-
-    // Link the size to the product
-    if (savedSize && savedSize._id) {
-      await ProductModels.findByIdAndUpdate(
-        body.id_product,
-        { id_size: savedSize._id },
-        { new: true, runValidators: true }
-      );
-    }
-
-    // Return success response
-    return c.json({ message: "Size saved successfully", data: savedSize }, 200);
-  } catch (error) {
-    console.error("Error:", error);
-    return c.json({ error: error.message }, 500);
   }
-});
+);
+
 // === CATEGORY ===
-router.put("/category/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.put(
+  "/category/:id",
+  (c, next) => authenticate(c, next, "category_product", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, data, status } = await handleUpdate(
-    CategoryProductModels,
-    id,
-    body,
-    "Category"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    const { error, data, status } = await handleUpdate(
+      CategoryProductModels,
+      id,
+      body,
+      "Category"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/category/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/category/:id",
+  (c, next) => authenticate(c, next, "category_product", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, message, status } = await handleDelete(
-    CategoryProductModels,
-    id,
-    "Category"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      CategoryProductModels,
+      id,
+      "Category"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 // === TYPE ===
-router.put("/type/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.put(
+  "/type/:id",
+  (c, next) => authenticate(c, next, "type", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, data, status } = await handleUpdate(
-    TypeModels,
-    id,
-    body,
-    "typeType"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    const { error, data, status } = await handleUpdate(
+      TypeModels,
+      id,
+      body,
+      "typeType"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/type/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/type/:id",
+  (c, next) => authenticate(c, next, "type", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, message, status } = await handleDelete(TypeModels, id, "type");
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      TypeModels,
+      id,
+      "type"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 // === USER ===
 
-router.put("/user/:id", authenticate, async (c) => {
+router.put("/profile/:id", authenticate, async (c) => {
   try {
     const id = c.req.param("id");
     const body = await c.req.json();
@@ -824,30 +944,28 @@ router.put("/user/:id", authenticate, async (c) => {
     const validationError = validateIdFormat(id);
     if (validationError) return c.json(validationError, 400);
 
-    // Convert empty strings to null for id_company and id_store
-    if (body.id_company === "") {
-      body.id_company = null;
-    }
-    if (body.id_store === "") {
-      body.id_store = null;
+    // Initialize reqBody
+    const reqBody = {};
+
+    // Include username if provided
+    if (body.username) {
+      reqBody.username = body.username;
     }
 
-    // Hash the password if it exists in the request body
+    // Hash the password if provided
     if (body.password) {
       try {
-        body.password = await hashPassword(body.password); // Replace plain text password with hashed password
+        reqBody.password = await hashPassword(body.password);
       } catch (hashError) {
         return c.json({ error: "Failed to hash password" }, 500);
       }
-    } else {
-      delete body.password; // Remove password field if it's empty/null
     }
 
     // Call handleUpdate with validated inputs
     const { error, data, status } = await handleUpdate(
       UserModels,
       id,
-      body,
+      reqBody,
       "user"
     );
 
@@ -859,103 +977,173 @@ router.put("/user/:id", authenticate, async (c) => {
   }
 });
 
-router.delete("/user/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.put(
+  "/user/:id",
+  (c, next) => authenticate(c, next, "users", OPERATIONS.UPDATE),
+  async (c) => {
+    try {
+      const id = c.req.param("id");
+      const body = await c.req.json();
 
-  const { error, message, status } = await handleDelete(UserModels, id, "user");
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
-// === PAYMENT ===
-router.put("/payment/:id", authenticate, async (c) => {
-  try {
-    // Extract the payment ID from the URL parameters
-    const id = c.req.param("id");
+      // Validate ID format
+      const validationError = validateIdFormat(id);
+      if (validationError) return c.json(validationError, 400);
 
-    // Parse the request body
-    const body = await c.req.json();
+      // Convert empty strings to null for id_company and id_store
+      if (body.id_company === "") {
+        body.id_company = null;
+      }
+      if (body.id_store === "") {
+        body.id_store = null;
+      }
 
-    // Validate required fields
-    if (!body.payment_method) {
-      return c.json({ error: "Missing required field: payment_method" }, 400);
-    }
+      // Hash the password if it exists in the request body
+      if (body.password) {
+        try {
+          body.password = await hashPassword(body.password); // Replace plain text password with hashed password
+        } catch (hashError) {
+          return c.json({ error: "Failed to hash password" }, 500);
+        }
+      } else {
+        delete body.password; // Remove password field if it's empty/null
+      }
 
-    // Set default values for optional fields
-    const keterangan = body.keterangan || null;
-    const paymentName = Array.isArray(body.paymentName) ? body.paymentName : [];
-
-    // Validate paymentName (if provided)
-    const invalidDetail = paymentName.find(
-      (detail) => !detail.payment_name || !detail.payment_desc
-    );
-    if (invalidDetail) {
-      return c.json(
-        {
-          error:
-            "Each detail in paymentName must have a payment_name and payment_desc",
-        },
-        400
+      // Call handleUpdate with validated inputs
+      const { error, data, status } = await handleUpdate(
+        UserModels,
+        id,
+        body,
+        "user"
       );
+
+      // Return response
+      return error ? c.json({ error }, status) : c.json(data, status);
+    } catch (err) {
+      console.error("Error in /user/:id PUT route:", err.message);
+      return c.json({ error: "Internal Server Error" }, 500);
     }
-
-    // Check if the payment exists
-    const existingPayment = await PaymentModels.findById(id);
-    if (!existingPayment) {
-      return c.json({ error: "No payment found with the given ID" }, 404);
-    }
-
-    // Prepare the updated payment data
-    const updatedPayment = {
-      payment_method: body.payment_method,
-      keterangan: keterangan,
-      paymentName: paymentName,
-    };
-
-    // Update the payment
-    const savedPayment = await PaymentModels.findByIdAndUpdate(
-      id,
-      { $set: updatedPayment },
-      { new: true, runValidators: true }
-    );
-
-    // Return success response
-    return c.json(
-      { message: "Payment updated successfully", data: savedPayment },
-      200
-    );
-  } catch (error) {
-    console.error("Error:", error);
-    return c.json({ error: error.message }, 500);
   }
-});
-router.delete("/payment/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+);
 
-  const { error, message, status } = await handleDelete(
-    PaymentModels,
-    id,
-    "payment"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+router.delete(
+  "/user/:id",
+  (c, next) => authenticate(c, next, "user", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+
+    const { error, message, status } = await handleDelete(
+      UserModels,
+      id,
+      "user"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
+// === PAYMENT ===
+router.put(
+  "/payment/:id",
+  (c, next) => authenticate(c, next, "payment", OPERATIONS.UPDATE),
+  async (c) => {
+    try {
+      // Extract the payment ID from the URL parameters
+      const id = c.req.param("id");
+
+      // Parse the request body
+      const body = await c.req.json();
+
+      // Validate required fields
+      if (!body.payment_method) {
+        return c.json({ error: "Missing required field: payment_method" }, 400);
+      }
+
+      // Set default values for optional fields
+      const keterangan = body.keterangan || null;
+      const paymentName = Array.isArray(body.paymentName)
+        ? body.paymentName
+        : [];
+
+      // Validate paymentName (if provided)
+      const invalidDetail = paymentName.find(
+        (detail) => !detail.payment_name || !detail.payment_desc
+      );
+      if (invalidDetail) {
+        return c.json(
+          {
+            error:
+              "Each detail in paymentName must have a payment_name and payment_desc",
+          },
+          400
+        );
+      }
+
+      // Check if the payment exists
+      const existingPayment = await PaymentModels.findById(id);
+      if (!existingPayment) {
+        return c.json({ error: "No payment found with the given ID" }, 404);
+      }
+
+      // Prepare the updated payment data
+      const updatedPayment = {
+        payment_method: body.payment_method,
+        keterangan: keterangan,
+        paymentName: paymentName,
+      };
+
+      // Update the payment
+      const savedPayment = await PaymentModels.findByIdAndUpdate(
+        id,
+        { $set: updatedPayment },
+        { new: true, runValidators: true }
+      );
+
+      // Return success response
+      return c.json(
+        { message: "Payment updated successfully", data: savedPayment },
+        200
+      );
+    } catch (error) {
+      console.error("Error:", error);
+      return c.json({ error: error.message }, 500);
+    }
+  }
+);
+router.delete(
+  "/payment/:id",
+  (c, next) => authenticate(c, next, "payment", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+
+    const { error, message, status } = await handleDelete(
+      PaymentModels,
+      id,
+      "payment"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 // === ORDER ===
-router.put("/order/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.put(
+  "/order/:id",
+  (c, next) => authenticate(c, next, "order", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, data, status } = await handleUpdate(
-    OrderModels,
-    id,
-    body,
-    "order"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    const { error, data, status } = await handleUpdate(
+      OrderModels,
+      id,
+      body,
+      "order"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
 // router.delete("/payment/:id", authenticate, async (c) => {
 //   const id = c.req.param("id");
@@ -971,92 +1159,116 @@ router.put("/order/:id", authenticate, async (c) => {
 // });
 
 // === SALES ===
-router.put("/sales/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.put(
+  "/sales/:id",
+  (c, next) => authenticate(c, next, "sales", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, data, status } = await handleUpdate(
-    SalesModels,
-    id,
-    body,
-    "sales"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    const { error, data, status } = await handleUpdate(
+      SalesModels,
+      id,
+      body,
+      "sales"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/sales/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/sales/:id",
+  (c, next) => authenticate(c, next, "sales", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, message, status } = await handleDelete(
-    SalesModels,
-    id,
-    "sales"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      SalesModels,
+      id,
+      "sales"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 
 // === SALES CAMPAIGN ===
-router.put("/salescampaign/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.put(
+  "/salescampaign/:id",
+  (c, next) => authenticate(c, next, "salesCampaign", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, data, status } = await handleUpdate(
-    salesCampaignModels,
-    id,
-    body,
-    "salesCampaign"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    const { error, data, status } = await handleUpdate(
+      salesCampaignModels,
+      id,
+      body,
+      "salesCampaign"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/salescampaign/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/salescampaign/:id",
+  (c, next) => authenticate(c, next, "salesCampaign", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, message, status } = await handleDelete(
-    salesCampaignModels,
-    id,
-    "salesCampaign"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      salesCampaignModels,
+      id,
+      "salesCampaign"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 
 // === ITEM CAMPAIGN ===
-router.put("/itemcampaign/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
+router.put(
+  "/itemcampaign/:id",
+  (c, next) => authenticate(c, next, "item_campaign", OPERATIONS.UPDATE),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json();
 
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, data, status } = await handleUpdate(
-    itemCampaignModels,
-    id,
-    body,
-    "item_campaign"
-  );
-  return error ? c.json({ error }, status) : c.json(data, status);
-});
+    const { error, data, status } = await handleUpdate(
+      itemCampaignModels,
+      id,
+      body,
+      "item_campaign"
+    );
+    return error ? c.json({ error }, status) : c.json(data, status);
+  }
+);
 
-router.delete("/itemcampaign/:id", authenticate, async (c) => {
-  const id = c.req.param("id");
-  const validationError = validateIdFormat(id);
-  if (validationError) return c.json(validationError, 400);
+router.delete(
+  "/itemcampaign/:id",
+  (c, next) => authenticate(c, next, "item_campaign", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
 
-  const { error, message, status } = await handleDelete(
-    itemCampaignModels,
-    id,
-    "item_campaign"
-  );
-  return error ? c.json({ error }, status) : c.json({ message }, status);
-});
+    const { error, message, status } = await handleDelete(
+      itemCampaignModels,
+      id,
+      "item_campaign"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
 
 router.post("/viewtablewithrelation", authenticate, async (c) => {
   try {
@@ -1113,6 +1325,40 @@ router.post("/viewtablewithrelation", authenticate, async (c) => {
     return c.res.json(result);
   } catch (error) {
     return c.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint untuk mendapatkan daftar koleksi
+router.post("/collections", authenticate, async (c) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectToDatabase();
+    }
+
+    // Mendapatkan daftar koleksi dari Mongoose
+    const collections = await mongoose.connection.db
+      .listCollections()
+      .toArray();
+
+    // Ekstrak nama dan informasi koleksi
+    const collectionList = collections.map((collection) => ({
+      name: collection.name,
+    }));
+
+    return c.json({
+      success: true,
+      data: collectionList,
+    });
+  } catch (error) {
+    console.error("Error fetching collections:", error);
+    return c.json(
+      {
+        success: false,
+        error: "Failed to fetch collections",
+        message: error.message,
+      },
+      500
+    );
   }
 });
 

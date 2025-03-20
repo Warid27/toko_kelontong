@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 
 // Icons
-import { IoSearchOutline } from "react-icons/io5";
 import { FaUserEdit, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { MdOutlineChangeCircle } from "react-icons/md";
 import { RiLockPasswordLine } from "react-icons/ri";
@@ -12,17 +11,15 @@ import client from "@/libs/axios";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
 import Loading from "@/components/loading";
+import { toast } from "react-toastify";
 
 // Components
-import { fetchUserGet } from "@/libs/fetching/user";
-import { fetchCompanyList } from "@/libs/fetching/company";
-import { fetchStoreList } from "@/libs/fetching/store";
+import { fetchUserGet, updateProfile } from "@/libs/fetching/user";
+import { getCompanyData } from "@/libs/fetching/company";
+import { getStoreData } from "@/libs/fetching/store";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
-import { Modal } from "@/components/Modal";
 
 const Profile = () => {
-  const [storeList, setStoreList] = useState([]);
-  const [companyList, setCompanyList] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -33,8 +30,8 @@ const Profile = () => {
     password: "",
     rule: "",
     status: "",
-    id_company: "",
-    id_store: "",
+    companyName: "",
+    storeName: "",
     avatar: "",
   });
   const [currentPassword, setCurrentPassword] = useState("");
@@ -72,21 +69,34 @@ const Profile = () => {
 
   useEffect(() => {
     const fetching_requirement = async () => {
-      const get_store_list = async () => {
-        const data_store = await fetchStoreList();
-        setStoreList(data_store);
-      };
-      const get_company_list = async () => {
-        const data_company = await fetchCompanyList();
-        setCompanyList(data_company);
-      };
       const get_user_get = async () => {
         const data_user = await fetchUserGet();
-        setUserToUpdate(data_user);
+        console.log("DATA USER", data_user);
+        if (data_user) {
+          setUserToUpdate(data_user);
+
+          const CompanyName = async () => {
+            const company = await getCompanyData(data_user.id_company);
+            setUserDataUpdate((prev) => ({
+              ...prev,
+              companyName: company ? company.name : null,
+            }));
+          };
+
+          const StoreName = async () => {
+            const store = await getStoreData(data_user.id_store);
+            setUserDataUpdate((prev) => ({
+              ...prev,
+              storeName: store ? store.name : null,
+            }));
+          };
+
+          await CompanyName();
+          await StoreName();
+        }
       };
 
-      await Promise.all([get_store_list(), get_company_list(), get_user_get()]);
-
+      await get_user_get();
       setIsLoading(false);
     };
     fetching_requirement();
@@ -94,16 +104,15 @@ const Profile = () => {
 
   useEffect(() => {
     if (userToUpdate) {
-      setUserDataUpdate({
+      setUserDataUpdate((prev) => ({
+        ...prev,
         id: userToUpdate._id,
         username: userToUpdate.username,
         avatar: userToUpdate.avatar,
         password: "",
         rule: userToUpdate.rule,
         status: userToUpdate.status !== undefined ? userToUpdate.status : 1,
-        id_company: userToUpdate.id_company,
-        id_store: userToUpdate.id_store,
-      });
+      }));
     }
   }, [userToUpdate]);
 
@@ -140,25 +149,12 @@ const Profile = () => {
             avatar: uploadedImageUrl,
           }));
         }
-
-        Swal.fire({
-          title: "Image Uploaded!",
-          text: "Your profile picture has been updated",
-          icon: "success",
-          background: "#f0f9ff",
-          iconColor: "#3b82f6",
-          confirmButtonColor: "#3b82f6",
-        });
+        toast.success("Your profile picture has been updated");
       } else {
-        Swal.fire("Upload Failed", response.error, "error");
+        toast.error("Upload Failed", response.error, "error");
       }
     } catch (error) {
-      console.error("Compression or upload failed:", error);
-      Swal.fire(
-        "Upload Failed",
-        "There was an error uploading your image",
-        "error"
-      );
+      toast.error("Compression or upload failed:", error);
     }
   };
 
@@ -247,12 +243,7 @@ const Profile = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await client.put(
-        `/api/user/${userDataUpdate.id}`,
-        userDataUpdate,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await updateProfile(userDataUpdate, userDataUpdate.id);
 
       Swal.fire({
         title: "Success!",
@@ -296,12 +287,12 @@ const Profile = () => {
     2: "Admin",
     3: "Manajer",
     4: "Kasir",
-    guest: "Belum memiliki rule",
+    Guest: "Guest",
   };
 
   // Determine the role name based on the user's rule
   const userRule = userDataUpdate.rule;
-  const nameRule = ruleMapping[userRule] || "guest";
+  const nameRule = ruleMapping[userRule] || "Guest";
 
   // Map user roles to their corresponding names
   const statusMapping = {
@@ -315,17 +306,24 @@ const Profile = () => {
 
   // Role color mapping
   const roleColorMapping = {
-    Superadmin: "bg-emerald-100 text-emerald-800",
-    Admin: "bg-green-100 text-green-800",
-    Manajer: "bg-teal-100 text-teal-800",
-    Kasir: "bg-lime-100 text-lime-800",
-    "-": "bg-gray-100 text-gray-800",
+    Superadmin:
+      "bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium shadow-md rounded-md border border-indigo-700",
+    Admin:
+      "bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium shadow-md rounded-md border border-blue-600",
+    Manajer:
+      "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-medium shadow-md rounded-md border border-violet-600",
+    Kasir:
+      "bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium shadow-md rounded-md border border-emerald-600",
+    Guest:
+      "bg-gradient-to-r from-gray-600 to-zinc-600 text-white font-medium shadow-md rounded-md border border-gray-700",
   };
 
   // Status color mapping
   const statusColorMapping = {
-    Active: "bg-green-100 text-green-800",
-    Inactive: "bg-red-100 text-red-800",
+    Active:
+      "bg-gradient-to-r from-green-500 to-emerald-500 text-white font-medium shadow-md rounded-md border border-green-600",
+    Inactive:
+      "bg-gradient-to-r from-red-500 to-rose-500 text-white font-medium shadow-md rounded-md border border-red-600",
   };
 
   if (isLoading === true) {
@@ -549,41 +547,14 @@ const Profile = () => {
                   Perusahaan
                 </label>
                 <div className="relative">
-                  <select
-                    id="company"
+                  <input
                     className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    value={userDataUpdate.id_company || "-"}
+                    placeholder="company"
+                    type="text"
+                    name="company"
+                    value={userDataUpdate.companyName || "-"}
                     disabled={true}
-                    name="id_company"
-                  >
-                    <option value="-" disabled>
-                      Belum memiliki Perusahaan
-                    </option>
-                    {companyList.length === 0 ? (
-                      <option value="default">No company available</option>
-                    ) : (
-                      companyList.map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
+                  />
                 </div>
               </motion.div>
 
@@ -596,26 +567,15 @@ const Profile = () => {
                   Toko
                 </label>
                 <div className="relative">
-                  <select
-                    id="store"
+                  <input
                     className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    value={userDataUpdate.id_store || "-"}
+                    placeholder="store"
+                    type="text"
+                    name="store"
+                    value={userDataUpdate.storeName || "-"}
                     disabled={true}
-                    name="id_store"
-                  >
-                    <option value="-" disabled>
-                      Belum memiliki Toko
-                    </option>
-                    {storeList.length === 0 ? (
-                      <option value="default">No store available</option>
-                    ) : (
-                      storeList.map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name}
-                        </option>
-                      ))
-                    )}
-                  </select>
+                  />
+
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg
                       className="h-5 w-5 text-gray-400"

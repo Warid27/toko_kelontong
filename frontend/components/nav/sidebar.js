@@ -4,6 +4,39 @@ import MenuItem from "@/components/menu/menuItem";
 import ContentRenderer from "@/components/nav/renderContents";
 import { rolePermissions } from "@/utils/permission";
 import { motion } from "framer-motion";
+// MUTU YUD EROR E  ER CE TE I
+import {
+  FaCrown,
+  FaUserShield,
+  FaUserTie,
+  FaUserCog,
+  FaUserAlt,
+  FaUserTag,
+  FaUserCheck,
+  FaUserClock,
+} from "react-icons/fa";
+import {
+  BsShieldFillCheck,
+  BsFillShieldLockFill,
+  BsPersonLinesFill,
+  BsPersonBadgeFill,
+  BsPersonCircle,
+} from "react-icons/bs";
+import {
+  MdSupervisorAccount,
+  MdAdminPanelSettings,
+  MdManageAccounts,
+  MdPerson,
+  MdPointOfSale,
+} from "react-icons/md";
+import {
+  HiUserCircle,
+  HiShieldCheck,
+  HiOfficeBuilding,
+  HiCash,
+  HiUser,
+} from "react-icons/hi";
+// import { TbUserSquare, TbCrown, TbShield, TbBuildingStore, TbCashBanknote } from 'react-icons/tb';
 import {
   TbUsersGroup,
   TbReportMoney,
@@ -27,6 +60,101 @@ import {
   TbShoppingBag,
   TbSettings,
 } from "react-icons/tb";
+
+const roleIconsMapping = {
+  // Font Awesome Icons (react-icons/fa)
+  fa: {
+    Superadmin: FaCrown,
+    Admin: FaUserShield,
+    Manajer: FaUserTie,
+    Kasir: FaUserTag,
+    Default: FaUserAlt,
+  },
+
+  // Bootstrap Icons (react-icons/bs)
+  bs: {
+    Superadmin: BsFillShieldLockFill,
+    Admin: BsShieldFillCheck,
+    Manajer: BsPersonLinesFill,
+    Kasir: BsPersonBadgeFill,
+    Default: BsPersonCircle,
+  },
+
+  // Material Design Icons (react-icons/md)
+  md: {
+    Superadmin: MdSupervisorAccount,
+    Admin: MdAdminPanelSettings,
+    Manajer: MdManageAccounts,
+    Kasir: MdPointOfSale,
+    Default: MdPerson,
+  },
+
+  // Heroicons (react-icons/hi)
+  hi: {
+    Superadmin: HiShieldCheck,
+    Admin: HiUserCircle,
+    Manajer: HiOfficeBuilding,
+    Kasir: HiCash,
+    Default: HiUser,
+  },
+};
+
+const FuturisticRoleIcon = ({
+  role,
+  iconSet = "fa",
+  size = 24,
+  styleType = "gradient",
+}) => {
+  const IconSet = roleIconsMapping[iconSet] || roleIconsMapping.fa;
+  const Icon = IconSet[role] || IconSet.Default;
+
+  const colorStyles = {
+    Superadmin: {
+      gradient:
+        "text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600",
+      neon: "text-purple-500 drop-shadow-[0_0_3px_rgba(168,85,247,0.8)]",
+      modern: "text-indigo-700",
+      cyberpunk: "text-purple-500 border-2 border-purple-500 p-1 rounded-md",
+    },
+    Admin: {
+      gradient:
+        "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600",
+      neon: "text-blue-500 drop-shadow-[0_0_3px_rgba(59,130,246,0.8)]",
+      modern: "text-blue-700",
+      cyberpunk: "text-blue-500 border-2 border-blue-500 p-1 rounded-md",
+    },
+    Manajer: {
+      gradient:
+        "text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-600",
+      neon: "text-fuchsia-500 drop-shadow-[0_0_3px_rgba(217,70,239,0.8)]",
+      modern: "text-fuchsia-700",
+      cyberpunk: "text-fuchsia-500 border-2 border-fuchsia-500 p-1 rounded-md",
+    },
+    Kasir: {
+      gradient:
+        "text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600",
+      neon: "text-emerald-500 drop-shadow-[0_0_3px_rgba(16,185,129,0.8)]",
+      modern: "text-emerald-700",
+      cyberpunk: "text-emerald-500 border-2 border-emerald-500 p-1 rounded-md",
+    },
+    Default: {
+      gradient:
+        "text-transparent bg-clip-text bg-gradient-to-r from-slate-600 to-gray-600",
+      neon: "text-gray-500 drop-shadow-[0_0_3px_rgba(107,114,128,0.8)]",
+      modern: "text-gray-700",
+      cyberpunk: "text-gray-500 border-2 border-gray-500 p-1 rounded-md",
+    },
+  };
+
+  const style =
+    colorStyles[role]?.[styleType] || colorStyles.Default[styleType];
+
+  return (
+    <div className={`inline-flex items-center justify-center mr-4 ${style}`}>
+      <Icon size={size} />
+    </div>
+  );
+};
 
 const Sidebar = ({
   numericRole,
@@ -100,6 +228,7 @@ const Sidebar = ({
     { label: "Pesanan Masuk", icon: <TbTruckDelivery />, key: "order_cust" },
     { label: "Order", icon: <TbShoppingBag />, key: "order" },
     { label: "Pengguna", icon: <TbUsersGroup />, key: "user" },
+    { label: "Jabatan", icon: <TbUserSquare />, key: "rule" },
     { label: "Kasir UI", icon: <TbCash />, key: "kasir" },
   ];
 
@@ -140,6 +269,21 @@ const Sidebar = ({
       .filter(Boolean); // Remove null values
   }, [idCompany, idStore, userRole]);
 
+  const role = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+
+  const roleMenuStyleMapping = {
+    Superadmin:
+      "bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-b-4 border-indigo-900 shadow-lg rounded-xl",
+    Admin:
+      "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-b-4 border-blue-900 shadow-lg rounded-xl",
+    Manajer:
+      "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-b-4 border-violet-900 shadow-lg rounded-xl",
+    Kasir:
+      "bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-b-4 border-emerald-900 shadow-lg rounded-xl",
+    Default:
+      "bg-gradient-to-r from-slate-600 to-gray-600 text-white border-b-4 border-slate-900 shadow-lg rounded-xl",
+  };
+
   return (
     <div className="drawer lg:drawer-open">
       <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
@@ -170,9 +314,16 @@ const Sidebar = ({
         animate={{ x: 0 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
       >
-        <div className="top-20 menu w-80 px-4 py-2 border-b-4 border-black fixed z-50 bg-white shadow-lg rounded-xl">
+        <div
+          className={`top-20 menu w-80 pl-4 py-2 border-b-4 border-black fixed z-50 bg-white shadow-lg rounded-xl ${roleMenuStyleMapping[role]}`}
+        >
           <span className="flex items-center text-2xl font-bold">
-            <TbUserSquare className="mr-4" />
+            <FuturisticRoleIcon
+              role={role}
+              iconSet="fa"
+              size={32}
+              styleType="neon"
+            />
             {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
           </span>
         </div>

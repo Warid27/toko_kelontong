@@ -21,6 +21,7 @@ export const rolePermissions = {
     "pembelian_list",
     "report",
     "category_product",
+    "rule",
   ],
   admin: [
     "profile",
@@ -55,5 +56,5 @@ export const rolePermissions = {
     "order",
   ],
   kasir: ["profile", "order_cust", "sales", "kasir"],
-  guest: ["profile"], // Only "profile" is accessible when numericRole is null
+  guest: ["profile"], 
 };

@@ -1,5 +1,5 @@
 import client from "@/libs/axios";
-
+import { tokenDecoded } from "@/utils/tokenDecoded";
 export const fetchItemCampaignList = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -40,17 +40,42 @@ export const getItemCampaign = async (id_item_campaign) => {
   }
 };
 
-export const addItemCampaign = async (data) => {
+export const addItemCampaign = async (reqBody) => {
   const token = localStorage.getItem("token");
-  const response = await client.post("/itemcampaign/additemcampaign", data, {
+
+  const userData = await tokenDecoded();
+
+  if (userData) {
+    reqBody.id_user = userData.id;
+    reqBody.id_store = userData.id_store
+      ? userData.id_store
+      : localStorage.getItem("id_store");
+    reqBody.id_company = userData.id_company
+      ? userData.id_company
+      : localStorage.getItem("id_company");
+  }
+
+  const response = await client.post("/itemcampaign/additemcampaign", reqBody, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response;
 };
 
-export const updateItemCampaign = async (id, data) => {
+export const updateItemCampaign = async (id, reqBody) => {
   const token = localStorage.getItem("token");
-  const response = await client.put(`/api/itemcampaign/${id}`, data, {
+  const userData = await tokenDecoded();
+
+  if (userData) {
+    reqBody.id_user = userData.id;
+    reqBody.id_store = userData.id_store
+      ? userData.id_store
+      : localStorage.getItem("id_store");
+    reqBody.id_company = userData.id_company
+      ? userData.id_company
+      : localStorage.getItem("id_company");
+  }
+
+  const response = await client.put(`/api/itemcampaign/${id}`, reqBody, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response;

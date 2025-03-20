@@ -50,6 +50,21 @@ export const updateUserData = async (reqBody, id) => {
   }
 };
 
+export const updateProfile = async (reqBody, id) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.put(`/api/profile/${id}`, reqBody, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error fetching store:", error);
+  }
+};
+
 export const fetchUserGet = async () => {
   try {
     const token = localStorage.getItem("token");

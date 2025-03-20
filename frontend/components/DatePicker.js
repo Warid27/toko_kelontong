@@ -16,7 +16,7 @@ export default function DatePickers({ filterBy, value, onChange }) {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <div className="border p-2 rounded bg-white">
+      <div className=" p-2 rounded bg-white">
         {filterBy === "daily" && (
           <DatePicker
             value={selectedDate}

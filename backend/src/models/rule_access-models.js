@@ -37,7 +37,7 @@ const ruleAccessSchema = new Schema({
   },
 });
 
-export const RuleAccessModel = model(
+export const RuleAccessModels = model(
   "rule_access",
   ruleAccessSchema,
   "rule_access"

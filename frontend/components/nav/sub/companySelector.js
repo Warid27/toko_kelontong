@@ -30,7 +30,7 @@ const CompanySelector = () => {
 
   useEffect(() => {
     const fetchStores = async () => {
-      if (companySelect) {
+      if (companySelect && companySelect != "null") {
         try {
           const data = await fetchStoreList(companySelect);
           setStoreList(Array.isArray(data) ? data : []);
@@ -51,7 +51,7 @@ const CompanySelector = () => {
   }, [companySelect]);
 
   useEffect(() => {
-    if (companySelect) {
+    if (companySelect && companySelect != "null") {
       localStorage.setItem("id_company", companySelect);
     } else {
       localStorage.removeItem("id_company");
@@ -110,7 +110,7 @@ const CompanySelector = () => {
               isSearchable
               placeholder="Select a company"
             />
-            {companySelect && (
+            {companySelect && companySelect != "null" && (
               <Select
                 options={storeList.map((s) => ({
                   value: s._id,

@@ -86,6 +86,8 @@ export const AddBatchProducts = async (reqBody) => {
   try {
     const token = localStorage.getItem("token");
 
+    console.log("REQ BOD BOD", reqBody);
+
     const response = await client.post(
       "/product/addbatch",
       reqBody, // Pass id_store in the request body

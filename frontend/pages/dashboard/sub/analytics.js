@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { IoSearchOutline } from "react-icons/io5";
 import { MdKeyboardArrowDown, MdTrendingUp, MdTrendingDown, MdMenu, MdDashboard, MdOutlineAnalytics } from "react-icons/md";
-import { FaUserAlt, FaChartLine, FaMoneyBillWave, FaShoppingBag } from "react-icons/fa";
+import { FaUserAlt, FaChartLine, FaMoneyBillWave, FaShoppingBag, FaRegCalendarAlt } from "react-icons/fa";
 import { FiActivity, FiBarChart2, FiUsers, FiDollarSign } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -119,23 +119,6 @@ export const Analytics = () => {
     const fetchBestSelling = async () => {
       const id_store = localStorage.getItem("id_store");
       const id_company = localStorage.getItem("id_company");
-      if (!startDate || !endDate) {
-        const response = await client.post("/sales/best-selling", {
-          filterBy: filterBy,
-          id_store: id_store,
-          id_company: id_company,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-        const data = response.data.data;
-        
-        setBestSellingList(Array.isArray(data) ? data : []);
-        return;
-      }
 
       try {
         const payload = {
@@ -143,6 +126,7 @@ export const Analytics = () => {
           sort: { total_quantity: parseInt(sortBest) },
           id_store: id_store,
           id_company: id_company,
+          selectedDate : selectedDate ? selectedDate.toISOString().split("T")[0] : null
         };
 
         if (sortBest) {
@@ -375,15 +359,18 @@ export const Analytics = () => {
           >
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Time Period</label>
-              <select
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                value={filterBy}
-                onChange={(e) => setFilterBy(e.target.value)}
-              >
-                <option value="daily">Daily</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
+              <div className="relative">
+                  <FaRegCalendarAlt className="absolute left-3 top-4 text-green-500" />
+                  <select
+                    className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent shadow-sm"
+                    value={filterBy}
+                    onChange={(e) => setFilterBy(e.target.value)}
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
             </div>
             
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -455,8 +442,8 @@ export const Analytics = () => {
               {formatNumber(salesTodayData ? salesTodayData : 0)}
             </motion.h2>
             <div className="mt-2 flex items-center text-sm text-green-500">
-              <MdTrendingUp className="mr-1" />
-              <p>15% increase</p>
+              <FiBarChart2 className="mr-1" />
+              <p>Total Sales</p>
             </div>
           </motion.div>
 
@@ -479,8 +466,8 @@ export const Analytics = () => {
               {formatNumber(salesProfitData ? salesProfitData : 0)}
             </motion.h2>
             <div className="mt-2 flex items-center text-sm text-green-500">
-              <MdTrendingUp className="mr-1" />
-              <p>10% increase</p>
+              <FiBarChart2 className="mr-1" />
+              <p>Total Return</p>
             </div>
           </motion.div>
 

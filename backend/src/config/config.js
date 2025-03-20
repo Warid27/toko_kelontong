@@ -80,6 +80,16 @@ async function ensureBucketExistsAndSetPolicy() {
     console.log(`Public policy set for bucket "${MINIO_BUCKET_NAME}".`);
   } catch (error) {
     console.error("Error checking/creating bucket or setting policy:", error);
+    // Add more detailed logging
+    console.error("MinIO Config:", {
+      endPoint: MINIO_ENDPOINT,
+      port: MINIO_PORT,
+      useSSL: MINIO_USE_SSL,
+      region: MINIO_REGION,
+      bucketName: MINIO_BUCKET_NAME,
+      accessKey: MINIO_ACCESS_KEY,
+      secretKey: MINIO_SECRET_KEY,
+    });
   }
 }
 

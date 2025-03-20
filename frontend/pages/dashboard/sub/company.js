@@ -111,7 +111,7 @@ const CompanyData = () => {
   const actions = [
     {
       icon: <MdDelete size={20} />,
-      onClick: (row) => deleteCompanyById(row.id),
+      onClick: (row) => deleteCompanyById(row._id),
       className: "bg-red-500 hover:bg-red-600",
     },
     {
@@ -156,6 +156,12 @@ const CompanyData = () => {
         status: selectedStatus,
       };
       const response = await updateCompany(companyId, reqBody);
+      const newStatus = statusOptions?.find(
+        (opt) => opt.value === selectedStatus
+      )?.label;
+      if (response.status == 200) {
+        toast.success(`Status berhasil dirubah ke ${newStatus}`);
+      }
       setCompanies((prevCompanies) =>
         prevCompanies.map((company) =>
           company._id === companyId
@@ -386,32 +392,6 @@ const CompanyData = () => {
   if (isLoading === true) {
     return <Loading />;
   }
-  const columns = [
-    { key: "id", label: "No" },
-    { key: "name", label: "Nama Perusahaan" },
-    { key: "address", label: "Alamat" },
-    {
-      key: "status",
-      label: "Status",
-      render: (value, row) => (
-        <div className="relative">
-          <select
-            className="appearance-none bg-white border border-gray-300 p-2 rounded-lg shadow-sm focus:ring focus:ring-green-300 w-full pr-10"
-            value={value}
-            onChange={(e) =>
-              console.log("Status Changed", row.id, e.target.value)
-            }
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <div className="w-full h-screen pt-16 relative">

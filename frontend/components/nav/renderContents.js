@@ -20,6 +20,7 @@ import StockList from "@/pages/dashboard/sub/stock";
 import PembelianList from "@/pages/dashboard/sub/table_pembelian";
 import Pembelian from "@/pages/dashboard/sub/pembelian";
 import Report from "@/pages/dashboard/sub/report";
+import RuleAccessData from "@/pages/dashboard/sub/rule";
 import { rolePermissions } from "@/utils/permission";
 
 const ContentRenderer = ({
@@ -91,6 +92,8 @@ const ContentRenderer = ({
       return <SalesMain />;
     case "kasir":
       return <Kasir />;
+    case "rule":
+      return <RuleAccessData />;
     default:
       return <Analytics />;
   }

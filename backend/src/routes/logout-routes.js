@@ -1,18 +1,15 @@
 import { Hono } from "hono";
 import { setCookie, getCookie } from "hono/cookie";
-import { PORT, JWT_SECRET } from "@config/config";
+import { JWT_SECRET } from "@config/config";
 import { UserModels } from "@models/user-models";
 import jwt from "jsonwebtoken";
-import accessValidation from "@validation/user-validation";
-import { renderEJS } from "@config/config";
 import { authenticate } from "@middleware/authMiddleware";
 
 const router = new Hono();
 
 // Logout User
-router.patch("/", authenticate async (c) => {
+router.patch("/", authenticate, async (c) => {
   try {
-
     let userId;
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
@@ -41,14 +38,7 @@ router.patch("/", authenticate async (c) => {
       maxAge: 3600, // 1 hour
     });
 
-    if (c.req.header("content-type") === "application/json") {
-      return c.json({ message: "Logged out successfully" });
-    } else {
-      const html = await renderEJS("login", {
-        title: "Home Page",
-      });
-      return c.html(html);
-    }
+    return c.json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout Error:", error);
     return c.text("Terjadi kesalahan saat logout.", 400);

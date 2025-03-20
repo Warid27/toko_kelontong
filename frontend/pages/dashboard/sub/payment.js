@@ -25,7 +25,6 @@ import Loading from "@/components/loading";
 import { fetchPaymentList, fetchPaymentAdd } from "@/libs/fetching/payment";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import { updatePayment, deletePayment } from "@/libs/fetching/payment";
-import client from "@/libs/axios";
 
 // Packages
 import { toast } from "react-toastify";

@@ -1,44 +1,143 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-
-// Icons
 import { IoSearchOutline } from "react-icons/io5";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
-
-// Components
 import { SubmitButton, CloseButton } from "@/components/form/button";
 import Table from "@/components/form/table";
 import { Modal } from "@/components/Modal";
 import Header from "@/components/section/header";
 import Loading from "@/components/loading";
 import DateTimePicker from "@/components/DateTimePicker";
-
-// Libraries
 import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchUserList } from "@/libs/fetching/user";
 import { fetchStoreList } from "@/libs/fetching/store";
-import { fetchItemCampaignList, addItemCampaign, updateItemCampaign, deleteItemCampaign } from "@/libs/fetching/itemCampaign";
-import client from "@/libs/axios";
-
-// Packages
+import {
+  fetchItemCampaignList,
+  addItemCampaign,
+  updateItemCampaign,
+  deleteItemCampaign,
+} from "@/libs/fetching/itemCampaign";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+
+// Separate FormContent component
+const FormContent = React.memo(
+  ({
+    isUpdate,
+    data,
+    formErrors,
+    handleChange,
+    handleDateChange,
+    handleSubmit,
+    onClose,
+  }) => {
+    return (
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-4">
+          <div>
+            <p className="font-semibold">Nama Item Campaign</p>
+            <input
+              type="text"
+              name="item_campaign_name"
+              value={data.item_campaign_name}
+              onChange={handleChange}
+              className={`border rounded-md p-2 w-full bg-white ${
+                formErrors.item_campaign_name ? "border-red-500" : ""
+              }`}
+            />
+            {formErrors.item_campaign_name && (
+              <p className="text-red-500 text-sm">
+                {formErrors.item_campaign_name}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="font-semibold">Rules</p>
+            <input
+              type="text"
+              name="rules"
+              value={data.rules}
+              onChange={handleChange}
+              className={`border rounded-md p-2 w-full bg-white ${
+                formErrors.rules ? "border-red-500" : ""
+              }`}
+            />
+            {formErrors.rules && (
+              <p className="text-red-500 text-sm">{formErrors.rules}</p>
+            )}
+          </div>
+          <div>
+            <p className="font-semibold">Start Date</p>
+            <DateTimePicker
+              onChange={(date) => handleDateChange(date, "start_date")}
+              value={new Date(data.start_date)}
+              name="start_date"
+              format="yyyy-MM-dd HH:mm"
+              className={`border p-2 rounded bg-white w-full ${
+                formErrors.start_date ? "border-red-500" : ""
+              }`}
+            />
+            {formErrors.start_date && (
+              <p className="text-red-500 text-sm">{formErrors.start_date}</p>
+            )}
+          </div>
+          <div>
+            <p className="font-semibold">End Date</p>
+            <DateTimePicker
+              onChange={(date) => handleDateChange(date, "end_date")}
+              value={new Date(data.end_date)}
+              minDate={new Date(data.start_date)}
+              name="end_date"
+              format="yyyy-MM-dd HH:mm"
+              className={`border p-2 rounded bg-white w-full ${
+                formErrors.end_date ? "border-red-500" : ""
+              }`}
+            />
+            {formErrors.end_date && (
+              <p className="text-red-500 text-sm">{formErrors.end_date}</p>
+            )}
+          </div>
+          <div>
+            <p className="font-semibold mb-2">Value</p>
+            <div className="relative">
+              <input
+                type="number"
+                name="value"
+                value={data.value}
+                onChange={handleChange}
+                className={`border rounded-md p-2 pr-8 w-full bg-white ${
+                  formErrors.value ? "border-red-500" : ""
+                }`}
+                max={99}
+                min={1}
+                step={1}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none">
+                %
+              </span>
+            </div>
+            {formErrors.value && (
+              <p className="text-red-500 text-sm">{formErrors.value}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end mt-5 gap-2">
+          <CloseButton onClick={onClose} />
+          <SubmitButton />
+        </div>
+      </form>
+    );
+  }
+);
 
 const ItemCampaign = () => {
   const [itemCampaign, setItemCampaign] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [loading, setLoading] = useState(false);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [itemCampaignToUpdate, setItemCampaignToUpdate] = useState(null);
-
-  const [storeList, setStoreList] = useState([]);
-  const [companyList, setCompanyList] = useState([]);
-  const [userList, setUserList] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [formErrors, setFormErrors] = useState({});
   const [itemCampaignDataAdd, setItemCampaignDataAdd] = useState({
     item_campaign_name: "",
     rules: "",
@@ -46,7 +145,6 @@ const ItemCampaign = () => {
     start_date: new Date(),
     end_date: new Date(),
   });
-
   const [itemCampaignDataUpdate, setItemCampaignDataUpdate] = useState({
     id: "",
     item_campaign_name: "",
@@ -56,30 +154,27 @@ const ItemCampaign = () => {
     end_date: new Date(),
   });
 
-  const id_store = localStorage.getItem("id_store") === "undefined" ? null : localStorage.getItem("id_store");
-  const id_company = localStorage.getItem("id_company") === "undefined" ? null : localStorage.getItem("id_company");
-  const id_user = localStorage.getItem("id_user") === "undefined" ? null : localStorage.getItem("id_user");
-  const token = localStorage.getItem("token");
-
-  // Header Table
   const ExportHeaderTable = [
     { label: "No", key: "no" },
-    { label: "Nama Item Campaign", key: "item_campaign_name" },
+    { label: "Nama Promo", key: "item_campaign_name" },
     { label: "Rules", key: "rules" },
-    { label: "Start Date", key: "start_date" },
-    { label: "End Date", key: "end_date" },
-    { label: "Value", key: "value" },
-  ];
-
-  const HeaderTable = [
-    { label: "Nama Item Campaign", key: "item_campaign_name" },
-    { label: "Rules", key: "rules" },
-    { label: "Start Date", key: "start_date" },
-    { label: "End Date", key: "end_date" },
-    { 
-      label: "Value", 
+    { label: "Tanggal Mulai", key: "start_date" },
+    { label: "Tanggal Berakhir", key: "end_date" },
+    {
+      label: "Nilai Promo",
       key: "value",
-      render: (value) => `${(value * 100)}%`, // Tampilkan value sebagai persentase
+      render: (value) => `${value * 100}%`,
+    },
+  ];
+  const HeaderTable = [
+    { label: "Nama Promo", key: "item_campaign_name" },
+    { label: "Rules", key: "rules" },
+    { label: "Tanggal Mulai", key: "start_date" },
+    { label: "Tanggal Berakhir", key: "end_date" },
+    {
+      label: "Nilai Promo",
+      key: "value",
+      render: (value) => `${value * 100}%`,
     },
   ];
 
@@ -91,94 +186,92 @@ const ItemCampaign = () => {
     },
     {
       icon: <FaRegEdit size={20} />,
-      onClick: (row) => handleUpdateItemCampaign(row),
+      onClick: (row) => handleUpdate(row),
       className: "bg-blue-500 hover:bg-blue-600",
     },
   ];
 
-  // --- Functions
-  const modalOpen = (param, bool) => {
-    const setters = { add: setIsModalOpen, update: setIsUpdateModalOpen };
-    if (setters[param]) setters[param](bool);
-  };
-
   useEffect(() => {
-    const fetching_requirement = async () => {
-      const get_user_list = async () => { const data = await fetchUserList(); setUserList(data); };
-      const get_company_list = async () => { const data = await fetchCompanyList(); setCompanyList(data); };
-      const get_store_list = async () => { const data = await fetchStoreList(); setStoreList(data); };
-      const get_itemCampaign_list = async () => { const data = await fetchItemCampaignList(); setItemCampaign(data); };
-      await Promise.all([get_user_list(), get_company_list(), get_store_list(), get_itemCampaign_list()]);
-      setIsLoading(false);
+    const fetchData = async () => {
+      try {
+        const campaigns = await fetchItemCampaignList();
+        setItemCampaign(campaigns);
+      } catch (error) {
+        toast.error("Failed to load data: " + error.message);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    fetching_requirement();
+    fetchData();
   }, []);
 
-  const handleUpdateItemCampaign = (itemCampaign) => {
-    setItemCampaignToUpdate(itemCampaign);
-    modalOpen("update", true);
+  const validateForm = (data) => {
+    const errors = {};
+    if (!data.item_campaign_name)
+      errors.item_campaign_name = "Name is required";
+    if (!data.rules) errors.rules = "Rules are required";
+    if (!data.value || isNaN(data.value) || data.value <= 0 || data.value > 99)
+      errors.value = "Value must be a percentage between 1% and 99%.";
+    if (!data.start_date) errors.start_date = "Start date is required";
+    if (!data.end_date) errors.end_date = "End date is required";
+    if (new Date(data.start_date) >= new Date(data.end_date))
+      errors.end_date = "End date must be after start date";
+    return errors;
   };
 
-  const deleteItemCampaignById = async (id) => {
-    Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "No, cancel!",
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const response = await deleteItemCampaign(id);
-          if (response.status === 200) {
-            toast.success("Item Campaign berhasil dihapus!");
-            setItemCampaign((prev) => prev.filter((p) => p._id !== id));
-          }
-        } catch (error) {
-          toast.error("Gagal menghapus Item Campaign: " + error.message);
-        }
-      }
-    });
-  };
-
-  const handleChangeAdd = (value, name) => {
-    setItemCampaignDataAdd((prevState) => ({
-      ...prevState,
-      [name]: value instanceof Date ? value.toISOString() : value,
+  const handleChangeAdd = useCallback((e) => {
+    const { name, value } = e.target;
+    setItemCampaignDataAdd((prev) => ({
+      ...prev,
+      [name]: value,
     }));
-  };
+    setFormErrors((prev) => ({ ...prev, [name]: null }));
+  }, []);
+
+  const handleChangeUpdate = useCallback((e) => {
+    const { name, value } = e.target;
+    setItemCampaignDataUpdate((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setFormErrors((prev) => ({ ...prev, [name]: null }));
+  }, []);
+
+  const handleDateChangeAdd = useCallback((date, name) => {
+    setItemCampaignDataAdd((prev) => ({
+      ...prev,
+      [name]: date,
+    }));
+    setFormErrors((prev) => ({ ...prev, [name]: null }));
+  }, []);
+
+  const handleDateChangeUpdate = useCallback((date, name) => {
+    setItemCampaignDataUpdate((prev) => ({
+      ...prev,
+      [name]: date,
+    }));
+    setFormErrors((prev) => ({ ...prev, [name]: null }));
+  }, []);
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
+    const errors = validateForm(itemCampaignDataAdd);
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      toast.error("Please fix the errors in the form");
+      return;
+    }
+
     try {
-      if (
-        !itemCampaignDataAdd.item_campaign_name ||
-        !itemCampaignDataAdd.rules ||
-        !itemCampaignDataAdd.value ||
-        !itemCampaignDataAdd.start_date ||
-        !itemCampaignDataAdd.end_date
-      ) {
-        toast.error("Please fill all required fields.");
-        return;
-      }
-      const value = parseFloat(itemCampaignDataAdd.value) / 100; // Konversi persentase ke desimal
       const reqBody = {
-        item_campaign_name: itemCampaignDataAdd.item_campaign_name,
-        rules: itemCampaignDataAdd.rules,
-        value: value,
-        start_date: itemCampaignDataAdd.start_date,
-        end_date: itemCampaignDataAdd.end_date,
-        id_store: id_store,
-        id_company: id_company,
-        id_user: id_user,
+        ...itemCampaignDataAdd,
+        value: parseFloat(itemCampaignDataAdd.value) / 100,
       };
       const response = await addItemCampaign(reqBody);
       if (response.status === 201) {
-        modalOpen("add", false);
-        toast.success("Item Campaign berhasil ditambahkan!");
+        setItemCampaign((prev) => [...prev, response.data]);
+        setIsModalOpen(false);
         setItemCampaignDataAdd({
           item_campaign_name: "",
           rules: "",
@@ -186,230 +279,154 @@ const ItemCampaign = () => {
           start_date: new Date(),
           end_date: new Date(),
         });
-        setItemCampaign((prev) => [...prev, response.data]);
-      } else {
-        toast.error("Gagal: " + response.error);
+        toast.success("Item Campaign added successfully!");
       }
     } catch (error) {
       toast.error("Error adding Item Campaign: " + error.message);
     }
   };
 
-  useEffect(() => {
-    if (itemCampaignToUpdate) {
-      setItemCampaignDataUpdate({
-        id: itemCampaignToUpdate._id || "",
-        item_campaign_name: itemCampaignToUpdate.item_campaign_name || "",
-        rules: itemCampaignToUpdate.rules || "",
-        value: (itemCampaignToUpdate.value * 100) || "", // Konversi desimal ke persentase
-        start_date: itemCampaignToUpdate.start_date ? new Date(itemCampaignToUpdate.start_date) : new Date(),
-        end_date: itemCampaignToUpdate.end_date ? new Date(itemCampaignToUpdate.end_date) : new Date(),
-      });
-    }
-  }, [itemCampaignToUpdate]);
-
-  const handleChangeUpdate = (value, name) => {
-    setItemCampaignDataUpdate((prevState) => ({
-      ...prevState,
-      [name]: value instanceof Date ? value.toISOString() : value,
-    }));
+  const handleUpdate = (item) => {
+    setItemCampaignDataUpdate({
+      id: item._id,
+      item_campaign_name: item.item_campaign_name,
+      rules: item.rules,
+      value: item.value * 100,
+      start_date: new Date(item.start_date),
+      end_date: new Date(item.end_date),
+    });
+    setIsUpdateModalOpen(true);
   };
 
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
+    const errors = validateForm(itemCampaignDataUpdate);
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      toast.error("Please fix the errors in the form");
+      return;
+    }
+
     try {
-      setLoading(true);
-      const value = parseFloat(itemCampaignDataUpdate.value) / 100; // Konversi persentase ke desimal
       const reqBody = {
-        item_campaign_name: itemCampaignDataUpdate.item_campaign_name,
-        rules: itemCampaignDataUpdate.rules,
-        value: value,
-        start_date: itemCampaignDataUpdate.start_date,
-        end_date: itemCampaignDataUpdate.end_date,
-        id_store: id_store,
-        id_company: id_company,
-        id_user: id_user,
+        ...itemCampaignDataUpdate,
+        value: parseFloat(itemCampaignDataUpdate.value) / 100,
       };
-      const response = await updateItemCampaign(itemCampaignDataUpdate.id, reqBody);
+      const response = await updateItemCampaign(
+        itemCampaignDataUpdate.id,
+        reqBody
+      );
       if (response.status === 200) {
-        modalOpen("update", false);
-        toast.success("Item Campaign berhasil diupdate!");
         setItemCampaign((prev) =>
-          prev.map((item) => (item._id === itemCampaignDataUpdate.id ? response.data : item))
+          prev.map((item) =>
+            item._id === itemCampaignDataUpdate.id ? response.data : item
+          )
         );
-      } else {
-        toast.error("Gagal: " + response.error);
+        setIsUpdateModalOpen(false);
+        toast.success("Item Campaign updated successfully!");
       }
     } catch (error) {
       toast.error("Error updating Item Campaign: " + error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const filteredItemCampaignList = itemCampaign.filter((item) =>
-    item.item_campaign_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const deleteItemCampaignById = async (id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      confirmButtonColor: "#d33",
+    });
 
-  const dataForExport = filteredItemCampaignList.map((item, index) => ({
-    no: index + 1,
-    item_campaign_name: item.item_campaign_name,
-    rules: item.rules,
-    start_date: item.start_date,
-    end_date: item.end_date,
-    value: `${(item.value * 100)}%`,
-  }));
+    if (result.isConfirmed) {
+      try {
+        await deleteItemCampaign(id);
+        setItemCampaign((prev) => prev.filter((p) => p._id !== id));
+        toast.success("Item Campaign deleted successfully!");
+      } catch (error) {
+        toast.error("Error deleting Item Campaign: " + error.message);
+      }
+    }
+  };
+
+  const filteredItems = itemCampaign.filter((item) => {
+    const query = searchQuery.toLowerCase();
+
+    return (
+      item.item_campaign_name.toLowerCase().includes(query) ||
+      item.rules.toLowerCase().includes(query) ||
+      item.value.toString().includes(query) || // Convert number to string
+      item.start_date.toLowerCase().includes(query) ||
+      item.end_date.toLowerCase().includes(query)
+    );
+  });
 
   if (isLoading) return <Loading />;
 
   return (
-    <div className="w-full h-screen pt-16 relative">
+    <div className="w-full h-screen pt-16">
       <Header
         title="Daftar Item Campaign"
         subtitle="Detail Daftar Item Campaign"
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        modalOpen={modalOpen}
+        modalOpen={(type, value) =>
+          type === "add" ? setIsModalOpen(value) : setIsUpdateModalOpen(value)
+        }
         isSearch={true}
         isAdd={true}
       />
-
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
-          {filteredItemCampaignList.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <h1>Data campaign tidak ditemukan!</h1>
           ) : (
             <Table
-              fileName="Data Item Campaign"
-              ExportHeaderTable={ExportHeaderTable}
               columns={HeaderTable}
-              data={filteredItemCampaignList}
+              data={filteredItems}
               actions={actions}
+              fileName="Data Promo Produk"
+              ExportHeaderTable={ExportHeaderTable}
             />
           )}
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => modalOpen("add", false)} title="Tambah Item Campaign" width="large">
-        <form onSubmit={handleSubmitAdd}>
-          <p className="font-semibold mt-4">Nama Item Campaign</p>
-          <input
-            type="text"
-            name="item_campaign_name"
-            value={itemCampaignDataAdd.item_campaign_name}
-            onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
-            className="border rounded-md p-2 w-full bg-white"
-            required
-          />
-          <p className="font-semibold mt-4">Rules</p>
-          <input
-            type="text"
-            name="rules"
-            value={itemCampaignDataAdd.rules}
-            onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
-            className="border rounded-md p-2 w-full bg-white"
-            required
-          />
-          <p className="font-semibold mt-4">Start Date</p>
-          <DateTimePicker
-            onChange={(date) => handleChangeAdd(date, "start_date")}
-            value={itemCampaignDataAdd.start_date ? new Date(itemCampaignDataAdd.start_date) : null}
-            name="start_date"
-            format="yyyy-MM-dd HH:mm"
-            className="border p-2 rounded bg-white w-full"
-          />
-          <p className="font-semibold mt-4">End Date</p>
-          <DateTimePicker
-            onChange={(date) => handleChangeAdd(date, "end_date")}
-            value={itemCampaignDataAdd.end_date ? new Date(itemCampaignDataAdd.end_date) : null}
-            minDate={itemCampaignDataAdd.start_date ? new Date(itemCampaignDataAdd.start_date) : null}
-            name="end_date"
-            format="yyyy-MM-dd HH:mm"
-            className="border p-2 rounded bg-white w-full"
-          />
-          <p className="font-semibold mt-4 mb-2">Value</p>
-          <div className="relative">
-            <input
-              type="number"
-              name="value"
-              value={itemCampaignDataAdd.value}
-              onChange={(e) => handleChangeAdd(e.target.value, e.target.name)}
-              className="border rounded-md p-2 pr-8 w-full bg-white"
-              required
-              max={99}
-              min={1}
-              step={1}
-            />
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none">
-              %
-            </span>
-          </div>
-          <div className="flex justify-end mt-5">
-            <CloseButton onClick={() => modalOpen("add", false)} />
-            <SubmitButton />
-          </div>
-        </form>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Tambah Item Campaign"
+        width="large"
+      >
+        <FormContent
+          isUpdate={false}
+          data={itemCampaignDataAdd}
+          formErrors={formErrors}
+          handleChange={handleChangeAdd}
+          handleDateChange={handleDateChangeAdd}
+          handleSubmit={handleSubmitAdd}
+          onClose={() => setIsModalOpen(false)}
+        />
       </Modal>
 
-      <Modal isOpen={isUpdateModalOpen} onClose={() => modalOpen("update", false)} title="Edit Item Campaign" width="large">
-        <form onSubmit={handleSubmitUpdate}>
-          <p className="font-semibold mt-4">Nama Item Campaign</p>
-          <input
-            type="text"
-            name="item_campaign_name"
-            value={itemCampaignDataUpdate.item_campaign_name}
-            onChange={(e) => handleChangeUpdate(e.target.value, e.target.name)}
-            className="border rounded-md p-2 w-full bg-white"
-            required
-          />
-          <p className="font-semibold mt-4">Rules</p>
-          <input
-            type="text"
-            name="rules"
-            value={itemCampaignDataUpdate.rules}
-            onChange={(e) => handleChangeUpdate(e.target.value, e.target.name)}
-            className="border rounded-md p-2 w-full bg-white"
-            required
-          />
-          <p className="font-semibold mt-4">Start Date</p>
-          <DateTimePicker
-            onChange={(date) => handleChangeUpdate(date, "start_date")}
-            value={itemCampaignDataUpdate.start_date ? new Date(itemCampaignDataUpdate.start_date) : null}
-            name="start_date"
-            format="yyyy-MM-dd HH:mm"
-            className="border p-2 rounded bg-white w-full"
-          />
-          <p className="font-semibold mt-4">End Date</p>
-          <DateTimePicker
-            onChange={(date) => handleChangeUpdate(date, "end_date")}
-            value={itemCampaignDataUpdate.end_date ? new Date(itemCampaignDataUpdate.end_date) : null}
-            minDate={itemCampaignDataUpdate.start_date ? new Date(itemCampaignDataUpdate.start_date) : null}
-            name="end_date"
-            format="yyyy-MM-dd HH:mm"
-            className="border p-2 rounded bg-white w-full"
-          />
-          <p className="font-semibold mt-4 mb-2">Value</p>
-          <div className="relative">
-            <input
-              type="number"
-              name="value"
-              value={itemCampaignDataUpdate.value}
-              onChange={(e) => handleChangeUpdate(e.target.value, e.target.name)}
-              className="border rounded-md p-2 pr-8 w-full bg-white"
-              required
-              max={99}
-              min={1}
-              step={1}
-            />
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none">
-              %
-            </span>
-          </div>
-          <div className="flex justify-end mt-5">
-            <CloseButton onClick={() => modalOpen("update", false)} />
-            <SubmitButton />
-          </div>
-        </form>
+      <Modal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        title="Edit Item Campaign"
+        width="large"
+      >
+        <FormContent
+          isUpdate={true}
+          data={itemCampaignDataUpdate}
+          formErrors={formErrors}
+          handleChange={handleChangeUpdate}
+          handleDateChange={handleDateChangeUpdate}
+          handleSubmit={handleSubmitUpdate}
+          onClose={() => setIsUpdateModalOpen(false)}
+        />
       </Modal>
     </div>
   );
