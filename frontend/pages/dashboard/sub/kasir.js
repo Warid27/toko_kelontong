@@ -30,7 +30,7 @@ import { fetchSalesCampaignList } from "@/libs/fetching/salesCampaign";
 import { fetchOrderList, updateOrder } from "@/libs/fetching/order";
 import { tokenDecoded } from "@/utils/tokenDecoded";
 
-const Kasir = () => {
+const Kasir = ({ userData }) => {
   const [products, setProducts] = useState([]);
   const [tableList, setTableList] = useState([]);
   const [orderList, setOrderList] = useState([]);
@@ -61,8 +61,8 @@ const Kasir = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const tax = 0.12;
-  const id_store = localStorage.getItem("id_store");
-  const id_company = localStorage.getItem("id_company");
+  const id_store = userData?.id_store;
+  const id_company = userData?.id_company;
   // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
@@ -108,7 +108,7 @@ const Kasir = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [id_store, id_company]);
 
   // Sync infoBuyyer with kasirItems
   useEffect(() => {

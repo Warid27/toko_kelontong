@@ -13,7 +13,7 @@ import { FaInfoCircle } from "react-icons/fa";
 import { fetchPembelianList } from "@/libs/fetching/pembelian";
 import { fetchTableList } from "@/libs/fetching/table";
 
-const PembelianList = ({ setSelectedLink }) => {
+const PembelianList = ({ userData }) => {
   const [listPembelian, setListPembelian] = useState([]);
   const [tableList, setTableList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,15 +21,14 @@ const PembelianList = ({ setSelectedLink }) => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [pembelianToUpdate, setPembelianToUpdate] = useState(null);
 
-  const token = localStorage.getItem("token");
-  const id_store = localStorage.getItem("id_store") || null;
+  const id_store = userData?.id_store;
 
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [pembelianData, tableData] = await Promise.all([
-          fetchPembelianList(id_store, token),
+          fetchPembelianList(id_store),
           fetchTableList(),
         ]);
         setListPembelian(pembelianData);
@@ -41,7 +40,7 @@ const PembelianList = ({ setSelectedLink }) => {
       }
     };
     fetchData();
-  }, [id_store, token]);
+  }, [id_store]);
 
   // Modal control
   const modalOpen = (type, bool) => {

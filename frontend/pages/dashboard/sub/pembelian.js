@@ -24,7 +24,7 @@ import { updateStock } from "@/libs/fetching/stock";
 import { toast } from "react-toastify";
 import { tokenDecoded } from "@/utils/tokenDecoded";
 
-const Pembelian = () => {
+const Pembelian = ({ userData }) => {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [pembelianItems, setPembelianItems] = useState([]);
@@ -38,9 +38,8 @@ const Pembelian = () => {
   const [infoBuyer, setInfoBuyer] = useState({ keterangan: "" });
   const [searchQuery, setSearchQuery] = useState("");
 
-  const id_store = localStorage.getItem("id_store") || null;
-  const id_company = localStorage.getItem("id_company") || null;
-
+  const id_store = userData?.id_store;
+  const id_company = userData?.id_company;
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
@@ -58,7 +57,7 @@ const Pembelian = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [id_company, id_store]);
 
   // Sync infoBuyer with pembelianItems
   useEffect(() => {
@@ -484,21 +483,11 @@ const Pembelian = () => {
           <div className="flex flex-wrap space-x-2">
             {selectedProduct?.id_extras?.extrasDetails.map((extra) => (
               <AddMenu
+                key={extra._id} // Tambahkan key di sini
                 onClick={() => setSelectedExtra(extra._id)}
                 content={extra.name}
                 isActive={selectedExtra === extra._id}
               />
-              // <button
-              //   key={extra._id}
-              //   className={`p-2 rounded-md ${
-              //     selectedExtra === extra._id
-              //       ? "bg-[#FDDC05] text-black font-semibold"
-              //       : "bg-white border-[#FDDC05] border-2"
-              //   }`}
-              //   onClick={() => setSelectedExtra(extra._id)}
-              // >
-              //   {extra.name}
-              // </button>
             ))}
           </div>
 
@@ -506,23 +495,12 @@ const Pembelian = () => {
           <div className="flex flex-wrap space-x-2">
             {selectedProduct?.id_size?.sizeDetails.map((size) => (
               <AddMenu
+                key={size._id} // Tambahkan key di sini
                 size="medium"
                 onClick={() => setSelectedSize(size._id)}
                 content={size.name}
                 isActive={selectedSize === size._id}
               />
-
-              // <button
-              //   key={size._id}
-              //   className={`p-2 rounded-md ${
-              //     selectedSize === size._id
-              //       ? "bg-[#FDDC05] text-black font-semibold"
-              //       : "bg-white border-[#FDDC05] border-2"
-              //   }`}
-              //   onClick={() => setSelectedSize(size._id)}
-              // >
-              //   {size.name}
-              // </button>
             ))}
           </div>
 

@@ -17,15 +17,16 @@ import {
   fetchUserList,
   addUserData,
   updateUserData,
+  deleteUser,
 } from "@/libs/fetching/user";
 import { uploadImageCompress } from "@/libs/fetching/upload-service"; // Assuming this exists
 import Loading from "@/components/loading";
-import { tokenDecoded } from "@/utils/tokenDecoded";
 
-const User = () => {
-  const statusUser = tokenDecoded().status;
-  const ruleUser = tokenDecoded().rule;
-  const usernameUser = tokenDecoded().username; // IKI YUDA YUD YUD YUD YUDD
+const User = ({ userData }) => {
+  const statusUser = userData?.status;
+  const ruleUser = userData?.rule;
+  const usernameUser = userData?.username;
+  const id_company = userData?.id_company;
 
   const [showPassword, setShowPassword] = useState(false);
   const [users, setUsers] = useState([]);
@@ -37,9 +38,7 @@ const User = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSuper, setIsSuper] = useState(
-    tokenDecoded().rule == 1 ? true : false
-  );
+
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState("Info"); // For update modal tabs
 
@@ -85,11 +84,6 @@ const User = () => {
           fetchCompanyList(),
         ]);
 
-        // Ambil id_company dengan aman
-        const decodedToken = tokenDecoded();
-        const id_company =
-          decodedToken?.id_company || localStorage.getItem("id_company") || "";
-
         // Filter users
         const filteredUsers = usersData
           .filter((ud) =>
@@ -109,7 +103,7 @@ const User = () => {
     };
 
     fetchData();
-  }, [ruleUser, usernameUser]);
+  }, [ruleUser, usernameUser, id_company]);
 
   useEffect(() => {
     if (!companyID) return; // Prevent unnecessary API calls
@@ -128,18 +122,17 @@ const User = () => {
   const handleStatusSelect = async (userId, selectedStatus) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await client.put(
-        `/api/user/${userId}`,
-        { status: selectedStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user._id === userId ? { ...user, status: selectedStatus } : user
-        )
-      );
-      toast.success("Status updated successfully");
+      reqBody = { status: selectedStatus };
+      const response = await updateUserData(reqBody, userId);
+
+      if (response.status === 200) {
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user._id === userId ? { ...user, status: selectedStatus } : user
+          )
+        );
+        toast.success("Status updated successfully");
+      }
     } catch (error) {
       toast.error("Failed to update status");
     } finally {
@@ -238,10 +231,7 @@ const User = () => {
 
     if (result.isConfirmed) {
       try {
-        const token = localStorage.getItem("token");
-        const response = await client.delete(`/api/user/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await deleteUser(id);
         if (response.status === 200) {
           toast.success("User deleted successfully");
           setUsers((prevUsers) => prevUsers.filter((p) => p._id != id));

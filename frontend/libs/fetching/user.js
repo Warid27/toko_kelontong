@@ -65,16 +65,42 @@ export const updateProfile = async (reqBody, id) => {
   }
 };
 
-export const fetchUserGet = async () => {
+export const fetchUserGet = async (id_user) => {
+  if (!id_user) {
+    console.warn("fetchUserGet called with undefined ID");
+    throw new Error("User ID is required");
+  }
+
   try {
     const token = localStorage.getItem("token");
-    const id_user = localStorage.getItem("id");
-    if (!id_user) {
-      console.error("user_id is missing in localStorage");
-      return;
-    }
     const response = await client.post(
       "/user/getuser",
+      { id: id_user },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const data = {
+      username: response.data.username,
+      avatar: response.data.avatar,
+      id: response.data._id,
+      rule: response.data.rule,
+      status: response.data.status,
+      id_company: response.data.id_company,
+      id_store: response.data.id_store,
+    };
+    return data;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+};
+
+export const getAvatar = async (id_user) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await client.post(
+      "/user/getavatar",
       { id: id_user },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -85,19 +111,13 @@ export const fetchUserGet = async () => {
   }
 };
 
-export const getAvatar = async () => {
+export const deleteUser = async (id) => {
   try {
     const token = localStorage.getItem("token");
-    const id_user = localStorage.getItem("id");
-    if (!id_user) {
-      console.error("user_id is missing in localStorage");
-      return;
-    }
-    const response = await client.post(
-      "/user/getavatar",
-      { id: id_user },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+
+    const response = await client.delete(`/api/user/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const data = response.data;
     return data;
   } catch (error) {

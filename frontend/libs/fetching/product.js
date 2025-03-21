@@ -5,12 +5,12 @@ export const fetchProductsList = async (
   id_store = null,
   id_company = null,
   status = null,
-  params = null
+  params = null,
+  id_category_product = null
 ) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("Token not found");
-
     if (!id_company && !id_store && params) {
       return [];
     }
@@ -18,16 +18,15 @@ export const fetchProductsList = async (
     const requestBody = {
       ...(id_store && { id_store }),
       ...(id_company && { id_company }),
+      ...(id_category_product && { id_category_product }),
       ...(status && { status }),
       ...(id_store && params && { params }),
     };
-
     const response = await client.post("/product/listproduct", requestBody, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-
     return response.data;
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -90,10 +89,8 @@ export const AddProductByExcel = async (reqBody) => {
 
     // Extract image from FormData
     const imageFiles = reqBody.getAll("images");
-    console.log("IMAGE FILES", imageFiles);
     if (imageFiles.length > 0) {
       const compressedImages = await compressImages(imageFiles);
-      console.log("COMPRESED IMAGES", compressedImages);
       // Remove old images and append compressed ones
       reqBody.delete("images");
       compressedImages.forEach((image) => reqBody.append("images", image));

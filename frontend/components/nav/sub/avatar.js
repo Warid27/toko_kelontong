@@ -5,7 +5,13 @@ import { getAvatar } from "@/libs/fetching/user";
 import CompanySelector from "@/components/nav/sub/companySelector";
 import StoreSelector from "@/components/nav/sub/storeSelector";
 
-const Avatar = ({ selector, handleLogout, setSelectedLink }) => {
+const Avatar = ({
+  selector,
+  handleLogout,
+  setSelectedLink,
+  userData,
+  updateLocalStorage,
+}) => {
   const [avatar, setAvatar] = useState(null);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -13,11 +19,11 @@ const Avatar = ({ selector, handleLogout, setSelectedLink }) => {
 
   useEffect(() => {
     const fetchAvatar = async () => {
-      const avatarUrl = await getAvatar();
+      const avatarUrl = await getAvatar(userData.id);
       setAvatar(avatarUrl);
     };
     fetchAvatar();
-  }, []);
+  }, [userData.id]);
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -86,11 +92,14 @@ const Avatar = ({ selector, handleLogout, setSelectedLink }) => {
           </li>
           {selector === "superadmin" ? (
             <li>
-              <CompanySelector />
+              <CompanySelector updateLocalStorage={updateLocalStorage} />
             </li>
           ) : selector === "admin" ? (
             <li>
-              <StoreSelector />
+              <StoreSelector
+                updateLocalStorage={updateLocalStorage}
+                companyId={userData.id_company}
+              />
             </li>
           ) : null}
           <li>

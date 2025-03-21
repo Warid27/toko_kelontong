@@ -14,14 +14,12 @@ import Loading from "@/components/loading";
 import { toast } from "react-toastify";
 
 // Components
-import { fetchUserGet, updateProfile } from "@/libs/fetching/user";
+import { updateProfile } from "@/libs/fetching/user";
 import { getCompanyData } from "@/libs/fetching/company";
 import { getStoreData } from "@/libs/fetching/store";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
-import { tokenDecoded } from "@/utils/tokenDecoded";
-
-const Profile = () => {
-  const statusUser = tokenDecoded().status;
+const Profile = ({ userData }) => {
+  const statusUser = userData.status;
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -70,53 +68,38 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    const fetching_requirement = async () => {
-      const get_user_get = async () => {
-        const data_user = await fetchUserGet();
-        console.log("DATA USER", data_user);
-        if (data_user) {
-          setUserToUpdate(data_user);
+    const fetchData = async () => {
+      if (!userData) return;
 
-          const CompanyName = async () => {
-            const company = await getCompanyData(data_user.id_company);
-            setUserDataUpdate((prev) => ({
-              ...prev,
-              companyName: company ? company.name : null,
-            }));
-          };
+      try {
+        setUserToUpdate(userData);
 
-          const StoreName = async () => {
-            const store = await getStoreData(data_user.id_store);
-            setUserDataUpdate((prev) => ({
-              ...prev,
-              storeName: store ? store.name : null,
-            }));
-          };
+        // Fetch company and store data only if IDs exist
+        const company = userData.id_company
+          ? await getCompanyData(userData.id_company)
+          : null;
+        const store = userData.id_store
+          ? await getStoreData(userData.id_store)
+          : null;
 
-          await CompanyName();
-          await StoreName();
-        }
-      };
-
-      await get_user_get();
-      setIsLoading(false);
+        // Update user data
+        setUserDataUpdate({
+          ...userData,
+          id: userData._id,
+          password: "",
+          status: userData.status ?? 1,
+          companyName: userData.rule === 1 ? null : company?.name,
+          storeName: userData.rule <= 2 ? null : store?.name,
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    fetching_requirement();
-  }, []);
 
-  useEffect(() => {
-    if (userToUpdate) {
-      setUserDataUpdate((prev) => ({
-        ...prev,
-        id: userToUpdate._id,
-        username: userToUpdate.username,
-        avatar: userToUpdate.avatar,
-        password: "",
-        rule: userToUpdate.rule,
-        status: userToUpdate.status !== undefined ? userToUpdate.status : 1,
-      }));
-    }
-  }, [userToUpdate]);
+    fetchData();
+  }, [userData]);
 
   const handleChangeUpdate = (e) => {
     const { name, value } = e.target;
@@ -164,8 +147,8 @@ const Profile = () => {
     e.preventDefault();
 
     if (
-      !userDataUpdate.username &&
-      userDataUpdate.password === "" &&
+      !userDataUpdate.username ||
+      userDataUpdate.password === "" ||
       repeatPassword === ""
     ) {
       Swal.fire({

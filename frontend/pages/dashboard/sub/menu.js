@@ -3,12 +3,7 @@ import Image from "next/image";
 
 // Icons
 import { MdDelete } from "react-icons/md";
-import {
-  FaRegEdit,
-  FaInfoCircle,
-  FaWpforms,
-  FaRegFileExcel,
-} from "react-icons/fa";
+import { FaRegEdit, FaWpforms, FaRegFileExcel } from "react-icons/fa";
 import { IoBarcodeOutline } from "react-icons/io5";
 import { IoIosCloudDone } from "react-icons/io";
 import { FaFileUpload, FaFolder } from "react-icons/fa";
@@ -37,7 +32,6 @@ import {
 } from "@/libs/fetching/product";
 import { fetchSizeList } from "@/libs/fetching/size";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
-import client from "@/libs/axios";
 
 // Packages
 import { toast } from "react-toastify";
@@ -45,7 +39,7 @@ import Select from "react-select";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
 
-const ProductMenu = () => {
+const ProductMenu = ({ userData }) => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBatch, setIsLoadingBatch] = useState(false);
@@ -67,17 +61,6 @@ const ProductMenu = () => {
   const [file, setFile] = useState(null);
   const [folder, setFolder] = useState(null);
   const [errorFolders, setErrorFolders] = useState();
-
-  const token = localStorage.getItem("token");
-  const id_store =
-    localStorage.getItem("id_store") === "undefined"
-      ? null
-      : localStorage.getItem("id_store");
-  const id_company =
-    localStorage.getItem("id_company") === "undefined"
-      ? null
-      : localStorage.getItem("id_company");
-  const id_user = localStorage.getItem("id_user");
 
   const [productDataAdd, setProductDataAdd] = useState({
     image: null,
@@ -107,6 +90,8 @@ const ProductMenu = () => {
     id_extras: "",
     id_size: "",
   });
+
+  const { id_store, id_company } = userData;
 
   const statusOptions = [
     { value: 0, label: "Active" },
@@ -229,7 +214,7 @@ const ProductMenu = () => {
       setIsLoading(false);
     };
     fetching_requirement();
-  }, []);
+  }, [id_store, id_company]);
 
   const handleDownload = () => {
     const link = document.createElement("a");

@@ -28,6 +28,7 @@ const ContentRenderer = ({
   setSelectedLink,
   userRole,
   filteredMenuConfig,
+  userData,
 }) => {
   const rolePermissions = useRolePermissions();
   const allowedKeys = filteredMenuConfig
@@ -78,7 +79,11 @@ const ContentRenderer = ({
 
   const Component = components[selectedLink] || Profile;
   return (
-    <Component {...(selectedLink === "profile" ? { setSelectedLink } : {})} />
+    <Component
+      {...(selectedLink === "order_cust"
+        ? { setSelectedLink, userData }
+        : { userData })}
+    />
   );
 };
 

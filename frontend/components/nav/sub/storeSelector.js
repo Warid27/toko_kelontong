@@ -1,83 +1,114 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import Select from "react-select";
 import StoreIcon from "@/components/nav/sub/storeIcon";
 import { fetchStoreList } from "@/libs/fetching/store";
 import { getCompanyData } from "@/libs/fetching/company";
+import { motion, AnimatePresence } from "framer-motion";
 
-const StoreSelector = () => {
+const StoreSelector = ({ companyId }) => {
   const dropdownRef = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [storeList, setStoreList] = useState([]);
-  const companyId = localStorage.getItem("id_company");
-  const [storeSelect, setStoreSelect] = useState(() => {
-    const storedStore = localStorage.getItem("id_store");
-    return storedStore && storedStore !== "undefined" ? storedStore : null;
-  });
-  const [isStore, setIsStore] = useState(false);
   const [companyName, setCompanyName] = useState("");
+  const [storeSelect, setStoreSelect] = useState(null);
+  const [isStore, setIsStore] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Safely get value from localStorage
+  const getValidLocalStorageValue = useCallback((key) => {
+    const value = localStorage.getItem(key);
+    return value && value !== "undefined" && value !== "null" ? value : null;
+  }, []);
+
+  // Safely set value in localStorage and dispatch event
+  const setLocalStorageWithEvent = useCallback((key, value) => {
+    if (value) {
+      localStorage.setItem(key, value);
+    } else {
+      localStorage.removeItem(key);
+    }
+    // Dispatch custom event for Dashboard to listen to
+    window.dispatchEvent(new Event("localStorageChange"));
+  }, []);
+
+  // Handle store selection changes
+  const handleStoreChange = useCallback(
+    (storeId) => {
+      setStoreSelect(storeId);
+      setIsStore(!!storeId);
+      setLocalStorageWithEvent("id_store", storeId);
+    },
+    [setLocalStorageWithEvent]
+  );
+
+  // Fetch company name and store list
   useEffect(() => {
-    const getCompany = async () => {
-      const data = await getCompanyData(companyId);
-      const name = data.name;
-      setCompanyName(name);
-    };
-    const fetchAndSetStores = async () => {
-      if (companyId && companyId !== "undefined") {
-        try {
-          const data = await fetchStoreList(companyId);
-          if (Array.isArray(data)) {
-            const filteredStores = data.filter(
-              (store) => store.id_company === companyId
-            );
-            setStoreList(filteredStores);
+    const fetchCompanyAndStores = async () => {
+      setError(null);
 
-            const storedStore = localStorage.getItem("id_store");
-            if (storedStore && storedStore !== "undefined") {
-              const storeExists = filteredStores.some(
-                (store) => store._id === storedStore
-              );
-              setStoreSelect(storeExists ? storedStore : null);
-              setIsStore(storeExists);
-            }
-          } else {
-            setStoreList([]);
-          }
-        } catch (error) {
-          console.error("Error fetching stores:", error);
-          setStoreList([]);
-        }
-      } else {
+      if (!companyId || companyId === "undefined" || companyId === "null") {
         setStoreList([]);
-        setStoreSelect(null);
-        setIsStore(false);
+        setCompanyName("");
+        handleStoreChange(null);
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        // Fetch company name
+        const companyData = await getCompanyData(companyId);
+        setCompanyName(companyData?.name || "Unknown Company");
+
+        // Fetch store list
+        const storeData = await fetchStoreList(companyId);
+
+        // Process store data
+        const filteredStores = Array.isArray(storeData)
+          ? storeData.filter((store) => store.id_company === companyId)
+          : [];
+
+        setStoreList(filteredStores);
+
+        // Get stored store ID
+        const storedStoreId = getValidLocalStorageValue("id_store");
+
+        // Validate stored store ID
+        const validStore = filteredStores.find(
+          (store) => store._id === storedStoreId
+        );
+
+        if (!validStore && storedStoreId) {
+          // Stored ID is invalid, clear it
+          handleStoreChange(null);
+        } else if (validStore && !storeSelect) {
+          // Valid store in localStorage but not in state
+          handleStoreChange(storedStoreId);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("Failed to load store data");
+        setStoreList([]);
+        setCompanyName("");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    getCompany();
-    fetchAndSetStores();
-  }, [companyId]);
+    fetchCompanyAndStores();
+  }, [companyId, handleStoreChange, getValidLocalStorageValue, storeSelect]);
 
+  // Initialize store selection from localStorage on component mount
   useEffect(() => {
-    if (storeSelect && storeSelect !== "undefined") {
-      localStorage.setItem("id_store", storeSelect);
+    const storedStoreId = getValidLocalStorageValue("id_store");
+    if (storedStoreId) {
+      setStoreSelect(storedStoreId);
       setIsStore(true);
-    } else {
-      localStorage.removeItem("id_store");
-      setIsStore(false);
     }
-  }, [storeSelect]);
+  }, [getValidLocalStorageValue]);
 
-  const handleChangeStore = (store) => {
-    setStoreSelect(store);
-  };
-
-  const clearSelector = () => {
-    localStorage.removeItem("id_store");
-    setStoreSelect(null);
-    setIsStore(false);
-  };
-
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -85,62 +116,82 @@ const StoreSelector = () => {
       }
     };
 
-    if (dropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dropdownOpen]);
+  }, []);
+
+  // Clear selection
+  const clearSelector = () => {
+    handleStoreChange(null);
+    setDropdownOpen(false);
+  };
+
+  // Format store options for the Select component
+  const storeOptions = storeList.map((store) => ({
+    value: store._id,
+    label: store.name,
+  }));
+
+  // Find the currently selected store
+  const selectedStore = storeOptions.find(
+    (option) => option.value === storeSelect
+  );
 
   return (
     <div className="relative" ref={dropdownRef}>
       <div className="flex flex-row gap-2 items-center">
-        {isStore && (
-          <StoreIcon key={storeSelect} role={1} store_id={storeSelect} />
-        )}
-        <button
+        <motion.button
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md shadow-md"
+          className="block w-full px-6 py-3 text-left text-gray-800 bg-white hover:bg-gray-100 transition-all duration-200  "
+          disabled={isLoading}
         >
-          Select Store
-        </button>
+          {isLoading ? "Loading stores..." : "Select Store"}
+        </motion.button>
       </div>
 
-      <div
-        className={` absolute left-0 mt-2 w-64 bg-white border border-gray-300 rounded-md shadow-lg p-4 z-50 transition-all duration-300 ease-out transform  ${
-          dropdownOpen
-            ? "scale-100 opacity-100 translate-y-0"
-            : "scale-95 opacity-0 translate-y-[-10px] pointer-events-none"
-        }`}
-      >
-        <h1 className="text-center mb-2 text-xl font-semibold text-gray-800 tracking-wide">
-          {companyName}
-        </h1>
-        <Select
-          id="store"
-          className="w-full"
-          options={storeList.map((s) => ({
-            value: s._id,
-            label: s.name,
-          }))}
-          value={
-            storeList
-              .map((s) => ({ value: s._id, label: s.name }))
-              .find((opt) => opt.value === storeSelect) || null
-          }
-          onChange={(selectedOption) =>
-            handleChangeStore(selectedOption?.value)
-          }
-          isSearchable
-          placeholder="Select a store"
-          noOptionsMessage={() => "No Store available"}
-        />
-        <button className="dangerBtn mt-2 w-full" onClick={clearSelector}>
-          Clear
-        </button>
-      </div>
+      <AnimatePresence>
+        {dropdownOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="border-t border-slate-200 p-5 flex flex-col gap-3"
+          >
+            <h1 className="text-center text-gray-800">
+              {companyName || "Select a Store"}
+            </h1>
+
+            {error ? (
+              <div className="text-red-500 text-center">{error}</div>
+            ) : (
+              <Select
+                id="store"
+                className="w-full"
+                options={storeOptions}
+                value={selectedStore}
+                onChange={(selectedOption) =>
+                  handleStoreChange(selectedOption?.value || null)
+                }
+                isSearchable
+                isLoading={isLoading}
+                placeholder={isLoading ? "Loading stores..." : "Select a store"}
+                noOptionsMessage={() => "No stores available"}
+              />
+            )}
+
+            <motion.button
+              className="dangerBtn mt-2 w-full"
+              onClick={clearSelector}
+              disabled={!isStore || isLoading}
+            >
+              Clear
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

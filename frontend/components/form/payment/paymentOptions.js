@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 const PaymentOption = ({ payment, selectedMethod, setSelectedMethod }) => {
   return (
@@ -31,7 +32,9 @@ const PaymentOption = ({ payment, selectedMethod, setSelectedMethod }) => {
 
       {/* Payment Name & Image */}
       <div className="flex items-center justify-center gap-5">
-        <img
+        <Image
+          width={100}
+          height={100}
           src={payment.image}
           alt={`${payment.payment_name} logo`}
           className="object-contain w-8 h-8"

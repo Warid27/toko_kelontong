@@ -62,8 +62,6 @@ const SalesMain = () => {
     salesDetails: [],
   });
 
-  const token = localStorage.getItem("token");
-
   // Header Table
   const ExportHeaderTable = [
     { label: "No", key: "no" },
@@ -78,32 +76,35 @@ const SalesMain = () => {
 
   const HeaderTable = [
     { label: "No Sales", key: "no" },
-    { 
-      label: "Tax", 
-      key: "tax", 
-      render: (value) => `${(value * 100)}%` 
+    {
+      label: "Tax",
+      key: "tax",
+      render: (value) => `${value * 100}%`,
     },
-    { 
-      label: "Total Price", 
+    {
+      label: "Total Price",
       key: "total_price",
-      render: (value) => `Rp. ${new Intl.NumberFormat("id-ID").format(value) || "-"}`,
+      render: (value) =>
+        `Rp. ${new Intl.NumberFormat("id-ID").format(value) || "-"}`,
     },
-    { 
-      label: "Total Discount", 
+    {
+      label: "Total Discount",
       key: "total_discount",
-      render: (value) => `${(value * 100)}%`,
+      render: (value) => `${value * 100}%`,
     },
     { label: "Total Quantity", key: "total_quantity" },
     { label: "Total Number Item", key: "total_number_item" },
-    { 
-      label: "Status", 
+    {
+      label: "Status",
       key: "status",
       render: (value, row) => (
         <input
           type="checkbox"
           className="toggle"
           checked={value === 1}
-          onChange={() => handleStatus(saleses.find(s => s._id === row._id)._id, value)}
+          onChange={() =>
+            handleStatus(saleses.find((s) => s._id === row._id)._id, value)
+          }
         />
       ),
     },
@@ -130,13 +131,34 @@ const SalesMain = () => {
 
   useEffect(() => {
     const fetching_requirement = async () => {
-      const get_user_list = async () => { const data = await fetchUserList(); setUserList(data); };
-      const get_company_list = async () => { const data = await fetchCompanyList(); setCompanyList(data); };
-      const get_store_list = async () => { const data = await fetchStoreList(); setStoreList(data); };
-      const get_order_list = async () => { const data = await fetchOrderList(); setOrderList(data); };
-      const get_salesCampaign_list = async () => { const data = await fetchSalesCampaignList(); setSalesCampaignList(data); };
-      const get_sales_list = async () => { const data = await fetchSalesList(); setSaleses(data); };
-      const get_payment_list = async () => { const data = await fetchPaymentList(); setPaymentList(data); };
+      const get_user_list = async () => {
+        const data = await fetchUserList();
+        setUserList(data);
+      };
+      const get_company_list = async () => {
+        const data = await fetchCompanyList();
+        setCompanyList(data);
+      };
+      const get_store_list = async () => {
+        const data = await fetchStoreList();
+        setStoreList(data);
+      };
+      const get_order_list = async () => {
+        const data = await fetchOrderList();
+        setOrderList(data);
+      };
+      const get_salesCampaign_list = async () => {
+        const data = await fetchSalesCampaignList();
+        setSalesCampaignList(data);
+      };
+      const get_sales_list = async () => {
+        const data = await fetchSalesList();
+        setSaleses(data);
+      };
+      const get_payment_list = async () => {
+        const data = await fetchPaymentList();
+        setPaymentList(data);
+      };
       await Promise.all([
         get_user_list(),
         get_company_list(),
@@ -205,18 +227,21 @@ const SalesMain = () => {
     }
   }, [salesToUpdate]);
 
-  const filteredSalesList = saleses.filter((sales) =>
-    (sales.no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    sales.status === 1 && "active".includes(searchQuery.toLowerCase()) ||
-    sales.status === 2 && "inactive".includes(searchQuery.toLowerCase()))
+  const filteredSalesList = saleses.filter(
+    (sales) =>
+      sales.no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (sales.status === 1 && "active".includes(searchQuery.toLowerCase())) ||
+      (sales.status === 2 && "inactive".includes(searchQuery.toLowerCase()))
   );
 
   const dataForExport = filteredSalesList.map((item, index) => ({
     no: index + 1,
     no_sales: item.no,
-    tax: `${(item.tax * 100)}%`,
-    total_price: `Rp. ${new Intl.NumberFormat("id-ID").format(item.total_price) || "-"}`,
-    total_discount: `${(item.total_discount * 100)}%`,
+    tax: `${item.tax * 100}%`,
+    total_price: `Rp. ${
+      new Intl.NumberFormat("id-ID").format(item.total_price) || "-"
+    }`,
+    total_discount: `${item.total_discount * 100}%`,
     total_quantity: item.total_quantity,
     total_number_item: item.total_number_item,
     status: item.status === 1 ? "Active" : "Inactive",
@@ -252,7 +277,12 @@ const SalesMain = () => {
         </div>
       </div>
 
-      <Modal isOpen={isUpdateModalOpen} onClose={() => modalOpen("update", false)} title="Data Sales" width="large">
+      <Modal
+        isOpen={isUpdateModalOpen}
+        onClose={() => modalOpen("update", false)}
+        title="Data Sales"
+        width="large"
+      >
         <div className="grid grid-cols-[auto_auto_1fr] gap-y-2 font-sans">
           <span className="text-left font-bold pr-2">Nomor Sales</span>
           <span className="font-bold px-2">:</span>
@@ -260,65 +290,91 @@ const SalesMain = () => {
 
           <span className="text-left font-bold pr-2">Pajak</span>
           <span className="font-bold px-2">:</span>
-          <span className="text-gray-700">{salesDataUpdate.tax ? `${(salesDataUpdate.tax * 100)}%` : "-"}</span>
+          <span className="text-gray-700">
+            {salesDataUpdate.tax ? `${salesDataUpdate.tax * 100}%` : "-"}
+          </span>
 
           <span className="text-left font-bold pr-2">Total Harga</span>
           <span className="font-bold px-2">:</span>
           <span className="text-gray-700">
-            {salesDataUpdate.total_price ? `Rp. ${new Intl.NumberFormat("id-ID").format(salesDataUpdate.total_price)}` : "-"}
+            {salesDataUpdate.total_price
+              ? `Rp. ${new Intl.NumberFormat("id-ID").format(
+                  salesDataUpdate.total_price
+                )}`
+              : "-"}
           </span>
 
           <span className="text-left font-bold pr-2">Total Diskon</span>
           <span className="font-bold px-2">:</span>
-          <span className="text-gray-700">{salesDataUpdate.total_discount ? `${(salesDataUpdate.total_discount * 100)}%` : "-"}</span>
+          <span className="text-gray-700">
+            {salesDataUpdate.total_discount
+              ? `${salesDataUpdate.total_discount * 100}%`
+              : "-"}
+          </span>
 
           <span className="text-left font-bold pr-2">Total Jumlah</span>
           <span className="font-bold px-2">:</span>
-          <span className="text-gray-700">{salesDataUpdate.total_quantity || "-"}</span>
+          <span className="text-gray-700">
+            {salesDataUpdate.total_quantity || "-"}
+          </span>
 
           <span className="text-left font-bold pr-2">Total Jumlah Barang</span>
           <span className="font-bold px-2">:</span>
-          <span className="text-gray-700">{salesDataUpdate.total_number_item || "-"}</span>
+          <span className="text-gray-700">
+            {salesDataUpdate.total_number_item || "-"}
+          </span>
 
           <span className="text-left font-bold pr-2">Pengguna</span>
           <span className="font-bold px-2">:</span>
           <span>
-            {userList.find((c) => c._id === salesDataUpdate.id_user)?.username || "Belum ada data pengguna"}
+            {userList.find((c) => c._id === salesDataUpdate.id_user)
+              ?.username || "Belum ada data pengguna"}
           </span>
 
           <span className="text-left font-bold pr-2">Nama Toko</span>
           <span className="font-bold px-2">:</span>
           <span>
-            {storeList.find((c) => c._id === salesDataUpdate.id_store)?.name || "Belum ada data toko"}
+            {storeList.find((c) => c._id === salesDataUpdate.id_store)?.name ||
+              "Belum ada data toko"}
           </span>
 
           <span className="text-left font-bold pr-2">Perusahaan</span>
           <span className="font-bold px-2">:</span>
           <span>
-            {companyList.find((c) => c._id === salesDataUpdate.id_company)?.name || "Belum ada data perusahaan"}
+            {companyList.find((c) => c._id === salesDataUpdate.id_company)
+              ?.name || "Belum ada data perusahaan"}
           </span>
 
           <span className="text-left font-bold pr-2">Pemesanan</span>
           <span className="font-bold px-2">:</span>
           <span>
-            {orderList.find((c) => c._id === salesDataUpdate.id_order)?.person_name || "Belum ada data pemesanan"}
+            {orderList.find((c) => c._id === salesDataUpdate.id_order)
+              ?.person_name || "Belum ada data pemesanan"}
           </span>
 
           <span className="text-left font-bold pr-2">Promo</span>
           <span className="font-bold px-2">:</span>
           <span>
-            {salesCampaignList.find((c) => c._id === salesDataUpdate.id_sales_campaign)?.campaign_name || "Belum ada data promo"}
+            {salesCampaignList.find(
+              (c) => c._id === salesDataUpdate.id_sales_campaign
+            )?.campaign_name || "Belum ada data promo"}
           </span>
 
           <span className="text-left font-bold pr-2">Pembayaran</span>
           <span className="font-bold px-2">:</span>
           <span>
-            {paymentList.find((c) => c._id === salesDataUpdate.id_payment_type)?.payment_method || "Belum ada data pembayaran"}
+            {paymentList.find((c) => c._id === salesDataUpdate.id_payment_type)
+              ?.payment_method || "Belum ada data pembayaran"}
           </span>
         </div>
       </Modal>
 
-      <Modal isOpen={isInfoModalOpen} onClose={() => modalOpen("info", false)} title="Sales Detail" width="large">
+      <Modal
+        isOpen={isInfoModalOpen}
+        onClose={() => modalOpen("info", false)}
+        title="Sales Detail"
+        width="large"
+      >
         {salesDataUpdate.salesDetails?.length > 0 ? (
           salesDataUpdate.salesDetails.map((detail, index) => (
             <div key={index}>
@@ -326,9 +382,13 @@ const SalesMain = () => {
               <div className="grid grid-cols-[auto_auto_1fr] gap-y-2 font-sans">
                 <span className="text-left font-bold pr-2">Kode Produk</span>
                 <span className="font-bold px-2">:</span>
-                <span className="text-gray-700">{detail.id_product?.product_code || "-"}</span>
+                <span className="text-gray-700">
+                  {detail.id_product?.product_code || "-"}
+                </span>
 
-                <span className="text-left font-bold pr-2">Nama Sales Detail</span>
+                <span className="text-left font-bold pr-2">
+                  Nama Sales Detail
+                </span>
                 <span className="font-bold px-2">:</span>
                 <span className="text-gray-700">{detail.name || "-"}</span>
               </div>

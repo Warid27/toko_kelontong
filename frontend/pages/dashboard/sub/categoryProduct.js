@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 
 // Icons
-import { IoSearchOutline } from "react-icons/io5";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 
@@ -14,15 +12,19 @@ import Header from "@/components/section/header";
 import Loading from "@/components/loading";
 
 // Libraries
-import { fetchCategoryList, fetchCategoryAdd, updateCategory, deleteCategory } from "@/libs/fetching/category";
-import client from "@/libs/axios";
+import {
+  fetchCategoryList,
+  fetchCategoryAdd,
+  updateCategory,
+  deleteCategory,
+} from "@/libs/fetching/category";
 
 // Packages
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
-const CategoryProduct = () => {
-  const [categoryProduct, setCategoryProduct] = useState([]);
+const CategoryProduct = ({ userData }) => {
+  const id_store = userData?.id_store;
   const [isLoading, setIsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -49,9 +51,7 @@ const CategoryProduct = () => {
     { label: "Nama Kategori", key: "name_category" },
   ];
 
-  const HeaderTable = [
-    { label: "Nama Kategori", key: "name_category" },
-  ];
+  const HeaderTable = [{ label: "Nama Kategori", key: "name_category" }];
 
   const actions = [
     {
@@ -79,12 +79,12 @@ const CategoryProduct = () => {
 
   useEffect(() => {
     const fetching_requirement = async () => {
-      const data_category = await fetchCategoryList();
+      const data_category = await fetchCategoryList(id_store);
       setCategoryProduct(data_category);
       setIsLoading(false);
     };
     fetching_requirement();
-  }, []);
+  }, [id_store]);
 
   const handleUpdateCategoryProduct = (categoryProduct, params) => {
     setCategoryProductToUpdate(categoryProduct);
@@ -131,7 +131,9 @@ const CategoryProduct = () => {
         toast.error("Please fill all required fields.");
         return;
       }
-      const response = await fetchCategoryAdd(categoryProductDataAdd.name_category);
+      const response = await fetchCategoryAdd(
+        categoryProductDataAdd.name_category
+      );
       if (response.status === 201) {
         modalOpen("add", false);
         toast.success("Kategori berhasil ditambahkan!");
@@ -171,13 +173,18 @@ const CategoryProduct = () => {
         name_category: categoryProductDataUpdate.name_category,
         id_store: categoryProductDataUpdate.id_store,
       };
-      const response = await updateCategory(categoryProductDataUpdate.id, reqBody);
+      const response = await updateCategory(
+        categoryProductDataUpdate.id,
+        reqBody
+      );
       if (response.status === 200) {
         modalOpen("update", false);
         toast.success("Kategori berhasil diupdate!");
         setCategoryProduct((prev) =>
           prev.map((category) =>
-            category._id === categoryProductDataUpdate.id ? response.data : category
+            category._id === categoryProductDataUpdate.id
+              ? response.data
+              : category
           )
         );
       } else {

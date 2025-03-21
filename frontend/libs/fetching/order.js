@@ -1,9 +1,9 @@
 import client from "@/libs/axios";
 
-export const fetchOrderList = async () => {
+export const fetchOrderList = async (id_store) => {
   try {
-    const id_store = localStorage.getItem("id_store");
     const token = localStorage.getItem("token");
+
     const response = await client.post(
       "/order/listorder",
       { id_store },

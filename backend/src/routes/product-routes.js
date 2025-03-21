@@ -530,68 +530,44 @@ router.post(
   (c, next) => authenticate(c, next, "product", OPERATIONS.READ),
   async (c) => {
     try {
-      // Parse JSON payload
-      let body;
-      try {
-        body = await c.req.json();
-      } catch (parseError) {
-        return c.json({ error: "Invalid JSON payload" }, 400);
-      }
-      // If body is empty, fetch all products
-      if (!body || Object.keys(body).length === 0) {
-        const products = await ProductModels.find().populate([
-          "id_extras",
-          "id_size",
-          "id_stock",
-        ]);
-        return c.json(products, 200);
-      }
+      const body = await c.req.json().catch(() => ({}));
+      const populateFields = ["id_extras", "id_size", "id_stock"];
+      // Build query from body parameters
+      const query = {
+        ...(body.id_store && { id_store: body.id_store }),
+        ...(body.id_company && { id_company: body.id_company }),
+        ...(body.status && { status: body.status }),
+        ...(body.id_category_product && {
+          id_category_product: body.id_category_product,
+        }),
+      };
 
-      // Build query based on request body
-      const query = {};
-      if (body.id_store) query.id_store = body.id_store;
-      if (body.id_company) query.id_company = body.id_company;
-      if (body.status) query.status = body.status;
-      if (body.id_category_product)
-        query.id_category_product = body.id_category_product;
-
-      // Fetch products matching the query
-      const products = await ProductModels.find(query).populate([
-        "id_extras",
-        "id_size",
-        "id_stock",
-      ]);
-
-      // Append order quantities if requested
+      // Fetch products
+      const products = await ProductModels.find(query).populate(populateFields);
+      // Handle order quantities if requested
       if (body.params === "order") {
-        // Fetch all orders with status = 2, selecting only orderDetails
         const orders = await OrderModels.find(
           { status: 2 },
           { orderDetails: 1 }
         ).populate("orderDetails.id_product");
 
-        // Map to store product-wise order quantities
-        const orderQuantities = new Map();
-
-        orders.forEach((order) => {
+        const orderQuantities = orders.reduce((map, order) => {
           order.orderDetails.forEach((detail) => {
             if (detail.id_product) {
               const productId = detail.id_product._id.toString();
-              orderQuantities.set(
-                productId,
-                (orderQuantities.get(productId) || 0) + detail.quantity
-              );
+              map.set(productId, (map.get(productId) || 0) + detail.quantity);
             }
           });
-        });
+          return map;
+        }, new Map());
 
-        // Create a new array with `orderQty` added to each product
-        const updatedProducts = products.map((product) => ({
-          ...product.toObject(),
-          orderQty: orderQuantities.get(product._id.toString()) || 0,
-        }));
-
-        return c.json(updatedProducts, 200);
+        return c.json(
+          products.map((p) => ({
+            ...p.toObject(),
+            orderQty: orderQuantities.get(p._id.toString()) || 0,
+          })),
+          200
+        );
       }
 
       return c.json(products, 200);

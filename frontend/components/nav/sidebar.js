@@ -98,34 +98,28 @@ const styles = {
 const RoleIcon = ({ role, iconSet = "fa", size = 24 }) => {
   const Icon = roleIcons[iconSet]?.[role] || roleIcons[iconSet].Default;
   const neonClass = styles[role]?.split(" ")[2] || styles.Default.split(" ")[2];
+  const colorMap = {
+    purple: "168,85,247",
+    blue: "59,130,246",
+    fuchsia: "217,70,239",
+    emerald: "16,185,129",
+    gray: "107,114,128",
+  };
+  const color =
+    Object.keys(colorMap).find((key) => neonClass.includes(key)) || "gray";
+
   return (
     <div
-      className={`mr-4 text-[${
+      className={`mr-4 text-${
         neonClass.split("-")[1]
-      }-500] drop-shadow-[0_0_3px_rgba(${
-        neonClass.includes("purple")
-          ? "168,85,247"
-          : neonClass.includes("blue")
-          ? "59,130,246"
-          : neonClass.includes("fuchsia")
-          ? "217,70,239"
-          : neonClass.includes("emerald")
-          ? "16,185,129"
-          : "107,114,128"
-      },0.8)]`}
+      }-500 drop-shadow-[0_0_3px_rgba(${colorMap[color]},0.8)]`}
     >
       <Icon size={size} />
     </div>
   );
 };
 
-const Sidebar = ({
-  numericRole,
-  idCompany,
-  idStore,
-  setSelectedLink,
-  selectedLink,
-}) => {
+const Sidebar = ({ numericRole, setSelectedLink, selectedLink, userData }) => {
   const [expandedMenus, setExpandedMenus] = useState({});
   const rolePermissions = useRolePermissions();
 
@@ -191,7 +185,7 @@ const Sidebar = ({
     () =>
       menuConfig
         .filter((item) => {
-          if (item.key === "store" && !idCompany) return false;
+          if (item.key === "store" && !userData.id_company) return false;
           if (
             [
               "gudang",
@@ -203,7 +197,7 @@ const Sidebar = ({
               "order",
               "kasir",
             ].includes(item.key) &&
-            !idStore
+            !userData.id_store
           )
             return false;
           return true;
@@ -223,7 +217,13 @@ const Sidebar = ({
             item?.submenu?.length > 0 ||
             rolePermissions[numericRole]?.includes(item.key)
         ),
-    [idCompany, idStore, numericRole, rolePermissions]
+    [
+      userData.id_company,
+      userData.id_store,
+      numericRole,
+      rolePermissions,
+      menuConfig,
+    ]
   );
 
   const toggleMenu = (key) =>
@@ -259,6 +259,7 @@ const Sidebar = ({
           Menu
         </motion.label>
         <ContentRenderer
+          userData={userData}
           selectedLink={selectedLink}
           setSelectedLink={setSelectedLink}
           userRole={numericRole}

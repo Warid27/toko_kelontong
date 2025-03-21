@@ -9,7 +9,10 @@ import { useRouter } from "next/router";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import Link from "next/link";
 import { fetchCategoryList } from "@/libs/fetching/category";
+import { getStoreData } from "@/libs/fetching/store";
+import { fetchProductsList } from "@/libs/fetching/product";
 import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
+import { loginServices } from "@/libs/fetching/auth";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -38,33 +41,19 @@ export default function Home() {
   }, [router.isReady]);
 
   useEffect(() => {
-    if (!queryReady) return;
+    if (!queryReady || typeof window === "undefined") return;
 
     const { id_store, id_company, id_category_product } = router.query;
 
     const login = async () => {
-      if (!localStorage.getItem("token")) {
-        try {
-          const response = await client.post(
-            "/login",
-            {
-              username: "customer",
-              password: "customer",
-            },
-            {
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
-          );
-          localStorage.setItem("token", response.data.token);
-          localStorage.setItem("id", response.data.user.id);
-          localStorage.setItem("username", response.data.user.username);
-          localStorage.setItem("id_store", response.data.user.id_store);
-          localStorage.setItem("id_company", response.data.user.id_company);
-        } catch (error) {
-          console.error("Login error:", error);
-        }
+      try {
+        (reqBody = {
+          username: "customer",
+          password: "customer",
+        }),
+          await loginServices(reqBody);
+      } catch (error) {
+        console.error("Login error:", error);
       }
     };
 
@@ -95,20 +84,14 @@ export default function Home() {
 
     const fetchProducts = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await client.post(
-          "/product/listproduct",
-          {
-            id_store,
-            id_company,
-            id_category_product,
-            status: 0,
-            params: "order",
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+        const response = fetchProductsList(
+          id_store,
+          id_company,
+          0,
+          "order",
+          id_category_product
         );
+
         setProducts(response.data);
         return response.data;
       } catch (error) {
@@ -124,14 +107,7 @@ export default function Home() {
           return [];
         }
 
-        const token = localStorage.getItem("token");
-        const response = await client.post(
-          "/store/getstore",
-          { id: id_store },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const response = await getStoreData(id_store);
 
         const storeData = response.data;
 

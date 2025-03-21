@@ -13,7 +13,7 @@ import { fetchProductsList } from "@/libs/fetching/product";
 import { fetchTableList } from "@/libs/fetching/table";
 import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
 
-const OrderCust = ({ setSelectedLink }) => {
+const OrderCust = ({ setSelectedLink, userData }) => {
   const [listOrder, setListOrder] = useState([]);
   const [productList, setProductList] = useState([]);
   const [tableList, setTableList] = useState([]);
@@ -21,8 +21,7 @@ const OrderCust = ({ setSelectedLink }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const token = localStorage.getItem("token");
-  const id_store = localStorage.getItem("id_store") || null;
+  const id_store = userData?.id_store;
 
   // Fetch initial data
   useEffect(() => {
@@ -41,7 +40,7 @@ const OrderCust = ({ setSelectedLink }) => {
           setTableList(data);
         };
         const getOrderList = async () => {
-          const data = await fetchOrderList(id_store, token);
+          const data = await fetchOrderList(id_store);
           setListOrder(data);
         };
 
@@ -58,7 +57,7 @@ const OrderCust = ({ setSelectedLink }) => {
       }
     };
     fetchData();
-  }, [id_store, token]);
+  }, [id_store]);
 
   // Process order and navigate to kasir
   const handleProcessOrder = (order) => {

@@ -34,7 +34,7 @@ const Login = () => {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [bubbles.length]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -251,7 +251,7 @@ const Login = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.9 }}
           >
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <motion.a
               href="/register"
               className="text-emerald-400 hover:text-green-400 transition"

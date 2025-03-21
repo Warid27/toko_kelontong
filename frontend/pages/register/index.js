@@ -55,7 +55,7 @@ const Register = () => {
       toast.error(errorMessage);
       setIsError(false);
     }
-  }, [isError]);
+  }, [isError, errorMessage]);
 
   return (
     <motion.div

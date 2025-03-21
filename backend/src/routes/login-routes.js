@@ -55,6 +55,13 @@ router.post("/", async (c) => {
         403
       ); // Forbidden
     }
+
+    // Configure JWT options based on user.rule
+    const tokenOptions = {};
+    if (user.rule !== 5) {
+      tokenOptions.expiresIn = "1h"; // Set expiration only if rule is not 5
+    }
+
     // Generate a JWT token
     const token = jwt.sign(
       {
@@ -66,7 +73,7 @@ router.post("/", async (c) => {
         status: user.status,
       },
       JWT_SECRET,
-      { expiresIn: "1h" } // Token expires in 1 hour
+      tokenOptions // Use conditional options
     );
 
     // Return success response
@@ -89,39 +96,36 @@ router.post("/", async (c) => {
     return c.json({ message: "An error occurred", error: error.message }, 500); // Internal Server Error
   }
 });
+
+// The /checkpass route remains unchanged
 router.post("/checkpass", async (c) => {
   try {
-    // Parse request body
     const { username, password, error } = await parseRequestBody(c);
     if (error) {
-      return c.json({ message: error }, 400); // Bad Request
+      return c.json({ message: error }, 400);
     }
 
-    // Find user in the database, including the 'status' field
     const user = await UserModels.findOne({ username }).select(
       "+password +status"
-    ); // Ensure 'password' and 'status' are included
+    );
     if (!user || !(await argon2.verify(user.password, password))) {
       return c.json({ message: "Invalid credentials" }, 401);
     }
 
-    // Verify password using Argon2
     const isPasswordMatch = await argon2.verify(user.password, password);
     if (!isPasswordMatch) {
-      return c.json({ message: "Wrong username or password" }, 401); // Unauthorized
+      return c.json({ message: "Wrong username or password" }, 401);
     }
 
-    // Check if the user's account is activated (status === 0)
-    if (user.status !== 0 || user.status !== 1) {
+    if (user.status !== 0 && user.status !== 1) {
       return c.json(
         {
           message: "Login failed, user account not activated",
         },
         403
-      ); // Forbidden
+      );
     }
-    // Generate a JWT token
-    // Return success response
+
     return c.json(
       {
         message: "password correct",
@@ -130,7 +134,7 @@ router.post("/checkpass", async (c) => {
     );
   } catch (error) {
     console.error("password incorrect:", error.message);
-    return c.json({ message: "An error occurred", error: error.message }, 500); // Internal Server Error
+    return c.json({ message: "An error occurred", error: error.message }, 500);
   }
 });
 

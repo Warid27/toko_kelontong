@@ -14,7 +14,7 @@ import Loading from "@/components/loading";
 import { fetchOrderList } from "@/libs/fetching/order";
 import { fetchTableList } from "@/libs/fetching/table";
 
-const Order = ({ setSelectedLink }) => {
+const Order = ({ userData }) => {
   const [listOrder, setListOrder] = useState([]);
   const [tableList, setTableList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,15 +22,14 @@ const Order = ({ setSelectedLink }) => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [orderToUpdate, setOrderToUpdate] = useState(null);
 
-  const token = localStorage.getItem("token");
-  const id_store = localStorage.getItem("id_store") || null;
+  const id_store = userData?.id_store;
 
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [orderData, tableData] = await Promise.all([
-          fetchOrderList(id_store, token), // Adjusted to include id_store and token
+          fetchOrderList(id_store),
           fetchTableList(),
         ]);
         setListOrder(orderData);
@@ -42,7 +41,7 @@ const Order = ({ setSelectedLink }) => {
       }
     };
     fetchData();
-  }, [id_store, token]);
+  }, [id_store]);
 
   // Modal control
   const modalOpen = (type, bool) => {

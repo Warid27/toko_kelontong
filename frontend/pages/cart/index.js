@@ -11,6 +11,8 @@ import client from "@/libs/axios";
 import Swal from "sweetalert2"; // Import sweetalert2
 import { IoClose } from "react-icons/io5";
 import { Modal } from "@/components/Modal";
+import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign"
+import { fetchProductsList } from "@/libs/fetching/product"
 
 const Cart = () => {
   // const [payments, setPayments] = useState([]);
@@ -20,6 +22,7 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [isnoteModalOpen, setIsnoteModalOpen] = useState(false);
   const [itemCampaignList, setItemCampaignList] = useState([]);
+  const [productList, setProductList] = useState([]);
 
   // Function
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,36 +32,28 @@ const Cart = () => {
     orderListRef.current = orderList;
   }, [orderList]);
 
-  const token = localStorage.getItem('token')
-
   // FETCH
-  useEffect(() => {
-    const fetchItemCampaign = async () => {
-      try {
-        const response = await client.post(
-          "/itemcampaign/listitemcampaigns",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
 
-        // Validate that the response is an array
-        setItemCampaignList(data);
-      } catch (error) {
-        console.error("Error fetching item campaign:", error);
-        setItemCampaignList([]);
-      }
+  useEffect(() => {
+    const fetching_requirement = async () => {
+      const get_itemCampaign_list = async () => {
+        const data_itemCampaign = await fetchItemCampaignList();
+        setItemCampaignList(data_itemCampaign);
+      };
+      // const get_product_list = async () => {
+      //   const data_product = await fetchProductsList(null, null, null, "order");
+      //   set(data_company);
+      // };
+      get_itemCampaign_list();
+      // setIsLoading(false);
     };
-    fetchItemCampaign();
+    fetching_requirement();
   }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        const token = localStorage.getItem("token")
         const response = await client.post("/product/listproduct", {
           params: "order",
         },{
@@ -136,11 +131,12 @@ const Cart = () => {
     };
 
     fetchProducts();
-  }, [itemCampaignList]); // Add itemCampaignList as a dependency
+  }, [itemCampaignList]);
 
   useEffect(() => {
     const fetchTable_cust = async () => {
       try {
+        const token = localStorage.getItem("token")
         const response = await client.post("/table/listtable", {}, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -162,8 +158,10 @@ const Cart = () => {
     };
     fetchTable_cust();
   }, []);
+  useEffect(() => {
   const fetchOrder = async () => {
     try {
+      const token = localStorage.getItem('token')
       const response = await client.post("/order/listorder", {}, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -193,7 +191,6 @@ const Cart = () => {
       setOrderList([]);
     }
   };
-  useEffect(() => {
     fetchOrder();
   }, []);
 

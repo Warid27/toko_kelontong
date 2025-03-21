@@ -6,6 +6,7 @@ import Image from "next/image";
 import Card from "@/components/Card";
 import { loginServices } from "@/libs/fetching/auth";
 import { fetchStoreList } from "@/libs/fetching/store";
+import client from "@/libs/axios";
 
 const DevelopmentHome = () => {
   const [stores, setStores] = useState([]);
@@ -23,11 +24,21 @@ const DevelopmentHome = () => {
         if (!response) {
           throw new Error("Failed to retrieve token");
         }
-
+        
         // Now fetch stores using the valid token
         const fetchStores = async () => {
           try {
-            const data = await fetchStoreList();
+            const token = localStorage.getItem("token");
+            const response = await client.post(
+              "/store/liststore",
+              { },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            const data = response.data
 
             const filteredStores = data.filter(
               (store) => store.status === 0 // Active stores

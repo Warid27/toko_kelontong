@@ -13,7 +13,6 @@ import { MdDelete } from "react-icons/md";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import Select from "react-select";
-import { tokenDecoded } from "@/utils/tokenDecoded";
 
 // Components
 import { SubmitButton, CloseButton } from "@/components/form/button";
@@ -37,8 +36,8 @@ import {
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import { downloadQR } from "@/utils/downloadQR";
 
-const StoreData = () => {
-  const statusUser = tokenDecoded().status;
+const StoreData = ({ userData }) => {
+  const statusUser = userData?.status;
   const qrRef = useRef();
   const [stores, setStores] = useState([]);
   const [companyList, setCompanyList] = useState([]);
@@ -50,9 +49,9 @@ const StoreData = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenu, setOpenMenu] = useState("Info");
 
-  const rule = localStorage.getItem("rule") || null;
-  const id_store = localStorage.getItem("id_store") || null;
-  const id_company = localStorage.getItem("id_company") || null;
+  const rule = userData?.rule;
+  const id_store = userData?.id_store;
+  const id_company = userData?.id_company;
 
   const [storeDataAdd, setStoreDataAdd] = useState({
     name: "",
@@ -478,13 +477,13 @@ const StoreData = () => {
             onClick={() => setOpenMenu("Info")}
             content={<FaRegEdit />}
             isActive={openMenu === "Info"}
-          />{statusUser !== 1 && (
+          />
+          {statusUser !== 1 && (
             <AddMenu
               onClick={() => setOpenMenu("QR Code")}
               content={<FaQrcode />}
               isActive={openMenu === "QR Code"}
             />
-
           )}
           <AddMenu
             onClick={() => setOpenMenu("Banner")}

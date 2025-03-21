@@ -5,7 +5,12 @@ import { toast } from "react-toastify";
 import Header from "@/components/section/header";
 import { MdDelete } from "react-icons/md";
 import { FaInfoCircle } from "react-icons/fa";
-import { fetchTypeList, fetchTypeAdd } from "@/libs/fetching/type";
+import {
+  fetchTypeList,
+  fetchTypeAdd,
+  deleteType,
+  updateType,
+} from "@/libs/fetching/type";
 import { SubmitButton, CloseButton } from "@/components/form/button";
 import Table from "@/components/form/table";
 import Loading from "@/components/loading"; // Assuming this exists based on CompanyData
@@ -70,12 +75,7 @@ const TypeList = () => {
 
     if (result.isConfirmed) {
       try {
-        const token = localStorage.getItem("token"); // Fix: Get token from localStorage
-        const response = await client.delete(`/api/type/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await deleteType(id);
 
         if (response.status === 200) {
           toast.success("Type deleted successfully");
@@ -104,8 +104,7 @@ const TypeList = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetchTypeAdd(typeDataAdd.type, token); // Pass token if required by fetchTypeAdd
+      const response = await fetchTypeAdd(typeDataAdd.type);
       if (response.status === 201) {
         toast.success("Type added successfully");
         setType((prevTypes) => [...prevTypes, response.data]);
@@ -143,16 +142,8 @@ const TypeList = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await client.put(
-        `/api/type/${typeDataUpdate.id}`,
-        { type: typeDataUpdate.type },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      reqBody = { type: typeDataUpdate.type };
+      const response = await updateType(reqBody);
 
       if (response.status === 200) {
         toast.success("Type updated successfully");

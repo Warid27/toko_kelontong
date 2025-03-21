@@ -122,6 +122,7 @@ const FormContent = React.memo(
     );
   }
 );
+FormContent.displayName = "FormContent";
 
 const SalesCampaign = () => {
   const [salesCampaign, setSalesCampaign] = useState([]);

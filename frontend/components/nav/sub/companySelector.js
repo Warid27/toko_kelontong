@@ -4,7 +4,7 @@ import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchStoreList } from "@/libs/fetching/store";
 import { motion, AnimatePresence } from "framer-motion";
 
-const CompanySelector = () => {
+const CompanySelector = ({ updateLocalStorage }) => {
   const dropdownRef = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [companyList, setCompanyList] = useState([]);
@@ -30,14 +30,14 @@ const CompanySelector = () => {
 
   useEffect(() => {
     const fetchStores = async () => {
-      if (companySelect && companySelect != "null") {
+      if (companySelect && companySelect !== "null") {
         try {
           const data = await fetchStoreList(companySelect);
           setStoreList(Array.isArray(data) ? data : []);
           const validStore = data.find((store) => store._id === storeSelect);
           if (!validStore) {
             setStoreSelect(null);
-            localStorage.removeItem("id_store");
+            updateLocalStorage("id_store", null); // Updated here
           }
         } catch (error) {
           console.error("Error fetching stores:", error);
@@ -48,27 +48,27 @@ const CompanySelector = () => {
       }
     };
     fetchStores();
-  }, [companySelect]);
+  }, [companySelect, updateLocalStorage, storeSelect]); // Added updateLocalStorage to dependencies
 
   useEffect(() => {
-    if (companySelect && companySelect != "null") {
-      localStorage.setItem("id_company", companySelect);
+    if (companySelect && companySelect !== "null") {
+      updateLocalStorage("id_company", companySelect); // Updated here
     } else {
-      localStorage.removeItem("id_company");
+      updateLocalStorage("id_company", null); // Updated here
     }
-  }, [companySelect]);
+  }, [companySelect, updateLocalStorage]); // Added updateLocalStorage to dependencies
 
   useEffect(() => {
     if (storeSelect) {
-      localStorage.setItem("id_store", storeSelect);
+      updateLocalStorage("id_store", storeSelect); // Updated here
     } else {
-      localStorage.removeItem("id_store");
+      updateLocalStorage("id_store", null); // Updated here
     }
-  }, [storeSelect]);
+  }, [storeSelect, updateLocalStorage]); // Added updateLocalStorage to dependencies
 
   const clearSelector = () => {
-    localStorage.removeItem("id_company");
-    localStorage.removeItem("id_store");
+    updateLocalStorage("id_company", null);
+    updateLocalStorage("id_store", null);
     setCompanySelect(null);
     setStoreSelect(null);
   };
@@ -77,7 +77,7 @@ const CompanySelector = () => {
     <div className="relative" ref={dropdownRef}>
       <motion.button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="block w-full px-6 py-3 text-left text-gray-800 bg-white hover:bg-gray-100 transition-all duration-200 border border-gray-200 rounded-md"
+        className="block w-full px-6 py-3 text-left text-gray-800 bg-white hover:bg-gray-100 transition-all duration-200"
       >
         Select Company & Store
       </motion.button>
@@ -110,7 +110,7 @@ const CompanySelector = () => {
               isSearchable
               placeholder="Select a company"
             />
-            {companySelect && companySelect != "null" && (
+            {companySelect && companySelect !== "null" && (
               <Select
                 options={storeList.map((s) => ({
                   value: s._id,

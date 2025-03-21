@@ -28,22 +28,21 @@ router.post(
 router.post("/getuser", authenticate, async (c) => {
   try {
     const { id } = await c.req.json();
-
     if (!id) {
-      return c.json({ message: "ID perusahaan diperlukan." }, 400);
+      return c.json({ message: "ID User diperlukan." }, 400);
     }
 
     const user = await UserModels.findById(id);
 
     if (!user) {
-      return c.json({ message: "Perusahaan tidak ditemukan." }, 404);
+      return c.json({ message: "User tidak ditemukan." }, 404);
     }
 
     return c.json(user, 200);
   } catch (error) {
     return c.json(
       {
-        message: "Terjadi kesalahan saat mengambil perusahaan.",
+        message: "Terjadi kesalahan saat mengambil User.",
         error: error.message,
       },
       500

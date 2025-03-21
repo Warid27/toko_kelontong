@@ -229,9 +229,9 @@ const Features = () => {
           </h1>
           <p className="text-lg">
             Customers want to know you have their best interest in mind. And
-            that's tough to do when you don't have all the information. With
-            Pano, you'll have a wide-angle view on every customer, giving you
-            full confidence in how to respond and when.
+            that&apos;s tough to do when you don&apos;t have all the
+            information. With Pano, you&apos;ll have a wide-angle view on every
+            customer, giving you full confidence in how to respond and when.
           </p>
         </div>
       </section>
@@ -297,9 +297,9 @@ const Features = () => {
           </h1>
           <p className="text-lg">
             Customers want to know you have their best interest in mind. And
-            that's tough to do when you don't have all the information. With
-            Pano, you'll have a wide-angle view on every customer, giving you
-            full confidence in how to respond and when.
+            that&apos;s tough to do when you don&apos;t have all the
+            information. With Pano, you&apos;ll have a wide-angle view on every
+            customer, giving you full confidence in how to respond and when.
           </p>
         </div>
         <div className="flex flex-col items-center translate-y-20">
