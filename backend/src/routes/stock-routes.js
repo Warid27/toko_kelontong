@@ -1,22 +1,25 @@
 import { Hono } from "hono";
-import { PORT } from "@config/config";
 import { StockModels } from "@models/stock-models";
 import { ProductModels } from "@models/product-models";
-import { authenticate } from "@middleware/authMiddleware";
+import { authenticate, OPERATIONS } from "@middleware/authMiddleware";
 import { mongoose } from "mongoose";
 export const router = new Hono();
 
 // Add Stock
-router.post("/addstock", authenticate, async (c) => {
-  try {
-    const stok = new StockModels(c.body);
-    await stok.save();
-    return c.json(stok, { status: 201 });
-  } catch (error) {
-    console.error("Error saving stock:", error);
-    return c.json({ error: "Something went wrong" }, { status: 500 });
+router.post(
+  "/addstock",
+  (c, next) => authenticate(c, next, "stock", OPERATIONS.CREATE),
+  async (c) => {
+    try {
+      const stok = new StockModels(c.body);
+      await stok.save();
+      return c.json(stok, { status: 201 });
+    } catch (error) {
+      console.error("Error saving stock:", error);
+      return c.json({ error: "Something went wrong" }, { status: 500 });
+    }
   }
-});
+);
 
 // Get all stock
 // router.post("/liststock", authenticate, async (c) => {

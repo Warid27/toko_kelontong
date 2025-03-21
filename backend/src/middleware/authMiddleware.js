@@ -42,8 +42,7 @@ export const authenticate = async (
       await next();
       return;
     }
-    console.log("TB NAME", tableName);
-    console.log("OPERATIONS:", operation);
+
     // Get the user's role from decoded token
     const userRole = decoded.rule;
 
@@ -61,7 +60,7 @@ export const authenticate = async (
       table_name: tableName,
     });
 
-    console.log("ACCESS RULE", accessRule);
+    console.log("ACESS RULE", accessRule);
 
     // If no access rule found or the specific operation is not allowed
     if (!accessRule || accessRule[operation] !== 1) {

@@ -11,3 +11,4 @@ export const tokenDecoded = () => {
 
   return decodeToken(token);
 };
+

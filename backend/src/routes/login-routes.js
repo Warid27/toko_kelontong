@@ -12,7 +12,7 @@ const parseRequestBody = async (c) => {
     const body = await c.req.json();
     const username = body.username;
     const password = body.password;
-    
+
     // Validate required fields
     if (!username || !password) {
       return { error: "Username and password are required" };
@@ -46,11 +46,11 @@ router.post("/", async (c) => {
       return c.json({ message: "Wrong username or password" }, 401); // Unauthorized
     }
 
-    // Check if the user's account is activated (status === 0)
-    if (user.status !== 0) {
+    // Check if the user's account is not inactive
+    if (![0, 1].includes(user.status)) {
       return c.json(
         {
-          message: "Login failed, user account not activated",
+          message: "Login failed, user account is not available!!!",
         },
         403
       ); // Forbidden
@@ -63,6 +63,7 @@ router.post("/", async (c) => {
         id_store: user.id_store,
         id_company: user.id_company,
         rule: user.rule,
+        status: user.status,
       },
       JWT_SECRET,
       { expiresIn: "1h" } // Token expires in 1 hour
@@ -111,7 +112,7 @@ router.post("/checkpass", async (c) => {
     }
 
     // Check if the user's account is activated (status === 0)
-    if (user.status !== 0) {
+    if (user.status !== 0 || user.status !== 1) {
       return c.json(
         {
           message: "Login failed, user account not activated",

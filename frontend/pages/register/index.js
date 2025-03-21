@@ -1,17 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { FaRegEye, FaRegEyeSlash, FaUserAstronaut, FaLock, FaCheck } from "react-icons/fa";
+import { FaCheck } from "react-icons/fa";
 import client from "@/libs/axios";
+import { toast } from "react-toastify";
 import { InputText, InputPassword } from "@/components/form/input";
 
 const Register = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isError, setIsError] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [activeBubble, setActiveBubble] = useState(null);
   const router = useRouter();
 
   // Create floating bubbles effect
@@ -33,21 +33,29 @@ const Register = () => {
           "Content-Type": "application/json",
         },
       });
-      console.log("API Response:", response.data);
       localStorage.setItem("token", response.data.token);
       router.push("/login");
     } catch (error) {
-      console.error("Error during registration:", error);
+      setIsError(true);
 
       if (error.response && error.response.status === 400) {
         setErrorMessage("Invalid input data. Please check your details.");
       } else if (error.response && error.response.status === 401) {
         setErrorMessage("Invalid username or password.");
+      } else if (error.response && error.response.status === 409) {
+        setErrorMessage("Username already taken!");
       } else {
         setErrorMessage("Registration failed. Please try again later.");
       }
     }
   };
+
+  useEffect(() => {
+    if (isError === true) {
+      toast.error(errorMessage);
+      setIsError(false);
+    }
+  }, [isError]);
 
   return (
     <motion.div
@@ -87,43 +95,44 @@ const Register = () => {
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-900/10 to-transparent pointer-events-none" />
 
       {/* Left Side - Branding */}
-      <motion.div 
+      <motion.div
         className="hidden md:flex flex-col w-1/2 items-center justify-center relative z-10"
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 1, delay: 0.2 }}
       >
-        <motion.div 
+        <motion.div
           className="absolute w-96 h-96 bg-gradient-to-r from-green-500/30 to-teal-500/30 blur-3xl rounded-full"
-          animate={{ 
+          animate={{
             scale: [1, 1.1, 1],
             rotate: [0, 10, 0],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
-        
-        <motion.div
-          className="text-center z-10"
-          whileHover={{ scale: 1.05 }}
-        >
+
+        <motion.div className="text-center z-10" whileHover={{ scale: 1.05 }}>
           <motion.button
             onClick={() => router.push("/")}
             className="flex flex-col items-center space-y-4"
             whileHover={{ y: -5 }}
           >
-            <motion.div 
+            <motion.div
               className="w-32 h-32 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-xl shadow-green-900/20"
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             >
               <div className="w-28 h-28 rounded-full bg-gray-900 flex items-center justify-center">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 text-transparent bg-clip-text">TK</h1>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 text-transparent bg-clip-text">
+                  TK
+                </h1>
               </div>
             </motion.div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 text-transparent bg-clip-text tracking-wide">
               Toko Kelontong
             </h1>
-            <p className="text-gray-300 font-light">Join our futuristic shopping experience</p>
+            <p className="text-gray-300 font-light">
+              Join our futuristic shopping experience
+            </p>
           </motion.button>
         </motion.div>
       </motion.div>
@@ -135,7 +144,7 @@ const Register = () => {
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        <motion.div 
+        <motion.div
           className="w-full max-w-md backdrop-blur-lg bg-gray-800/40 p-10 rounded-2xl shadow-2xl border border-gray-700/50"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -149,8 +158,8 @@ const Register = () => {
           >
             Create Account
           </motion.h2>
-          
-          <motion.p 
+
+          <motion.p
             className="text-gray-400 mb-8"
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -167,7 +176,7 @@ const Register = () => {
               className="group"
             >
               <div className="relative">
-              <InputText
+                <InputText
                   id="username"
                   label="Username"
                   name="username"
@@ -195,7 +204,7 @@ const Register = () => {
                 /> */}
               </div>
             </motion.div>
-            
+
             <motion.div
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -203,7 +212,7 @@ const Register = () => {
               className="group"
             >
               <div className="relative">
-              <InputPassword
+                <InputPassword
                   id="password"
                   label="Password"
                   name="password"
@@ -242,7 +251,7 @@ const Register = () => {
             </motion.div>
 
             {errorMessage && (
-              <motion.p 
+              <motion.p
                 className="text-red-400 text-sm"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -266,15 +275,29 @@ const Register = () => {
                   className="sr-only"
                   required
                 />
-                <div 
+                <div
                   onClick={() => setTermsAccepted(!termsAccepted)}
-                  className={`w-5 h-5 mr-2 border ${termsAccepted ? 'bg-green-500 border-green-500' : 'bg-gray-800/70 border-gray-600'} rounded flex items-center justify-center transition-colors cursor-pointer`}
+                  className={`w-5 h-5 mr-2 border ${
+                    termsAccepted
+                      ? "bg-green-500 border-green-500"
+                      : "bg-gray-800/70 border-gray-600"
+                  } rounded flex items-center justify-center transition-colors cursor-pointer`}
                 >
                   {termsAccepted && <FaCheck className="text-white text-xs" />}
                 </div>
               </div>
-              <label htmlFor="terms" className="text-sm text-gray-300 cursor-pointer select-none">
-                I agree to the <span className="text-emerald-400 hover:text-green-300 transition-colors">Terms of Service</span> and <span className="text-emerald-400 hover:text-green-300 transition-colors">Privacy Policy</span>
+              <label
+                htmlFor="terms"
+                className="text-sm text-gray-300 cursor-pointer select-none"
+              >
+                I agree to the{" "}
+                <span className="text-emerald-400 hover:text-green-300 transition-colors">
+                  Terms of Service
+                </span>{" "}
+                and{" "}
+                <span className="text-emerald-400 hover:text-green-300 transition-colors">
+                  Privacy Policy
+                </span>
               </label>
             </motion.div>
 
@@ -294,7 +317,7 @@ const Register = () => {
             </motion.button>
           </form>
 
-          <motion.p 
+          <motion.p
             className="text-sm text-gray-400 mt-6 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -309,8 +332,8 @@ const Register = () => {
               Login
             </motion.a>
           </motion.p>
-          
-          <motion.p 
+
+          <motion.p
             className="text-xs text-gray-500 mt-8 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

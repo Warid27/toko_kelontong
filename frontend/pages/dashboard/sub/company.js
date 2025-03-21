@@ -7,7 +7,6 @@ import { MdDelete } from "react-icons/md";
 import { FaRegEdit, FaInfoCircle, FaImage } from "react-icons/fa";
 
 // Components
-
 import { SubmitButton, CloseButton } from "@/components/form/button";
 import { AddMenu } from "@/components/form/menu";
 import Table from "@/components/form/table";
@@ -69,7 +68,7 @@ const CompanyData = () => {
     logo: "",
     header: "",
   });
-
+  
   const statusOptions = [
     { value: 0, label: "Active" },
     { value: 1, label: "Inactive" },

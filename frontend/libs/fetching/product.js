@@ -1,4 +1,6 @@
 import client from "@/libs/axios";
+import { compressImages } from "@/utils/ImageCompressor";
+
 export const fetchProductsList = async (
   id_store = null,
   id_company = null,
@@ -82,11 +84,40 @@ export const fetchProductsAdd = async (reqBody) => {
   }
 };
 
-export const AddBatchProducts = async (reqBody) => {
+export const AddProductByExcel = async (reqBody) => {
   try {
     const token = localStorage.getItem("token");
 
-    console.log("REQ BOD BOD", reqBody);
+    // Extract image from FormData
+    const imageFiles = reqBody.getAll("images");
+    console.log("IMAGE FILES", imageFiles);
+    if (imageFiles.length > 0) {
+      const compressedImages = await compressImages(imageFiles);
+      console.log("COMPRESED IMAGES", compressedImages);
+      // Remove old images and append compressed ones
+      reqBody.delete("images");
+      compressedImages.forEach((image) => reqBody.append("images", image));
+    }
+
+    const response = await client.post(
+      "/product/file",
+      reqBody, // Pass id_store in the request body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Error fetching products:", error);
+  }
+};
+
+export const AddBatchProducts = async (reqBody) => {
+  try {
+    const token = localStorage.getItem("token");
 
     const response = await client.post(
       "/product/addbatch",

@@ -20,8 +20,13 @@ import {
 } from "@/libs/fetching/user";
 import { uploadImageCompress } from "@/libs/fetching/upload-service"; // Assuming this exists
 import Loading from "@/components/loading";
+import { tokenDecoded } from "@/utils/tokenDecoded";
 
 const User = () => {
+  const statusUser = tokenDecoded().status;
+  const ruleUser = tokenDecoded().rule;
+  const usernameUser = tokenDecoded().username; // IKI YUDA YUD YUD YUD YUDD
+
   const [showPassword, setShowPassword] = useState(false);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,6 +37,9 @@ const User = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSuper, setIsSuper] = useState(
+    tokenDecoded().rule == 1 ? true : false
+  );
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState("Info"); // For update modal tabs
 
@@ -57,7 +65,8 @@ const User = () => {
 
   const statusOptions = [
     { value: 0, label: "Active" },
-    { value: 1, label: "Inactive" },
+    { value: 1, label: "Pending" },
+    { value: 2, label: "Inactive" },
   ];
 
   const ruleList = [
@@ -75,7 +84,22 @@ const User = () => {
           fetchUserList(),
           fetchCompanyList(),
         ]);
-        setUsers(usersData);
+
+        // Ambil id_company dengan aman
+        const decodedToken = tokenDecoded();
+        const id_company =
+          decodedToken?.id_company || localStorage.getItem("id_company") || "";
+
+        // Filter users
+        const filteredUsers = usersData
+          .filter((ud) =>
+            id_company !== "" && ruleUser !== 1
+              ? ud.id_company === id_company
+              : true
+          )
+          .filter((d) => d.username !== usernameUser);
+
+        setUsers(filteredUsers);
         setCompanyList(companiesData);
       } catch (error) {
         toast.error("Failed to load data");
@@ -83,8 +107,9 @@ const User = () => {
         setIsLoading(false);
       }
     };
+
     fetchData();
-  }, []);
+  }, [ruleUser, usernameUser]);
 
   useEffect(() => {
     if (!companyID) return; // Prevent unnecessary API calls
@@ -161,6 +186,7 @@ const User = () => {
           className="bg-white border border-green-300 p-2 rounded-lg shadow-xl focus:ring focus:ring-green-300 cursor-pointer"
           value={value}
           onChange={(e) => handleStatusSelect(row._id, Number(e.target.value))}
+          disabled={statusUser === 1}
         >
           {statusOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -411,7 +437,9 @@ const User = () => {
           </div>
           <p className="font-semibold mt-4 mb-2">Rule</p>
           <Select
-            options={ruleList}
+            options={ruleList.filter((rl) =>
+              ruleUser != 1 ? rl.value != 1 && rl.value != 5 : rl
+            )}
             value={
               ruleList.find((opt) => opt.value === Number(userDataAdd.rule)) ||
               null
@@ -551,7 +579,9 @@ const User = () => {
             </div>
             <p className="font-semibold mt-4 mb-2">Rule</p>
             <Select
-              options={ruleList}
+              options={ruleList.filter((rl) =>
+                ruleUser != 1 ? rl.value != 1 && rl.value != 5 : rl
+              )}
               value={
                 ruleList.find(
                   (opt) => opt.value === Number(userDataUpdate.rule)

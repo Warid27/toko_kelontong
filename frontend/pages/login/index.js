@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import {
-  FaRegEye,
-  FaRegEyeSlash,
-  FaUserAstronaut,
-  FaLock,
-} from "react-icons/fa";
 import { loginServices } from "@/libs/fetching/auth";
 import { tokenDecoded } from "@/utils/tokenDecoded";
 import { toast } from "react-toastify";

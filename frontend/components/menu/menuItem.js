@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-const MenuItem = ({ icon, label, onClick, isActive }) => {
+const MenuItem = ({ icon: Icon, label, onClick, isActive }) => {
   return (
     <motion.a
       onClick={onClick}
@@ -22,7 +22,7 @@ const MenuItem = ({ icon, label, onClick, isActive }) => {
         animate={{ color: isActive ? "#D1D5DB" : "#000000" }}
       >
         <motion.div className="w-full flex items-center">
-          {icon && React.cloneElement(icon, { className: "mr-2" })}
+          {Icon && <Icon className="mr-2" />}
           {label}
         </motion.div>
       </motion.div>

@@ -3,6 +3,7 @@ import { ProductModels } from "@models/product-models";
 import { CategoryProductModels } from "@models/categoryProduct-models";
 import { OrderModels } from "@models/order-models";
 import { itemCampaignModels } from "@models/itemCampaign";
+import { fileMetadataModels } from "@models/fileMetadata-models";
 import { StockModels } from "@models/stock-models";
 import { ExtrasModels } from "@models/extras-models";
 import { SizeModels } from "@models/size-models";
@@ -29,16 +30,15 @@ function generateShortKey(length = 8) {
     .toString("hex") // Convert to hexadecimal
     .slice(0, length); // Truncate to desired length
 }
-
 router.post(
   "/file",
   (c, next) => authenticate(c, next, "product", OPERATIONS.CREATE),
   async (c) => {
     try {
       console.log("📌 [INFO] Request received at /file endpoint");
-
-      // Get form data
       const formData = await c.req.formData();
+
+      // Extract form data
       const uploadedFile = formData.get("file");
       const images = formData.getAll("images");
       const id_store = formData.get("id_store");
@@ -49,12 +49,10 @@ router.post(
         return c.json({ message: "File is required!" }, 400);
       }
 
-      // Process the uploaded file
-      const { buffer, fileType, fileName } = await processUploadedFile(
+      // Process file and upload to MinIO
+      const { buffer, fileName, fileType } = await processUploadedFile(
         uploadedFile
       );
-
-      // Upload file to MinIO
       const fileUrl = await uploadToMinio(
         MINIO_BUCKET_NAME,
         fileName,
@@ -63,17 +61,12 @@ router.post(
       );
       console.log("📌 [INFO] File uploaded to MinIO:", fileUrl);
 
-      // Extract data from Excel file
-      const { headers, data } = await extractExcelData(buffer);
-
-      // Extract required image names from Excel data
+      // Extract data and process images
+      const { data } = await extractExcelData(buffer);
       const requiredImages = extractRequiredImageNames(data);
       console.log("📌 [INFO] Required images from Excel:", requiredImages);
 
-      // Filter and process only the images that are referenced in the Excel data
       const imageURLs = await processFilteredImages(images, requiredImages);
-
-      // Create processed data with image URLs
       const processedData = createProcessedData(
         data,
         imageURLs,
@@ -81,7 +74,6 @@ router.post(
         id_company
       );
 
-      // Return response
       return c.json(
         {
           success: true,
@@ -101,37 +93,38 @@ router.post(
 // Helper functions
 async function processUploadedFile(uploadedFile) {
   const originalFileName = uploadedFile.name;
-  const currentDate = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+  const currentDate = new Date().toISOString().split("T")[0];
   const safeFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, "_");
   const fileExt = originalFileName.split(".").pop().toLowerCase();
 
-  let buffer, fileType, fileName;
-
+  // Handle CSV conversion or direct Excel processing
   if (fileExt === "csv") {
     console.log("📌 [INFO] Converting CSV to XLSX");
     const csvBuffer = await uploadedFile.arrayBuffer();
     const csvData = new TextDecoder().decode(csvBuffer);
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Sheet1");
+    csvData.split("\n").forEach((row) => worksheet.addRow(row.split(",")));
 
-    csvData.split("\n").forEach((row) => {
-      worksheet.addRow(row.split(","));
-    });
-
-    buffer = await workbook.xlsx.writeBuffer();
-    fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    fileName = `excel/${safeFileName.split(".")[0]}-${currentDate}.xlsx`;
+    const buffer = await workbook.xlsx.writeBuffer();
+    return {
+      buffer,
+      fileType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      fileName: `excel/${safeFileName.split(".")[0]}-${currentDate}.xlsx`,
+    };
   } else {
     console.log("📌 [INFO] Processing original Excel file");
-    buffer = await uploadedFile.arrayBuffer();
-    fileType = uploadedFile.type;
-    fileName = `excel/${safeFileName.split(".")[0]}-${currentDate}-${crypto
-      .randomUUID()
-      .substring(0, 8)}.xlsx`;
+    const buffer = await uploadedFile.arrayBuffer();
+    return {
+      buffer,
+      fileType: uploadedFile.type,
+      fileName: `excel/${safeFileName.split(".")[0]}-${currentDate}-${crypto
+        .randomUUID()
+        .substring(0, 8)}.xlsx`,
+    };
   }
-
-  return { buffer, fileType, fileName };
 }
 
 async function uploadToMinio(bucketName, fileName, buffer, fileType) {
@@ -142,7 +135,6 @@ async function uploadToMinio(bucketName, fileName, buffer, fileType) {
     buffer.byteLength,
     { "Content-Type": fileType }
   );
-
   return `${minioUrl}/${fileName}`;
 }
 
@@ -155,11 +147,12 @@ async function extractExcelData(buffer) {
   const data = [];
   const headers = [];
 
+  // Extract headers
   worksheet.getRow(1).eachCell((cell, colNumber) => {
     headers[colNumber - 1] = cell.value?.toString() || `Column${colNumber}`;
   });
-  console.log("📌 [INFO] Extracted headers:", headers);
 
+  // Extract data rows
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber > 1) {
       const rowData = {};
@@ -171,48 +164,36 @@ async function extractExcelData(buffer) {
       data.push(rowData);
     }
   });
-  console.log("📌 [INFO] Extracted data:", data.length, "rows");
 
+  console.log("📌 [INFO] Extracted data:", data.length, "rows");
   return { headers, data };
 }
 
-// New function to extract required image names from Excel data
 function extractRequiredImageNames(data) {
   const requiredImages = new Set();
-
   data.forEach((row) => {
     if (row.image) {
       const imageName = row.image.split("/").pop()?.trim().toLowerCase();
-      if (imageName) {
-        requiredImages.add(imageName);
-      }
+      if (imageName) requiredImages.add(imageName);
     }
   });
-
   return Array.from(requiredImages);
 }
 
-// Modified image processing function to only process required images
-// Add this to the processFilteredImages function in the backend code
-
 async function processFilteredImages(images, requiredImages) {
   const imageURLs = {};
-  const requiredImageNames = new Set(requiredImages);
-
   console.log(
     `📌 [INFO] Total uploaded images: ${images.length}, Required images: ${requiredImages.length}`
   );
 
   for (const image of images) {
-    // Extract the base filename without extension for comparison
-    // This handles the case where Excel references "product1.jpg" but we upload "product1.webp"
     const originalImageName = image.name.split("/").pop();
     const baseImageName = originalImageName
       .replace(/\.[^.]+$/, "")
       .trim()
       .toLowerCase();
 
-    // Check if any required image matches this base name (ignoring extension)
+    // Check if this image is referenced in Excel
     const matchingRequiredImage = requiredImages.find((reqImg) => {
       const reqImgBase = reqImg
         .replace(/\.[^.]+$/, "")
@@ -221,7 +202,7 @@ async function processFilteredImages(images, requiredImages) {
       return reqImgBase === baseImageName;
     });
 
-    // Skip processing if this image isn't referenced in the Excel file
+    // Skip if not referenced
     if (!matchingRequiredImage) {
       console.log(
         `📌 [INFO] Skipping image: ${originalImageName} (not referenced in Excel)`
@@ -229,9 +210,9 @@ async function processFilteredImages(images, requiredImages) {
       continue;
     }
 
-    console.log(
-      `📌 [INFO] Processing required image: ${originalImageName} (matches Excel reference: ${matchingRequiredImage})`
-    );
+    console.log(`📌 [INFO] Processing required image: ${originalImageName}`);
+
+    // Upload image to MinIO
     const buffer = await image.arrayBuffer();
     const ext = image.name.endsWith(".webp") ? ".webp" : extname(image.name);
     const uniqueFileName = `${crypto.randomUUID()}${ext}`;
@@ -245,26 +226,24 @@ async function processFilteredImages(images, requiredImages) {
       { "Content-Type": image.type }
     );
 
+    // Generate short URL
     const publicUrl = `${minioUrl}/${objectKey}`;
     const shortKey = generateShortKey();
     const shortenedUrl = `${BACKEND_URI}/api/image/${shortKey}`;
 
-    // Save file metadata
-    const fileMetadata = new fileMetadataModels({
+    // Save metadata
+    await new fileMetadataModels({
       bucketName: MINIO_BUCKET_NAME,
       objectName: objectKey,
       fileUrl: publicUrl,
       shortenedUrl,
       shortkey: shortKey,
-    });
-    await fileMetadata.save();
+    }).save();
 
-    // Store URL with the correct matching name from Excel
-    // This ensures we map to the exact name in the Excel file
+    // Store URLs with both matching name and base name
     const matchingImageName = matchingRequiredImage.toLowerCase();
     imageURLs[matchingImageName] = shortenedUrl;
 
-    // Also store with the base name to improve matching chances
     if (baseImageName !== matchingImageName) {
       imageURLs[baseImageName] = shortenedUrl;
     }
@@ -278,7 +257,6 @@ async function processFilteredImages(images, requiredImages) {
   return imageURLs;
 }
 
-// Update the createProcessedData function to better handle extension differences
 function createProcessedData(data, imageURLs, id_store, id_company) {
   return data.map((row) => {
     let imageUrl = "https://placehold.co/600x400"; // Default placeholder
@@ -290,12 +268,9 @@ function createProcessedData(data, imageURLs, id_store, id_company) {
         .trim()
         .toLowerCase();
 
-      // Try to match by full name first, then by base name
-      if (imageURLs[fullImageName]) {
-        imageUrl = imageURLs[fullImageName];
-      } else if (imageURLs[baseImageName]) {
-        imageUrl = imageURLs[baseImageName];
-      }
+      // Try full name first, then base name
+      imageUrl =
+        imageURLs[fullImageName] || imageURLs[baseImageName] || imageUrl;
     }
 
     return {
@@ -306,7 +281,6 @@ function createProcessedData(data, imageURLs, id_store, id_company) {
     };
   });
 }
-
 // Add Product by Batch
 router.post(
   "/addbatch",
@@ -336,10 +310,15 @@ router.post(
           deskripsi,
           id_store,
           id_company,
-          id_extras,
-          id_size,
           category,
           image_url,
+          status,
+          promo,
+          varian,
+          detail_varian,
+          ukuran,
+          detail_ukuran,
+          stock,
         } = item;
 
         // Validate required fields
@@ -360,7 +339,17 @@ router.post(
 
         // Get the id_category_product by category and id_store
         const trimmedCategory = category.trim();
+        const trimmedPromo = promo.trim();
         const trimmedIdStore = id_store.trim();
+        const trimmedStatus = status.trim();
+        const trimmedStock = stock ? stock.toString().trim() : "0";
+        let id_item_campaign = null;
+
+        let status_product = 1;
+
+        if (trimmedStatus.toLowerCase() == "active") {
+          status_product = 0;
+        }
 
         const categoryData = await CategoryProductModels.findOne({
           name_category: { $regex: new RegExp(`^${trimmedCategory}$`, "i") },
@@ -375,11 +364,22 @@ router.post(
           );
         }
 
+        const itemCampaignData = await itemCampaignModels.findOne({
+          item_campaign_name: {
+            $regex: new RegExp(`^${trimmedPromo}$`, "i"),
+          },
+          id_store: trimmedIdStore,
+        });
+
+        if (itemCampaignData) {
+          id_item_campaign = itemCampaignData._id;
+        }
+
         let productImage = image_url || "https://placehold.co/500x500";
 
         const productData = {
           name_product,
-          id_category_product: categoryData._id, // Pastikan kategori ditemukan
+          id_category_product: categoryData._id,
           sell_price,
           buy_price,
           product_code,
@@ -387,9 +387,9 @@ router.post(
           deskripsi,
           id_store,
           id_company,
-          id_extras,
-          id_size,
           image: productImage,
+          status: status_product,
+          id_item_campaign: id_item_campaign,
         };
 
         console.log("Processing product data:", productData);
@@ -398,9 +398,10 @@ router.post(
         const productDataSaved = await product.save();
         console.log("Product saved:", productDataSaved);
 
+        // Create stock
         const stockData = {
           id_product: productDataSaved._id,
-          amount: 0,
+          amount: parseInt(trimmedStock) || 0,
         };
 
         console.log("Stock data before saving:", stockData);
@@ -409,20 +410,106 @@ router.post(
         const savedStock = await stok.save();
         console.log("Stock saved:", savedStock);
 
-        if (savedStock) {
-          await ProductModels.findByIdAndUpdate(
-            productDataSaved._id,
-            { id_stock: savedStock._id },
-            { new: true, runValidators: true }
-          );
-          console.log(
-            `Stock ID ${savedStock._id} linked to product ${productDataSaved._id}`
-          );
+        // Update product with stock ID
+        let productUpdateData = { id_stock: savedStock._id };
+
+        // Create extras (variants) if provided
+        let savedExtras = null;
+        if (varian && detail_varian) {
+          const varianParts = varian.split("(");
+          const varianName = varianParts[0].trim();
+          const varianDesc =
+            varianParts.length > 1
+              ? varianParts[1].replace(")", "").trim()
+              : "";
+
+          const extrasDetails = [];
+
+          // Process detail_varian "Saus sambal (Pedas); Saus Kecap (Manis)"
+          const detailVarianItems = detail_varian.split(";");
+          for (const item of detailVarianItems) {
+            const itemParts = item.split("(");
+            const itemName = itemParts[0].trim();
+            const itemDesc =
+              itemParts.length > 1 ? itemParts[1].replace(")", "").trim() : "";
+
+            extrasDetails.push({
+              name: itemName,
+              deskripsi: itemDesc,
+            });
+          }
+
+          const extrasData = {
+            id_product: productDataSaved._id,
+            name: varianName,
+            deskripsi: varianDesc,
+            extrasDetails: extrasDetails,
+          };
+
+          console.log("Extras data before saving:", extrasData);
+
+          const extras = new ExtrasModels(extrasData);
+          savedExtras = await extras.save();
+          console.log("Extras saved:", savedExtras);
+
+          productUpdateData.id_extras = savedExtras._id;
         }
 
+        // Create size if provided
+        let savedSize = null;
+        if (ukuran && detail_ukuran) {
+          const ukuranParts = ukuran.split("(");
+          const ukuranName = ukuranParts[0].trim();
+          const ukuranDesc =
+            ukuranParts.length > 1
+              ? ukuranParts[1].replace(")", "").trim()
+              : "";
+
+          const sizeDetails = [];
+
+          // Process detail_ukuran "Kecil (Sedikit); Normal (Biasa); Kuli (Banyak)"
+          const detailUkuranItems = detail_ukuran.split(";");
+          for (const item of detailUkuranItems) {
+            const itemParts = item.split("(");
+            const itemName = itemParts[0].trim();
+            const itemDesc =
+              itemParts.length > 1 ? itemParts[1].replace(")", "").trim() : "";
+
+            sizeDetails.push({
+              name: itemName,
+              deskripsi: itemDesc,
+            });
+          }
+
+          const sizeData = {
+            id_product: productDataSaved._id,
+            name: ukuranName,
+            deskripsi: ukuranDesc,
+            sizeDetails: sizeDetails,
+          };
+
+          console.log("Size data before saving:", sizeData);
+
+          const size = new SizeModels(sizeData);
+          savedSize = await size.save();
+          console.log("Size saved:", savedSize);
+
+          productUpdateData.id_size = savedSize._id;
+        }
+
+        // Update product with stock ID, extras ID, and size ID
+        const updatedProduct = await ProductModels.findByIdAndUpdate(
+          productDataSaved._id,
+          productUpdateData,
+          { new: true, runValidators: true }
+        );
+        console.log("Product updated with IDs:", updatedProduct);
+
         insertedProducts.push({
-          product: productDataSaved,
+          product: updatedProduct,
           stock: savedStock,
+          extras: savedExtras,
+          size: savedSize,
         });
       }
 

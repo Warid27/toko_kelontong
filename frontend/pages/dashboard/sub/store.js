@@ -13,6 +13,7 @@ import { MdDelete } from "react-icons/md";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import Select from "react-select";
+import { tokenDecoded } from "@/utils/tokenDecoded";
 
 // Components
 import { SubmitButton, CloseButton } from "@/components/form/button";
@@ -37,6 +38,7 @@ import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import { downloadQR } from "@/utils/downloadQR";
 
 const StoreData = () => {
+  const statusUser = tokenDecoded().status;
   const qrRef = useRef();
   const [stores, setStores] = useState([]);
   const [companyList, setCompanyList] = useState([]);
@@ -103,6 +105,7 @@ const StoreData = () => {
             onChange={(e) =>
               handleStatusSelect(row._id, Number(e.target.value))
             }
+            disabled={statusUser === 1}
           >
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -247,7 +250,7 @@ const StoreData = () => {
         icon: storeDataAdd.icon,
       };
       const response = await addStore(reqBody);
-      if (response.status === 201) {
+      if (response.status === 200) {
         modalOpen("add", false);
         toast.success("Store added successfully");
         setStores((prev) => [...prev, response.data]);
@@ -475,12 +478,14 @@ const StoreData = () => {
             onClick={() => setOpenMenu("Info")}
             content={<FaRegEdit />}
             isActive={openMenu === "Info"}
-          />
-          <AddMenu
-            onClick={() => setOpenMenu("QR Code")}
-            content={<FaQrcode />}
-            isActive={openMenu === "QR Code"}
-          />
+          />{statusUser !== 1 && (
+            <AddMenu
+              onClick={() => setOpenMenu("QR Code")}
+              content={<FaQrcode />}
+              isActive={openMenu === "QR Code"}
+            />
+
+          )}
           <AddMenu
             onClick={() => setOpenMenu("Banner")}
             content={<FaBullhorn />}

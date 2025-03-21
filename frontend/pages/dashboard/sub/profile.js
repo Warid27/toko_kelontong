@@ -18,8 +18,10 @@ import { fetchUserGet, updateProfile } from "@/libs/fetching/user";
 import { getCompanyData } from "@/libs/fetching/company";
 import { getStoreData } from "@/libs/fetching/store";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
+import { tokenDecoded } from "@/utils/tokenDecoded";
 
 const Profile = () => {
+  const statusUser = tokenDecoded().status;
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -297,7 +299,8 @@ const Profile = () => {
   // Map user roles to their corresponding names
   const statusMapping = {
     0: "Active",
-    1: "Inactive",
+    1: "Pending",
+    2: "Inactive",
   };
 
   // Determine the role name based on the user's status
@@ -575,22 +578,6 @@ const Profile = () => {
                     value={userDataUpdate.storeName || "-"}
                     disabled={true}
                   />
-
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
                 </div>
               </motion.div>
 

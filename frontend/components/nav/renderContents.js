@@ -1,4 +1,5 @@
 import React from "react";
+import { useRolePermissions } from "@/utils/permission";
 import Analytics from "@/pages/dashboard/sub/analytics";
 import ProductMenu from "@/pages/dashboard/sub/menu";
 import CompanyData from "@/pages/dashboard/sub/company";
@@ -21,7 +22,6 @@ import PembelianList from "@/pages/dashboard/sub/table_pembelian";
 import Pembelian from "@/pages/dashboard/sub/pembelian";
 import Report from "@/pages/dashboard/sub/report";
 import RuleAccessData from "@/pages/dashboard/sub/rule";
-import { rolePermissions } from "@/utils/permission";
 
 const ContentRenderer = ({
   selectedLink,
@@ -29,74 +29,57 @@ const ContentRenderer = ({
   userRole,
   filteredMenuConfig,
 }) => {
-  // Flatten the filteredMenuConfig to include both top-level items and submenu items
-  const allowedKeys = filteredMenuConfig.flatMap((item) =>
-    item.submenu ? item.submenu.map((subItem) => subItem.key) : item.key
-  );
+  const rolePermissions = useRolePermissions();
+  const allowedKeys = filteredMenuConfig
+    .flatMap((item) =>
+      item?.submenu ? item.submenu.map((sub) => sub?.key) : item?.key
+    )
+    .filter(Boolean);
 
-  // Check permissions
-  const hasMenuPermission = allowedKeys.includes(selectedLink);
-  const hasRolePermission =
-    rolePermissions[userRole]?.includes(selectedLink) || false;
+  // Show loading if permissions aren't fetched yet or only "profile" is present
+  if (!rolePermissions[userRole] || rolePermissions[userRole].length <= 1) {
+    return <div className="p-4 text-3xl text-gray-500">Loading...</div>;
+  }
 
-  // Special case for "profile": only requires role permission, not menu permission
   const hasPermission =
     selectedLink === "profile"
-      ? hasRolePermission
-      : hasMenuPermission && hasRolePermission;
+      ? rolePermissions[userRole].includes(selectedLink)
+      : allowedKeys.includes(selectedLink) &&
+        rolePermissions[userRole].includes(selectedLink);
 
   if (!hasPermission) {
-    return <div className="text-red-500 p-4 text-3xl">Access Denied</div>;
+    return <div className="p-4 text-3xl text-red-500">Access Denied</div>;
   }
 
-  switch (selectedLink) {
-    case "company":
-      return <CompanyData />;
-    case "stock":
-      return <StockList />;
-    case "pembelian":
-      return <Pembelian />;
-    case "type":
-      return <TypeList />;
-    case "category_product":
-      return <CategoryProduct />;
-    case "store":
-      return <StoreData />;
-    case "analytics":
-      return <Analytics />;
-    case "report":
-      return <Report />;
-    case "product":
-      return <ProductMenu />;
-    case "extras":
-      return <Extras />;
-    case "user":
-      return <User />;
-    case "order":
-      return <Order />;
-    case "order_cust":
-      return <OrderCust setSelectedLink={setSelectedLink} />;
-    case "size":
-      return <Size />;
-    case "profile":
-      return <Profile />;
-    case "payment":
-      return <Payment />;
-    case "pembelian_list":
-      return <PembelianList />;
-    case "sales_campaign":
-      return <SalesCampaign />;
-    case "item_campaign":
-      return <ItemCampaign />;
-    case "sales":
-      return <SalesMain />;
-    case "kasir":
-      return <Kasir />;
-    case "rule":
-      return <RuleAccessData />;
-    default:
-      return <Analytics />;
-  }
+  const components = {
+    company: CompanyData,
+    stock: StockList,
+    pembelian: Pembelian,
+    type: TypeList,
+    category_product: CategoryProduct,
+    store: StoreData,
+    analytics: Analytics,
+    report: Report,
+    product: ProductMenu,
+    extras: Extras,
+    users: User,
+    order: Order,
+    order_cust: OrderCust,
+    size: Size,
+    profile: Profile,
+    payment: Payment,
+    pembelian_list: PembelianList,
+    sales_campaign: SalesCampaign,
+    item_campaign: ItemCampaign,
+    sales: SalesMain,
+    kasir: Kasir,
+    rule_access: RuleAccessData,
+  };
+
+  const Component = components[selectedLink] || Profile;
+  return (
+    <Component {...(selectedLink === "profile" ? { setSelectedLink } : {})} />
+  );
 };
 
 export default ContentRenderer;

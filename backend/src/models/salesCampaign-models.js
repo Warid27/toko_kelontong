@@ -13,7 +13,7 @@ const salesCampaignSchema = new Schema({
 });
 
 export const salesCampaignModels = model(
-  "salesCampaign",
+  "sales_campaign",
   salesCampaignSchema,
-  "salesCampaign"
+  "sales_campaign"
 );

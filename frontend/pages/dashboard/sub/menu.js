@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 
 // Icons
-import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import { MdDelete } from "react-icons/md";
 import {
   FaRegEdit,
@@ -12,9 +10,8 @@ import {
   FaRegFileExcel,
 } from "react-icons/fa";
 import { IoBarcodeOutline } from "react-icons/io5";
-import { IoSearchOutline } from "react-icons/io5";
 import { IoIosCloudDone } from "react-icons/io";
-import { FaFileUpload } from "react-icons/fa";
+import { FaFileUpload, FaFolder } from "react-icons/fa";
 
 // Components
 import { SubmitButton, CloseButton } from "@/components/form/button";
@@ -36,6 +33,7 @@ import {
   AddBatchProducts,
   updateProduct,
   deleteProduct,
+  AddProductByExcel,
 } from "@/libs/fetching/product";
 import { fetchSizeList } from "@/libs/fetching/size";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
@@ -50,7 +48,7 @@ import { motion } from "framer-motion";
 const ProductMenu = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [isLoadingBatch, setIsLoadingBatch] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -68,6 +66,7 @@ const ProductMenu = () => {
 
   const [file, setFile] = useState(null);
   const [folder, setFolder] = useState(null);
+  const [errorFolders, setErrorFolders] = useState();
 
   const token = localStorage.getItem("token");
   const id_store =
@@ -243,20 +242,15 @@ const ProductMenu = () => {
   };
 
   const handleStatusSelect = async (productId, selectedStatus) => {
-    try {
-      setLoading(true);
-      const response = await updateProduct(productId, {
-        status: selectedStatus,
-      });
-      if (response.status === 200) {
-        setProducts((prev) =>
-          prev.map((p) =>
-            p._id === productId ? { ...p, status: selectedStatus } : p
-          )
-        );
-      }
-    } finally {
-      setLoading(false);
+    const response = await updateProduct(productId, {
+      status: selectedStatus,
+    });
+    if (response.status === 200) {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === productId ? { ...p, status: selectedStatus } : p
+        )
+      );
     }
   };
 
@@ -378,18 +372,42 @@ const ProductMenu = () => {
       toast.error("Pilih file dan folder gambar!");
       return;
     }
+
+    // Check file extensions in the folder
+    const allowedImageExtensions = [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".gif",
+      ".webp",
+      ".bmp",
+      ".svg",
+    ];
+    const invalidFiles = Array.from(folder).filter((file) => {
+      const fileName = file.name.toLowerCase();
+      const fileExtension = fileName.substring(fileName.lastIndexOf("."));
+      return !allowedImageExtensions.includes(fileExtension);
+    });
+
+    // Display error if invalid files found
+    if (invalidFiles.length > 0) {
+      setErrorFolders(
+        "Extensi yang diperbolehkan hanya gambar (.jpg, .jpeg, .png, .gif, .webp, .bmp, .svg)"
+      );
+      return;
+    }
+
+    // Set loading state to true at the beginning
+    setIsLoadingBatch(true);
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("id_store", id_store);
     formData.append("id_company", id_company);
     Array.from(folder).forEach((img) => formData.append("images", img));
+
     try {
-      const response = await client.post("/product/file", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await AddProductByExcel(formData);
 
       if (response.status === 200) {
         const data = response.data.data;
@@ -397,6 +415,8 @@ const ProductMenu = () => {
         if (responseProduct.status === 201) {
           modalOpen("add", false);
           toast.success("Produk berhasil ditambahkan!");
+          setFile(null);
+          setFolder(null);
           const newProducts = responseProduct.data.products.map(
             (item) => item.product
           );
@@ -405,6 +425,9 @@ const ProductMenu = () => {
       }
     } catch (error) {
       toast.error("Error uploading batch: " + error.message);
+    } finally {
+      // Set loading state to false regardless of success or failure
+      setIsLoadingBatch(false);
     }
   };
 
@@ -458,7 +481,6 @@ const ProductMenu = () => {
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
       const reqBody = {
         name_product: productDataUpdate.name_product,
         id_category_product: productDataUpdate.id_category_product,
@@ -482,8 +504,6 @@ const ProductMenu = () => {
       }
     } catch (error) {
       toast.error("Error updating product: " + error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -681,63 +701,138 @@ const ProductMenu = () => {
               <SubmitButton />
             </div>
           </form>
+        ) : isLoadingBatch ? (
+          <Loading />
         ) : (
           <div>
             <button
+              className="absolute top-4 right-4 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
               onClick={() => {
                 modalOpen("add", false);
                 modalOpen("example", true);
               }}
             >
-              example
+              View Example
             </button>
-            <h1 className="text-lg font-semibold text-gray-800 text-center mb-2">
-              Upload Excel & Folder Gambar
-            </h1>
-            <div className="upload-container">
-              <label className="upload-label">
-                <input
-                  type="file"
-                  accept=".xlsx, .xls, .csv"
-                  onChange={handleFileChange}
-                  style={{ display: "none" }}
-                />
-                {file && <p>File dipilih: {file.name}</p>}
-                <div className="upload-content">
-                  {file ? (
-                    <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                      <IoIosCloudDone className="text-5xl text-[#FDDC05]" />
-                      <p className="text-sm text-[#FDDC05]">File Uploaded</p>
+            <div className="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-sm">
+              <h1 className="text-xl font-semibold text-gray-800 text-center mb-6">
+                Upload Excel & Folder Gambar
+              </h1>
+
+              <div className="space-y-6 mb-6">
+                {/* Excel File Upload */}
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 transition-all hover:border-[#FDDC05]">
+                  <label className="w-full cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls, .csv"
+                      onChange={handleFileChange}
+                      style={{ display: "none" }}
+                    />
+
+                    <div className="flex items-center gap-4">
+                      <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                        {file ? (
+                          <IoIosCloudDone className="text-5xl text-[#FDDC05]" />
+                        ) : (
+                          <FaFileUpload className="text-5xl text-[#FDDC05]" />
+                        )}
+                        <p className="text-sm font-medium text-[#282722] mt-1">
+                          {file ? "File Uploaded" : "New File"}
+                        </p>
+                      </div>
+
+                      <div className="flex-1">
+                        {file ? (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">
+                              File dipilih:
+                            </p>
+                            <p className="text-sm text-gray-600 truncate max-w-xs">
+                              {file.name}
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">
+                              Pilih File Excel
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Format .xlsx, .xls, atau .csv
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
-                      <FaFileUpload className="text-5xl text-[#FDDC05]" />
-                      <p className="text-sm text-[#FDDC05]">New File</p>
-                    </div>
-                  )}
+                  </label>
                 </div>
-              </label>
-            </div>
-            <div className="upload-container mt-4">
-              <label className="upload-label">
-                <input
-                  type="file"
-                  webkitdirectory=""
-                  directory=""
-                  multiple
-                  onChange={handleFolderChange}
-                  style={{ display: "none" }}
-                />
-                {folder ? (
-                  <p>{folder.length} file gambar dipilih</p>
-                ) : (
-                  <p>Pilih folder gambar</p>
+                {file && (
+                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 transition-all hover:border-[#FDDC05]">
+                    <label className="w-full cursor-pointer">
+                      <input
+                        type="file"
+                        webkitdirectory=""
+                        directory=""
+                        multiple
+                        onChange={handleFolderChange}
+                        style={{ display: "none" }}
+                      />
+
+                      <div className="flex items-center gap-4">
+                        <div className="bg-[#F8FAFC] w-28 rounded-lg p-3 flex flex-col items-center justify-center">
+                          {folder && folder.length > 0 ? (
+                            <IoIosCloudDone className="text-5xl text-[#FDDC05]" />
+                          ) : (
+                            <FaFolder className="text-5xl text-[#FDDC05]" />
+                          )}
+                          <p className="text-sm font-medium text-[#FDDC05] mt-1">
+                            {folder && folder.length > 0
+                              ? "Folder Uploaded"
+                              : "Select Folder"}
+                          </p>
+                        </div>
+
+                        <div className="flex-1">
+                          {folder && folder.length > 0 ? (
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">
+                                Folder dipilih:
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {folder.length} file gambar
+                              </p>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">
+                                Pilih Folder Gambar
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                Unggah semua gambar dari folder
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Error message display */}
+                    {errorFolders && (
+                      <div className="mt-2 text-red-500 text-sm">
+                        {errorFolders}
+                      </div>
+                    )}
+                  </div>
                 )}
-              </label>
+              </div>
+
+              {/* Kept the original Submit button as requested */}
+              <SubmitButton
+                type="button"
+                onClick={handleProductBatch}
+                content="Upload"
+              />
             </div>
-            <button onClick={handleProductBatch} className="addBtn mt-4">
-              Upload
-            </button>
           </div>
         )}
       </Modal>
@@ -748,7 +843,7 @@ const ProductMenu = () => {
         title="Edit Produk"
         width="large"
       >
-        <form onSubmit={handleSubmitUpdate}>
+        <form onSubmit={handleSubmitUpdate} className="relative">
           <p className="font-semibold">Gambar Produk</p>
           <p className="mb-2 text-sm text-slate-500">
             Format .jpg .jpeg .png dan minimal ukuran 300 x 300px

@@ -37,7 +37,6 @@ const StockList = () => {
   ];
 
   const HeaderTable = [
-    { label: "No", key: "no" },
     {
       label: "Nama Produk",
       key: "product_name",

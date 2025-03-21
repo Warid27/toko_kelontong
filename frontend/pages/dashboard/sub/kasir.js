@@ -9,7 +9,6 @@ import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
 import { VscTrash } from "react-icons/vsc";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import { CgNotes } from "react-icons/cg";
-import { IoIosArrowDropdown } from "react-icons/io";
 
 // Components
 import Card from "@/components/Card";
@@ -358,6 +357,7 @@ const Kasir = () => {
 
   // Clear cart
   const clearKasir = () => {
+    modalOpen("pay", false);
     setKasirItems([]);
     setInfoBuyyer({ nama: "", keterangan: "", status: 1 });
     setSalesDiscount(null);

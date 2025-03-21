@@ -27,7 +27,7 @@ const Table = ({
   }, [data, itemsPerPage]);
 
   const selectedData = data.slice(startIndex, startIndex + itemsPerPage);
-
+  console.log("EXPORT HEADER TABLE", ExportHeaderTable);
   // Generate export data dynamically based on columns
   const dataForExport = selectedData.map((row, index) => ({
     no: index + 1,
@@ -47,7 +47,7 @@ const Table = ({
       ])
     ),
   }));
-
+  console.log("DATA FOR EXPORT", dataForExport);
   return (
     <>
       <div className="p-5 flex flex-row justify-between items-center">

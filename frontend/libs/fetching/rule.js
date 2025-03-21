@@ -5,7 +5,7 @@ export const fetchRuleList = async () => {
     const token = localStorage.getItem("token");
     const response = await client.post(
       "/rule/listrule",
-      {}, // Pass id_rule in the request body
+      {},
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -57,15 +57,11 @@ export const getRuleData = async (id) => {
 export const updateRule = async (ruleId, requestBody) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await client.put(
-      `/api/rule/${ruleId}`,
-      requestBody,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await client.put(`/api/rule/${ruleId}`, requestBody, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     return response;
   } catch (error) {

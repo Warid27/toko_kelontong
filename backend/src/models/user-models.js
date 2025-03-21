@@ -17,7 +17,7 @@ const userSchema = new Schema({
   },
   status: {
     type: Number,
-    enum: [0, 1], // (Active, Inactive)
+    enum: [0, 1, 2], // (Active, Pending, Inactive)
     default: 1,
   },
   id_company: {

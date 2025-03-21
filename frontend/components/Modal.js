@@ -108,7 +108,7 @@ export const Modal = ({
 
             {/* Scrollable Content */}
             <motion.div
-              className="p-4 overflow-y-auto max-h-[70vh]"
+              className="relative p-4 overflow-y-auto max-h-[70vh]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}

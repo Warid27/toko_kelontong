@@ -10,7 +10,7 @@ import Table from "@/components/form/table";
 import { Modal } from "@/components/Modal";
 import Header from "@/components/section/header";
 import Loading from "@/components/loading";
-import Toggle from "@/components/form/toggle"
+import Toggle from "@/components/form/toggle";
 
 // Libraries
 import {
@@ -36,7 +36,7 @@ const RuleAccessData = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [ruleToUpdate, setRuleToUpdate] = useState(null);
-  const [filterBy, setFilterBy] = useState("1");
+  const [filterBy, setFilterBy] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -46,7 +46,7 @@ const RuleAccessData = () => {
     can_create: 0,
     can_read: 0,
     can_update: 0,
-    can_delete: 0
+    can_delete: 0,
   });
 
   const [ruleDataUpdate, setRuleDataUpdate] = useState({
@@ -56,15 +56,15 @@ const RuleAccessData = () => {
     can_create: 0,
     can_read: 0,
     can_update: 0,
-    can_delete: 0
+    can_delete: 0,
   });
 
   useEffect(() => {
     const fetchTable = async () => {
       try {
-        const tableData = await fetchCollectionList()
+        const tableData = await fetchCollectionList();
         setTableList(tableData.data);
-        console.log("tablenya", tableData.data)
+        console.log("tablenya", tableData.data);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching collection data:", error);
@@ -83,7 +83,6 @@ const RuleAccessData = () => {
     { value: 5, label: "Customer" },
   ];
 
-
   const ExportHeaderTable = [
     { label: "No", key: "no" },
     { label: "Rule", key: "rule" },
@@ -95,13 +94,15 @@ const RuleAccessData = () => {
   ];
 
   const HeaderTable = [
-    { label: "Rule", key: "rule",
-        render: (value, row) => (
-            <div className="relative">
-              {ruleOptions.find(ro => ro.value === value).label}
-            </div>
-          ),
-     },
+    {
+      label: "Rule",
+      key: "rule",
+      render: (value, row) => (
+        <div className="relative">
+          {ruleOptions.find((ro) => ro.value === value).label}
+        </div>
+      ),
+    },
     {
       key: "table_name",
       label: "Table Name",
@@ -126,12 +127,12 @@ const RuleAccessData = () => {
       label: "Create",
       render: (value, row) => (
         <Toggle
-            isChecked={value === 1}
-            onChange={() => {
-                const newValue = value === 1 ? 0 : 1;
-                handlePermissionChange(row._id, "can_create", newValue);
-              }}
-            name="can_create"
+          isChecked={value === 1}
+          onChange={() => {
+            const newValue = value === 1 ? 0 : 1;
+            handlePermissionChange(row._id, "can_create", newValue);
+          }}
+          name="can_create"
         />
       ),
     },
@@ -140,12 +141,12 @@ const RuleAccessData = () => {
       label: "Read",
       render: (value, row) => (
         <Toggle
-            isChecked={value === 1}
-            onChange={() => {
-                const newValue = value === 1 ? 0 : 1;
-                handlePermissionChange(row._id, "can_read", newValue);
-              }}
-            name="can_read"
+          isChecked={value === 1}
+          onChange={() => {
+            const newValue = value === 1 ? 0 : 1;
+            handlePermissionChange(row._id, "can_read", newValue);
+          }}
+          name="can_read"
         />
       ),
     },
@@ -154,12 +155,12 @@ const RuleAccessData = () => {
       label: "Update",
       render: (value, row) => (
         <Toggle
-            isChecked={value === 1}
-            onChange={() => {
-                const newValue = value === 1 ? 0 : 1;
-                handlePermissionChange(row._id, "can_update", newValue);
-              }}
-            name="can_update"
+          isChecked={value === 1}
+          onChange={() => {
+            const newValue = value === 1 ? 0 : 1;
+            handlePermissionChange(row._id, "can_update", newValue);
+          }}
+          name="can_update"
         />
       ),
     },
@@ -168,12 +169,12 @@ const RuleAccessData = () => {
       label: "Delete",
       render: (value, row) => (
         <Toggle
-            isChecked={value === 1}
-            onChange={() => {
-                const newValue = value === 1 ? 0 : 1;
-                handlePermissionChange(row._id, "can_delete", newValue);
-              }}
-            name="can_delete"
+          isChecked={value === 1}
+          onChange={() => {
+            const newValue = value === 1 ? 0 : 1;
+            handlePermissionChange(row._id, "can_delete", newValue);
+          }}
+          name="can_delete"
         />
       ),
     },
@@ -184,7 +185,7 @@ const RuleAccessData = () => {
       icon: <MdDelete size={20} />,
       onClick: (row) => deleteRuleById(row._id),
       className: "bg-red-500 hover:bg-red-600",
-    }
+    },
   ];
 
   // --- Function
@@ -202,8 +203,10 @@ const RuleAccessData = () => {
     const fetchData = async () => {
       try {
         const ruleData = await fetchRuleList();
-        
-        setRules(ruleData.filter(rd => filterBy != "" ? rd.rule == filterBy : rd));
+
+        setRules(
+          ruleData.filter((rd) => (filterBy != "" ? rd.rule == filterBy : rd))
+        );
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching rule data:", error);
@@ -224,9 +227,7 @@ const RuleAccessData = () => {
       if (response.status === 200) {
         setRules((prevRules) =>
           prevRules.map((rule) =>
-            rule._id === ruleId
-              ? { ...rule, table_name: selectedTable }
-              : rule
+            rule._id === ruleId ? { ...rule, table_name: selectedTable } : rule
           )
         );
         toast.success("table updated successfully");
@@ -249,12 +250,10 @@ const RuleAccessData = () => {
       if (response.status === 200) {
         setRules((prevRules) =>
           prevRules.map((rule) =>
-            rule._id === ruleId
-              ? { ...rule, [permission]: value }
-              : rule
+            rule._id === ruleId ? { ...rule, [permission]: value } : rule
           )
         );
-        toast.success(`${permission.replace('can_', '')} permission updated`);
+        toast.success(`${permission.replace("can_", "")} permission updated`);
       }
     } catch (error) {
       toast.error("Failed to update permission");
@@ -285,9 +284,7 @@ const RuleAccessData = () => {
           const response = await deleteRule(id);
           if (response.status === 200) {
             toast.success("Rule access berhasil dihapus!");
-            setRules((prevRules) =>
-              prevRules.filter((p) => p._id !== id)
-            );
+            setRules((prevRules) => prevRules.filter((p) => p._id !== id));
           }
         } catch (error) {
           toast.error("Error:" + error);
@@ -300,20 +297,20 @@ const RuleAccessData = () => {
     const { name, value } = e.target;
     setRuleDataAdd((prevState) => ({
       ...prevState,
-      [name]: name.startsWith('can_') ? Number(value) : value,
+      [name]: name.startsWith("can_") ? Number(value) : value,
     }));
   };
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
-    console.log("data add", ruleDataAdd)
+    console.log("data add", ruleDataAdd);
 
     try {
       if (!ruleDataAdd.table_name) {
         alert("Please select a table name.");
         return;
       }
-      
+
       const reqBody = {
         rule: Number(ruleDataAdd.rule),
         table_name: ruleDataAdd.table_name,
@@ -322,7 +319,7 @@ const RuleAccessData = () => {
         can_update: Number(ruleDataAdd.can_update),
         can_delete: Number(ruleDataAdd.can_delete),
       };
-      
+
       const response = await addRule(reqBody);
       if (response.status === 201) {
         modalOpen("add", false);
@@ -333,7 +330,7 @@ const RuleAccessData = () => {
           can_create: 0,
           can_read: 0,
           can_update: 0,
-          can_delete: 0
+          can_delete: 0,
         });
         setRules((prevRules) => [...prevRules, response.data]);
       } else {
@@ -349,14 +346,14 @@ const RuleAccessData = () => {
     const { name, value } = e.target;
     setRuleDataAdd((prevState) => ({
       ...prevState,
-      [name]: name.startsWith('can_') ? Number(value) : value,
+      [name]: name.startsWith("can_") ? Number(value) : value,
     }));
   };
 
   const getRuleLabel = (ruleValue) => {
-    const option = ruleOptions.find(opt => opt.value === ruleValue);
-    console.log("rule", option)
-    return option ? option.label : 'Unknown';
+    const option = ruleOptions.find((opt) => opt.value === ruleValue);
+    console.log("rule", option);
+    return option ? option.label : "Unknown";
   };
 
   const filteredRuleList = rules.filter(
@@ -384,7 +381,7 @@ const RuleAccessData = () => {
       <div className="p-4 mt-4">
         <div className="bg-white rounded-lg">
           <div>
-          <select
+            <select
               className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent shadow-sm"
               value={filterBy}
               onChange={(e) => setFilterBy(e.target.value)}
@@ -420,7 +417,7 @@ const RuleAccessData = () => {
         width="large"
       >
         <form onSubmit={handleSubmitAdd}>
-        <p className="font-semibold mt-4 mb-2">Rule</p>
+          <p className="font-semibold mt-4 mb-2">Rule</p>
           <Select
             id="rule"
             className="basic-single"
@@ -444,63 +441,62 @@ const RuleAccessData = () => {
             id="table_name"
             className="basic-single"
             options={tableList.map((table) => ({
-                label: table.name, 
-                value: table.name
+              label: table.name,
+              value: table.name,
             }))} // Konversi objek agar react-select bisa membaca
             value={
-                tableList
+              tableList
                 .map((table) => ({ label: table.name, value: table.name })) // Konversi format yang sama
-                .find((option) => option.value === ruleDataAdd.table_name) || null
+                .find((option) => option.value === ruleDataAdd.table_name) ||
+              null
             }
             onChange={(selectedOption) =>
-                setRuleDataAdd((prevState) => ({
+              setRuleDataAdd((prevState) => ({
                 ...prevState,
                 table_name: selectedOption ? selectedOption.value : "",
-                }))
+              }))
             }
             isSearchable
             required
             placeholder="Select Table..."
             noOptionsMessage={() => "No tables available"}
-            />
-
-
+          />
 
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
-            <Toggle
+              <Toggle
                 isChecked={ruleDataAdd.can_create === 1}
                 onChange={handleChangeAdd}
                 label="Create Permission"
                 name="can_create"
-                />
+              />
             </div>
 
             <div>
-            <Toggle
+              <Toggle
                 isChecked={ruleDataAdd.can_read === 1}
                 onChange={handleChangeAdd}
                 label="Read Permission"
                 name="can_read"
-                />
+              />
             </div>
 
             <div>
-            <Toggle
+              <Toggle
                 isChecked={ruleDataAdd.can_update === 1}
                 onChange={handleChangeAdd}
                 label="Update Permission"
                 name="can_update"
-                />
+              />
             </div>
 
             <div>
-            <Toggle
+              <Toggle
                 isChecked={ruleDataAdd.can_delete === 1}
                 onChange={handleChangeAdd}
                 label="Delete Permission"
                 name="can_delete"
-                />
+              />
             </div>
           </div>
 

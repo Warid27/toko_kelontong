@@ -2,8 +2,7 @@ import { Client } from "minio";
 import mongoose from "mongoose";
 
 // Load environment variables using Bun's built-in support
-// NotUse (Will be deleted)
-const renderEJS = "";
+
 
 // JWT
 const SECRET_KEY = Bun.env.JWT_SECRET;
@@ -103,7 +102,6 @@ export {
   PORT,
   SECRET_KEY,
   JWT_SECRET,
-  renderEJS,
   minioClient,
   MINIO_BUCKET_NAME,
   minioUrl,

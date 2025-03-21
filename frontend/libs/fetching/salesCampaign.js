@@ -4,10 +4,14 @@ import { tokenDecoded } from "@/utils/tokenDecoded";
 export const fetchSalesCampaignList = async () => {
   try {
     const token = localStorage.getItem("token");
-    const id_store = localStorage.getItem("id_store");
+    const id_store = tokenDecoded().id_store ? tokenDecoded().id_store
+    : localStorage.getItem("id_store");;
+    const id_company = tokenDecoded().id_company
+      ? tokenDecoded().id_company
+      : localStorage.getItem("id_company");
     const response = await client.post(
       "/salescampaign/listsalescampaign",
-      { id_store },
+      { id_company, id_store },
       {
         headers: {
           Authorization: `Bearer ${token}`,

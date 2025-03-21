@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { UserModels } from "@models/user-models";
+import { CompanyModels } from "@models/company-models";
+import { StoreModels } from "@models/store-models";
 import argon2 from "argon2";
 
 const router = new Hono();
@@ -55,7 +57,7 @@ router.post("/", async (c) => {
       username,
       password: hashedPassword, // Store the hashed password
       rule: null,
-      status: 1, // Inactive
+      status: 1, // Pending
       id_company: null,
       id_store: null,
     });

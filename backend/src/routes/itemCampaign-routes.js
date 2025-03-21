@@ -6,11 +6,29 @@ const router = new Hono();
 
 // Get all item campaigns
 router.post(
-  "/listitemcampaign",
+  "/listitemcampaigns",
   (c, next) => authenticate(c, next, "item_campaign", OPERATIONS.READ),
   async (c) => {
     try {
-      const itemCampaigns = await itemCampaignModels.find();
+      const body = await c.req.json();
+
+      let { id_company, id_store } = body;
+
+      // Validasi id_company agar tidak berisi string "undefined" atau null
+      if (!id_company || id_company === "undefined" || id_company === "null") {
+        id_company = null;
+      }
+      if (!id_store || id_store === "undefined" || id_store === "null") {
+        id_store = null;
+      }
+
+      let query = {};
+      if (id_company) query.id_company = id_company;
+      if (id_store) query.id_store = id_store;
+
+      // Query ke database
+      const itemCampaigns = await itemCampaignModels.find(query);
+
       return c.json(itemCampaigns, 200);
     } catch (error) {
       return c.text("Internal Server Error", 500);
