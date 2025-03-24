@@ -29,7 +29,7 @@ import { validatePhoneNumber } from "@/utils/validatePhoneNumber";
 
 // Packages
 import { toast } from "react-toastify";
-import Select from "react-select"; //warid warid
+import Select from "react-select";
 import Swal from "sweetalert2";
 
 const CompanyData = () => {

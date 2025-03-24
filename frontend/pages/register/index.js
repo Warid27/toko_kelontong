@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import { FaCheck } from "react-icons/fa";
-import client from "@/libs/axios";
 import { toast } from "react-toastify";
 import { InputText, InputPassword } from "@/components/form/input";
+import { registerService } from "@/libs/fetching/auth";
 
 const Register = () => {
   const [username, setUsername] = useState("");
@@ -28,13 +28,11 @@ const Register = () => {
     };
 
     try {
-      const response = await client.post("/register", registerData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      localStorage.setItem("token", response.data.token);
-      router.push("/login");
+      const response = await registerService(registerData);
+      if (response.status === 200) {
+        toast.success("Register berhasil!");
+        router.push("/login");
+      }
     } catch (error) {
       setIsError(true);
 

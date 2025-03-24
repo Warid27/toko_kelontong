@@ -91,7 +91,8 @@ const ProductMenu = ({ userData }) => {
     id_size: "",
   });
 
-  const { id_store, id_company } = userData;
+  const id_store = userData?.id_store;
+  const id_company = userData?.id_company;
 
   const statusOptions = [
     { value: 0, label: "Active" },

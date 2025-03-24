@@ -30,6 +30,7 @@ const CategoryProduct = ({ userData }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [categoryProduct, setCategoryProduct] = useState([]); // Add this line
   const [categoryProductToUpdate, setCategoryProductToUpdate] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState("");

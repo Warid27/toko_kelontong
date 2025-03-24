@@ -71,6 +71,45 @@ router.post(
     }
   }
 );
+// Add Demo company
+router.post("/adddemo", async (c) => {
+  try {
+    const body = await c.req.json();
+
+    const data = {
+      name: body.name,
+      address: body.address,
+      id_type: body.id_type,
+      status: 1,
+      phone: body.phone,
+      email: body.email,
+      header: null,
+      logo: null,
+    };
+
+    const company = new CompanyModels(data);
+    await company.save();
+    return c.json(company, 201);
+  } catch (error) {
+    return c.json({ message: error.message }, 400);
+  }
+});
+
+// Add company
+router.post(
+  "/addcompany",
+  (c, next) => authenticate(c, next, "company", OPERATIONS.CREATE),
+  async (c) => {
+    try {
+      const body = await c.req.json();
+      const company = new CompanyModels(body);
+      await company.save();
+      return c.json(company, 201);
+    } catch (error) {
+      return c.json({ message: error.message }, 400);
+    }
+  }
+);
 
 router.post("/listcompanylogo", async (c) => {
   try {
@@ -93,6 +132,5 @@ router.post("/listcompanylogo", async (c) => {
     return c.json({ error: "An unexpected error occurred" }, 500);
   }
 });
-
 
 export default router;

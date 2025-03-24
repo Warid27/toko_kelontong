@@ -92,6 +92,17 @@ export const fetchTypeList = async () => {
   }
 };
 
+export const fetchListType = async () => {
+  try {
+    const response = await client.post("/type/list", {});
+    const data = response.data;
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching type:", error);
+  }
+};
+
 export const deleteType = async (id) => {
   try {
     const token = localStorage.getItem("token");

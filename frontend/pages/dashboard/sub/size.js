@@ -33,7 +33,8 @@ const Size = ({ userData }) => {
   const [loading, setLoading] = useState(false);
 
   // Extract id_store and id_company from userData
-  const { id_store, id_company } = userData;
+  const id_store = userData?.id_store;
+  const id_company = userData?.id_company;
 
   // Header Table
   const ExportHeaderTable = [
@@ -81,6 +82,12 @@ const Size = ({ userData }) => {
 
   useEffect(() => {
     const fetchRequirements = async () => {
+      if (!id_store || !id_company) {
+        console.error("Missing id_store or id_company, aborting fetch");
+        setProductList([]);
+        setIsLoading(false);
+        return;
+      }
       const products = await fetchProductsList(id_store, id_company);
       setProductList(products);
       setIsLoading(false);

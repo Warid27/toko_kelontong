@@ -1,6 +1,9 @@
 import client from "@/libs/axios";
-import Swal from "sweetalert2";
+import { toast } from "react-toastify";
 import { clearUserCache } from "@/utils/tokenDecoded";
+
+// Make sure to include this CSS in your main app file or component
+// import "react-toastify/dist/ReactToastify.css";
 
 export const loginServices = async (reqBody) => {
   try {
@@ -15,7 +18,7 @@ export const loginServices = async (reqBody) => {
       localStorage.setItem("token", token);
       return token;
     } else {
-      Swal.fire("Gagal", response.data.message || "Login gagal", "error");
+      toast.error(response.data.message || "Login failed");
     }
   } catch (error) {
     console.error("Login error:", error);
@@ -26,12 +29,14 @@ export const loginServices = async (reqBody) => {
 export const registerService = async (reqBody) => {
   try {
     localStorage.clear();
+    clearUserCache();
+
     const response = await client.post("/register", reqBody);
 
     if (response.status === 200) {
       return response;
     } else {
-      Swal.fire("Gagal", response.data.message || "Register gagal", "error");
+      toast.error(response.data.message || "Registration failed");
     }
   } catch (error) {
     console.error("Register error:", error);

@@ -2,18 +2,20 @@
 import Footer from "@/components/Footer";
 import Topbar from "@/components/Topbar";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
+import { InputText, InputPassword } from "@/components/form/input";
 
 // React Imports
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 
 // Next.js Imports
 import Image from "next/image";
 import { useRouter } from "next/router";
 
-// Data Fetching Imports
-import { fetchCompanyListLogo } from "@/libs/fetching/company";
-import { listStoreStatus } from "@/libs/fetching/store";
-import { listProductStatus } from "@/libs/fetching/product";
+// Fetching
+import { registerService } from "@/libs/fetching/auth";
+import { addDemoCompany } from "@/libs/fetching/company";
+import { fetchListType } from "@/libs/fetching/type";
 
 // Icon Imports
 import {
@@ -25,56 +27,96 @@ import {
   MdInsertChart,
   MdAssignment,
 } from "react-icons/md";
+import { FaCheck } from "react-icons/fa";
+
+// Framer Motion Import
+import { motion } from "framer-motion";
+
+// Toast Import
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Features = () => {
-  const [companyData, setCompanyData] = useState([]);
-  const [storeData, setStoreData] = useState([]);
-  const [productData, setProductData] = useState([]);
   const router = useRouter();
   const motiveLength = 8;
   const baseURL = "http://localhost:8080";
 
+  // State Management
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [id_type, setIdType] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [typeList, setTypeList] = useState([]);
+
   useEffect(() => {
-    const fetchingRequirements = async () => {
-      const storeLength = async () => {
-        try {
-          const response = await listStoreStatus();
-          if (response?.data) {
-            setStoreData(response.data);
-          }
-        } catch (error) {
-          console.error("Error fetching company logos:", error);
-        }
+    const fetching_requirement = async () => {
+      const get_type_list = async () => {
+        const data_type = await fetchListType();
+        setTypeList(data_type);
       };
-
-      const productLength = async () => {
-        try {
-          const response = await listProductStatus();
-          if (response?.data) {
-            setProductData(response.data);
-          }
-        } catch (error) {
-          console.error("Error fetching company logos:", error);
-        }
-      };
-
-      const fetchCompanyLogo = async () => {
-        try {
-          const response = await fetchCompanyListLogo();
-          if (response?.data) {
-            setCompanyData(response.data);
-          }
-        } catch (error) {
-          console.error("Error fetching company logos:", error);
-        }
-      };
-
-      fetchCompanyLogo();
-      storeLength();
-      productLength();
+      get_type_list();
     };
-    fetchingRequirements();
+    fetching_requirement();
   }, []);
+
+  // Handle Registration
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setErrorMessage("");
+
+    const companyData = {
+      name,
+      address,
+      id_type,
+      status: 1,
+      phone,
+      email,
+    };
+
+    try {
+      const companyResponse = await addDemoCompany(companyData);
+
+      if (companyResponse.status === 201) {
+        const registerData = {
+          id_company: companyResponse._id,
+          username,
+          password,
+          rule: 2,
+          status: 1,
+        };
+        const response = await registerService(registerData);
+        if (response.status === 200) {
+          toast.success("Register akun demo berhasil!");
+          router.push("/login");
+        }
+      }
+    } catch (error) {
+      setIsError(true);
+
+      if (error.response && error.response.status === 400) {
+        setErrorMessage("Invalid input data. Please check your details.");
+      } else if (error.response && error.response.status === 401) {
+        setErrorMessage("Invalid username or password.");
+      } else if (error.response && error.response.status === 409) {
+        setErrorMessage("Username already taken!");
+      } else {
+        setErrorMessage("Registration failed. Please try again later.");
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isError === true) {
+      toast.error(errorMessage);
+      setIsError(false);
+    }
+  }, [isError, errorMessage]);
 
   return (
     <div className="bg-[#F7F7F7] min-h-screen flex flex-col relative">
@@ -131,7 +173,7 @@ const Features = () => {
           height={300}
           className="w-full object-cover"
         />
-        <div className="z-30 justify-center items-center w-full h-full absolute flex flex-col  text-white bg-black bg-opacity-50 px-32 py-12 rounded-md">
+        <div className="z-30 justify-center items-center w-full h-full absolute flex flex-col text-white bg-black bg-opacity-50 px-32 py-12 rounded-md">
           <div className="flex flex-col gap-3 justify-center items-center">
             <p className="text-8xl font-bold text-center">Features</p>
             <p className="text-2xl max-w-[65%] text-center">
@@ -324,6 +366,260 @@ const Features = () => {
         </div>
       </section>
 
+      {/* Section 3 */}
+      <section className="z-30 p-10 -translate-y-16 flex flex-row justify-evenly items-center relative">
+        <motion.div
+          className="flex flex-col justify-center items-center w-full md:w-1/2 p-10 z-10"
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          <motion.div
+            className="w-full max-w-md backdrop-blur-lg bg-gray-800/40 p-10 rounded-2xl shadow-2xl border border-gray-700/50"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <motion.h2
+              className="text-4xl font-bold mb-2 bg-gradient-to-r from-emerald-400 to-green-500 text-transparent bg-clip-text"
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              Create Account
+            </motion.h2>
+
+            <motion.p
+              className="text-gray-400 mb-8"
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              Join us and experience the future of shopping
+            </motion.p>
+
+            <form className="w-full space-y-6" onSubmit={handleRegister}>
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+                className="group"
+              >
+                <div className="relative">
+                  <InputText
+                    id="username"
+                    label="Username"
+                    name="username"
+                    value={username}
+                    text_color="text-white"
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.7 }}
+                className="group"
+              >
+                <div className="relative">
+                  <InputPassword
+                    id="password"
+                    label="Password"
+                    name="password"
+                    text_color="text-white"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Additional Company Fields */}
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
+              >
+                <InputText
+                  id="name"
+                  label="Company Name"
+                  name="name"
+                  value={name}
+                  text_color="text-white"
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.9 }}
+              >
+                <InputText
+                  id="address"
+                  label="Address"
+                  name="address"
+                  value={address}
+                  text_color="text-white"
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 1.0 }}
+              >
+                <Select
+                  id="type"
+                  className="basic-single"
+                  options={typeList.map((c) => ({
+                    value: c._id,
+                    label: c.type,
+                  }))}
+                  value={
+                    typeList
+                      .map((c) => ({ value: c._id, label: c.type }))
+                      .find((opt) => opt.value === id_type) || null
+                  }
+                  onChange={(selectedOption) =>
+                    setIdType(selectedOption ? selectedOption.value : "")
+                  }
+                  isSearchable
+                  required
+                  placeholder="Pilih Type..."
+                  noOptionsMessage={() => "No Type available"}
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 1.1 }}
+              >
+                <InputText
+                  id="phone"
+                  label="Phone"
+                  name="phone"
+                  value={phone}
+                  text_color="text-white"
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 1.2 }}
+              >
+                <InputText
+                  id="email"
+                  label="Email"
+                  name="email"
+                  value={email}
+                  text_color="text-white"
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </motion.div>
+
+              {errorMessage && (
+                <motion.p
+                  className="text-red-400 text-sm"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {errorMessage}
+                </motion.p>
+              )}
+
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 1.3 }}
+                className="flex items-center"
+              >
+                <div className="relative">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={() => setTermsAccepted(!termsAccepted)}
+                    className="sr-only"
+                    required
+                  />
+                  <div
+                    onClick={() => setTermsAccepted(!termsAccepted)}
+                    className={`w-5 h-5 mr-2 border ${
+                      termsAccepted
+                        ? "bg-green-500 border-green-500"
+                        : "bg-gray-800/70 border-gray-600"
+                    } rounded flex items-center justify-center transition-colors cursor-pointer`}
+                  >
+                    {termsAccepted && (
+                      <FaCheck className="text-white text-xs" />
+                    )}
+                  </div>
+                </div>
+                <label
+                  htmlFor="terms"
+                  className="text-sm text-gray-300 cursor-pointer select-none"
+                >
+                  I agree to the{" "}
+                  <span className="text-emerald-400 hover:text-green-300 transition-colors">
+                    Terms of Service
+                  </span>{" "}
+                  and{" "}
+                  <span className="text-emerald-400 hover:text-green-300 transition-colors">
+                    Privacy Policy
+                  </span>
+                </label>
+              </motion.div>
+
+              <motion.button
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-bold rounded-lg shadow-lg transition duration-300 relative overflow-hidden group"
+                type="submit"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <motion.span
+                  className="absolute inset-0 w-full h-full bg-gradient-to-r from-emerald-400 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  animate={{ x: ["0%", "100%"] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  style={{ filter: "blur(15px)" }}
+                />
+                <span className="relative z-10">Create an account</span>
+              </motion.button>
+            </form>
+
+            <motion.p
+              className="text-sm text-gray-400 mt-6 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 1.4 }}
+            >
+              Already have an account?{" "}
+              <motion.a
+                href="/login"
+                className="text-emerald-400 hover:text-green-400 transition"
+                whileHover={{ scale: 1.05 }}
+              >
+                Login
+              </motion.a>
+            </motion.p>
+
+            <motion.p
+              className="text-xs text-gray-500 mt-8 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 1.5 }}
+            >
+              ©2024 All Rights Reserved. Carakan.
+            </motion.p>
+          </motion.div>
+        </motion.div>
+      </section>
+
       {/* Footer Motive */}
       <div className="flex justify-center max-h-[30vh] min-h-[30vh] overflow-hidden mt-24 relative w-full z-40">
         <Image
@@ -335,7 +631,7 @@ const Features = () => {
         />
       </div>
 
-      {/* Footer (Now Flexible & Always at Bottom) */}
+      {/* Footer */}
       <footer className="w-full mt-auto z-40">
         <Footer
           logo={"/icon_kelontong.svg"}

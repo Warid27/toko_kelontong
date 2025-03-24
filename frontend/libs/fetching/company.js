@@ -106,3 +106,13 @@ export const addCompany = async (reqBody) => {
     console.error("Error add store:", error);
   }
 };
+
+export const addDemoCompany = async (reqBody) => {
+  try {
+    const response = await client.post("/company/adddemo", reqBody);
+
+    return response;
+  } catch (error) {
+    console.error("Error add company:", error);
+  }
+};

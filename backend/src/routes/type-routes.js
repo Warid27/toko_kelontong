@@ -83,6 +83,19 @@ router.post(
     }
   }
 );
+// Get All Types
+router.post("/list", async (c) => {
+  try {
+    const types = await TypeModels.find();
+    return c.json(types, 200);
+  } catch (error) {
+    console.error("❌ Error in /listtype route:", error);
+    return c.json(
+      { message: "Internal Server Error", error: error.message },
+      500
+    );
+  }
+});
 
 // Get Type by ID
 router.post(
