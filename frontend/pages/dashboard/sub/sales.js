@@ -19,12 +19,13 @@ import { fetchOrderList } from "@/libs/fetching/order";
 import { fetchSalesCampaignList } from "@/libs/fetching/salesCampaign";
 import { fetchSalesList, updateSalesStatus } from "@/libs/fetching/sales";
 import { fetchPaymentList } from "@/libs/fetching/payment";
-import client from "@/libs/axios";
 
 // Packages
 import { toast } from "react-toastify";
 
-const SalesMain = () => {
+const SalesMain = ({ userData }) => {
+  const id_store = userData?.id_store;
+
   // State
   const [saleses, setSaleses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -152,7 +153,7 @@ const SalesMain = () => {
         setSalesCampaignList(data);
       };
       const get_sales_list = async () => {
-        const data = await fetchSalesList();
+        const data = await fetchSalesList(id_store);
         setSaleses(data);
       };
       const get_payment_list = async () => {
@@ -171,7 +172,7 @@ const SalesMain = () => {
       setIsLoading(false);
     };
     fetching_requirement();
-  }, []);
+  }, [id_store]);
 
   const handleStatus = async (salesId, currentStatus) => {
     try {

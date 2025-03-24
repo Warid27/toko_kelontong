@@ -19,9 +19,18 @@ import { FiActivity, FiBarChart2, FiUsers, FiDollarSign } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import DatePickers from "@/components/DatePicker";
-import client from "@/libs/axios";
 import SalesChart from "@/components/SalesChart";
 import { formatNumber } from "@/utils/formatNumber";
+
+import { fetchUserList } from "@/libs/fetching/user";
+import { fetchProductsList } from "@/libs/fetching/product";
+import {
+  fetchBestSelling,
+  fetchSalesTodayData,
+  fetchTransaksiHistory,
+  fetchSalesProfit,
+  fetchSalesCount,
+} from "@/libs/fetching/sales";
 
 export const Analytics = ({ userData }) => {
   const [bestSellingList, setBestSellingList] = useState([]);
@@ -38,31 +47,23 @@ export const Analytics = ({ userData }) => {
   const [salesCountData, setSalesCountData] = useState(0);
   const [salesProfitData, setSalesProfitData] = useState(0);
   const [showSidebar, setShowSidebar] = useState(true);
-  const token = localStorage.getItem("token");
   const id_store = userData?.id_store;
   const id_company = userData?.id_company;
 
   // Your existing useEffect hooks for data fetching remain unchanged
   useEffect(() => {
-    const fetchSalesTodayData = async () => {
+    const SalesTodayData = async () => {
       try {
-        const response = await client.post(
-          "/sales/totalsales",
-          {
-            id_store,
-            id_company,
-            filterRekapBy,
-            filterBy,
-            selectedDate: selectedDate
-              ? selectedDate.toISOString().split("T")[0]
-              : null,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const reqBody = {
+          id_store,
+          id_company,
+          filterRekapBy,
+          filterBy,
+          selectedDate: selectedDate
+            ? selectedDate.toISOString().split("T")[0]
+            : null,
+        };
+        const response = await fetchSalesTodayData(reqBody);
         const data = response.data;
         setSalesTodayData(data.data);
       } catch (error) {
@@ -71,22 +72,13 @@ export const Analytics = ({ userData }) => {
       }
     };
 
-    fetchSalesTodayData();
-  }, [filterRekapBy, filterBy, selectedDate, token, id_company, id_store]);
+    SalesTodayData();
+  }, [filterRekapBy, filterBy, selectedDate, id_company, id_store]);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await client.post(
-          "/product/listproduct",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
+        const data = await fetchProductsList();
 
         if (!Array.isArray(data)) {
           console.error(
@@ -103,21 +95,12 @@ export const Analytics = ({ userData }) => {
       }
     };
     fetchProduct();
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await client.post(
-          "/user/listuser",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetchUserList();
         const data = response.data;
 
         if (!Array.isArray(data)) {
@@ -132,11 +115,10 @@ export const Analytics = ({ userData }) => {
       }
     };
     fetchUser();
-  }, [token]);
+  }, []);
 
   useEffect(() => {
-    const fetchBestSelling = async () => {
-
+    const BestSelling = async () => {
       try {
         const payload = {
           filterBy: filterBy,
@@ -152,12 +134,8 @@ export const Analytics = ({ userData }) => {
           payload.sort = { total_quantity: parseInt(sortBest, 10) };
         }
 
-        const response = await client.post("/sales/best-selling", payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = response.data.data;
+        const response = await fetchBestSelling(payload);
+        const data = response.data;
         console.log(data);
         setBestSellingList(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -165,27 +143,20 @@ export const Analytics = ({ userData }) => {
         setBestSellingList([]);
       }
     };
-    fetchBestSelling();
-  }, [filterBy, sortBest, token, selectedDate, id_company, id_store]);
+    BestSelling();
+  }, [filterBy, sortBest, selectedDate, id_company, id_store]);
 
   useEffect(() => {
-    const fetchTransaksiHistory = async () => {
+    const TransaksiHistory = async () => {
       try {
-        const response = await client.post(
-          "/sales/transaksi-history",
-          {
-            id_store,
-            id_company,
-            filterBy,
-            selectedDate,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data.data;
+        const reqBody = {
+          id_store,
+          id_company,
+          filterBy,
+          selectedDate,
+        };
+        const response = await fetchTransaksiHistory(reqBody);
+        const data = response.data;
 
         if (!Array.isArray(data)) {
           console.error(
@@ -201,30 +172,22 @@ export const Analytics = ({ userData }) => {
         setTransaksiHistoryList([]);
       }
     };
-    fetchTransaksiHistory();
-  }, [filterBy, selectedDate, token, id_company, id_store]);
+    TransaksiHistory();
+  }, [filterBy, selectedDate, id_company, id_store]);
 
   useEffect(() => {
-    const fetchSalesCount = async () => {
+    const SalesCount = async () => {
       try {
-        const response = await client.post(
-          "/sales/sales-count",
-          {
-            id_store,
-            id_company,
-            filterRekapBy,
-            filterBy,
-            selectedDate: selectedDate
-              ? selectedDate.toISOString().split("T")[0]
-              : null,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data;
+        const reqBody = {
+          id_store,
+          id_company,
+          filterRekapBy,
+          filterBy,
+          selectedDate: selectedDate
+            ? selectedDate.toISOString().split("T")[0]
+            : null,
+        };
+        const data = await fetchSalesCount(reqBody);
 
         if (!data || typeof data.total_sales !== "number") {
           console.error("Unexpected data format:", data);
@@ -237,29 +200,22 @@ export const Analytics = ({ userData }) => {
         setSalesCountData(0);
       }
     };
-    fetchSalesCount();
-  }, [filterRekapBy, filterBy, selectedDate, token, id_company, id_store]);
+    SalesCount();
+  }, [filterRekapBy, filterBy, selectedDate, id_company, id_store]);
 
   useEffect(() => {
-    const fetchProfit = async () => {
+    const SalesProfit = async () => {
       try {
-        const response = await client.post(
-          "/sales/profitsales",
-          {
-            id_store,
-            id_company,
-            filterRekapBy,
-            filterBy,
-            selectedDate: selectedDate
-              ? selectedDate.toISOString().split("T")[0]
-              : null,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const reqBody = {
+          id_store,
+          id_company,
+          filterRekapBy,
+          filterBy,
+          selectedDate: selectedDate
+            ? selectedDate.toISOString().split("T")[0]
+            : null,
+        };
+        const response = await fetchSalesProfit(reqBody);
         const data = response.data;
 
         if (!data.success) {
@@ -273,8 +229,8 @@ export const Analytics = ({ userData }) => {
         setSalesProfitData(0);
       }
     };
-    fetchProfit();
-  }, [filterRekapBy, filterBy, selectedDate, token, id_company, id_store]);
+    SalesProfit();
+  }, [filterRekapBy, filterBy, selectedDate, id_company, id_store]);
 
   // Animation variants
   const containerVariants = {

@@ -19,7 +19,7 @@ import { getCompanyData } from "@/libs/fetching/company";
 import { getStoreData } from "@/libs/fetching/store";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
 const Profile = ({ userData }) => {
-  const statusUser = userData.status;
+  const statusUser = userData?.status;
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);

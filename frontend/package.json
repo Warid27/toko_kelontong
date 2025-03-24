@@ -3,6 +3,7 @@
   "version": "0.0.3",
   "private": true,
   "scripts": {
+    "clean": "rm -rf .next",
     "dev": "next dev -p 8000",
     "build": "next build",
     "start": "next start",
