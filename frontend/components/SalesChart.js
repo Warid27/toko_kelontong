@@ -19,15 +19,17 @@ const formatRupiah = (value) => {
   }).format(value);
 };
 
-const SalesChart = () => {
+const SalesChart = ({userData}) => {
   const [salesData, setSalesData] = useState([]);
+  const id_company = userData?.id_company
+  const id_store = userData?.id_store
 
   useEffect(() => {
     const fetchSalesData = async () => {
       try {
         const token = localStorage.getItem('token')
-        const id_store = localStorage.getItem("id_store")
-        const id_company = localStorage.getItem("id_company")
+        console.log("analitik", id_company)
+        console.log("analitik", id_store)
         const response = await client.post("/sales/sales-chart", {
           id_store,
           id_company,

@@ -140,7 +140,7 @@ const StoreData = ({ userData }) => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const storeData = await fetchStoreList();
+        const storeData = await fetchStoreList(id_company);
         setStores(storeData);
         if (rule === "1") {
           const companyData = await fetchCompanyList();
