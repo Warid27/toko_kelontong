@@ -12,8 +12,14 @@ import DatePickers from "@/components/DatePicker";
 import client from "@/libs/axios";
 import { Modal } from "@/components/Modal";
 import { formatNumber } from "@/utils/formatNumber";
+import {
+  fetchTransaksiHistory
+} from "@/libs/fetching/sales";
+import {
+  fetchOrderTransaksiHistory
+} from "@/libs/fetching/order";
 
-export const Report = () => {
+export const Report = ({userData}) => {
   const [salesReportList, setSalesReportList] = useState([]);
   const [orderReportList, setOrderReportList] = useState([]);
   const [filterBy, setFilterBy] = useState("daily");
@@ -22,6 +28,8 @@ export const Report = () => {
   const [orderDetailsList, setOrderDetailsList] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const id_store = userData?.id_store;
+  const id_company = userData?.id_company;
 
   const modalOpen = (param, bool) => {
     const setters = {
@@ -32,93 +40,69 @@ export const Report = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchTransaksiHistory = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const id_store = localStorage.getItem("id_store");
-        const id_company = localStorage.getItem("id_company");
-        const response = await client.post(
-          "/sales/transaksi-history",
-          {
-            id_store,
-            id_company,
-            filterBy,
-            selectedDate: selectedDate
-              ? selectedDate.toISOString().split("T")[0]
-              : null,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = response.data.data;
-
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /sales/transaksi-history:",
-            data
-          );
-          setSalesReportList([]);
-        } else {
+ useEffect(() => {
+     const TransaksiHistory = async () => {
+      setIsLoading(true)
+       try {
+         const reqBody = {
+           id_store,
+           id_company,
+           filterBy,
+           selectedDate,
+         };
+         const response = await fetchTransaksiHistory(reqBody);
+         const data = response.data;
+ 
+         if (!Array.isArray(data)) {
+           console.error(
+             "Unexpected data format from /sales/transaksi-history:",
+             data
+           );
+           setSalesReportList([]);
+         } else {
           setSalesReportList(data);
-        }
-      } catch (error) {
-        console.error("Error fetching sales:", error);
-        setSalesReportList([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchTransaksiHistory();
-  }, [filterBy, selectedDate]);
+         }
+       } catch (error) {
+         console.error("Error fetching sales:", error);
+         setSalesReportList([]);
+       } finally {
+        setIsLoading(false)
+       }
+     };
+     TransaksiHistory();
+   }, [filterBy, selectedDate, id_company, id_store]);
 
   useEffect(() => {
-    const fetchTransaksiHistory = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const id_store = localStorage.getItem("id_store");
-        const id_company = localStorage.getItem("id_company");
-        const response = await client.post(
-          "/order/transaksi-history",
-          {
+      const TransaksiHistory = async () => {
+        setIsLoading(true)
+        try {
+          const reqBody = {
             id_store,
             id_company,
             filterBy,
-            selectedDate: selectedDate
-              ? selectedDate.toISOString().split("T")[0]
-              : null,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            selectedDate,
+          };
+          const response = await fetchOrderTransaksiHistory(reqBody);
+          const data = response.data;
+  
+          if (!Array.isArray(data)) {
+            console.error(
+              "Unexpected data format from /order/transaksi-history:",
+              data
+            );
+            setOrderReportList([]);
+          } else {
+            setOrderReportList(data);
           }
-        );
-        const data = response.data.data;
-
-        if (!Array.isArray(data)) {
-          console.error(
-            "Unexpected data format from /sales/transaksi-history:",
-            data
-          );
+        } catch (error) {
+          console.error("Error fetching order:", error);
           setOrderReportList([]);
-        } else {
-          setOrderReportList(data);
+        } finally {
+          setIsLoading(false)
         }
-      } catch (error) {
-        console.error("Error fetching sales:", error);
-        setOrderReportList([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchTransaksiHistory();
-  }, [filterBy, selectedDate]);
+      };
+      TransaksiHistory();
+    }, [filterBy, selectedDate, id_company, id_store]);
 
   // Calculate total sales and orders
   const totalSales = salesReportList.reduce(

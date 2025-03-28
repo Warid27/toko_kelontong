@@ -40,6 +40,7 @@ import Swal from "sweetalert2";
 import { motion } from "framer-motion";
 
 const ProductMenu = ({ userData }) => {
+  const statusUser = userData?.status;
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBatch, setIsLoadingBatch] = useState(false);
@@ -139,6 +140,7 @@ const ProductMenu = ({ userData }) => {
             onChange={(e) =>
               handleStatusSelect(row._id, Number(e.target.value))
             }
+            disabled={statusUser === 1}
           >
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>

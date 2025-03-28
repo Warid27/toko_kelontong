@@ -156,12 +156,12 @@ export const Analytics = ({ userData }) => {
           selectedDate,
         };
         const response = await fetchTransaksiHistory(reqBody);
-        const data = response.data;
 
-        if (!Array.isArray(data)) {
+        const data = response.data
+        if (!response.success) {
           console.error(
             "Unexpected data format from /sales/transaksi-history:",
-            data
+            response
           );
           setTransaksiHistoryList([]);
         } else {
@@ -218,8 +218,11 @@ export const Analytics = ({ userData }) => {
         const response = await fetchSalesProfit(reqBody);
         const data = response.data;
 
-        if (!data.success) {
-          console.error("Unexpected data format:", data);
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /sales/profitsales:",
+            data
+          );
           setSalesProfitData(0);
         } else {
           setSalesProfitData(data.total_profit);
@@ -500,7 +503,7 @@ export const Analytics = ({ userData }) => {
                 Performance Trends
               </h3>
               <div className="bg-white rounded-xl overflow-hidden">
-                <SalesChart />
+                <SalesChart userData={userData} />
               </div>
             </motion.div>
 

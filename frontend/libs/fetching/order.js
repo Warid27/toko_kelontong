@@ -41,3 +41,19 @@ export const updateOrder = async (reqBody, orderId) => {
     throw error;
   }
 };
+
+export const fetchOrderTransaksiHistory = async (reqBody) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.post("/sales/transaksi-history", reqBody, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = response.data;
+    return data;
+  } catch (error) {
+    console.error("Error fetching saleses:", error);
+  }
+};
