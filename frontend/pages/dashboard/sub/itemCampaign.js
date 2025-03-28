@@ -9,9 +9,6 @@ import { Modal } from "@/components/Modal";
 import Header from "@/components/section/header";
 import Loading from "@/components/loading";
 import DateTimePicker from "@/components/DateTimePicker";
-import { fetchCompanyList } from "@/libs/fetching/company";
-import { fetchUserList } from "@/libs/fetching/user";
-import { fetchStoreList } from "@/libs/fetching/store";
 import {
   fetchItemCampaignList,
   addItemCampaign,

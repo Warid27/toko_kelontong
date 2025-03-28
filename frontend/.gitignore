@@ -28,7 +28,8 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
+/pages/development
+w
 # env files (can opt-in for committing if needed)
 .env*
 

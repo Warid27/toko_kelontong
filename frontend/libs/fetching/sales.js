@@ -20,6 +20,22 @@ export const fetchSalesList = async (id_store) => {
   }
 };
 
+export const fetchSalesChart = async (reqBody) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.post("/sales/sales-chart", reqBody, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = response.data;
+    return data;
+  } catch (error) {
+    console.error("Error fetching saleses:", error);
+  }
+};
+
 export const fetchBestSelling = async (reqBody) => {
   try {
     const token = localStorage.getItem("token");

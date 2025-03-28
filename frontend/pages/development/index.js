@@ -5,7 +5,6 @@ import Topbar from "@/components/Topbar";
 import Image from "next/image";
 import Card from "@/components/Card";
 import { loginServices } from "@/libs/fetching/auth";
-import { fetchStoreList } from "@/libs/fetching/store";
 import client from "@/libs/axios";
 
 const DevelopmentHome = () => {

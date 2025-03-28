@@ -153,7 +153,7 @@ const StoreData = ({ userData }) => {
       }
     };
     fetchData();
-  }, [rule]);
+  }, [rule, id_company]);
 
   useEffect(() => {
     if (storeToUpdate) {

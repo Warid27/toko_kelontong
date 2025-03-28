@@ -138,6 +138,7 @@ export default function Home() {
           message: "",
         });
       } else {
+        console.error("RESEP ERROR", response);
         toast.error(
           `Pesan Gagal Dikirim: ${response.statusText || "Unknown error"}`
         );
