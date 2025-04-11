@@ -36,7 +36,7 @@ router.post("/upload", async (c) => {
     await fs.writeFile(filePath, Buffer.from(fileBuffer));
 
     // Construct the image URL
-    const imageUrl = `https://tokokube.parisada.id/uploads/product/${fileName}`;
+    const imageUrl = `http://localhost:8080/uploads/product/${fileName}`;
 
     // Return success response
     return c.json({ success: true, image: imageUrl }, 201);
