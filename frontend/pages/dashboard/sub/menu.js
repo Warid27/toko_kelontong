@@ -1000,7 +1000,7 @@ const ProductMenu = () => {
         >
           <ImageWithFallback
             onError={"https://placehold.co/100x100"}
-            src="https://tokokube.parisada.id/api/image/39f317fa"
+              src="http://localhost:8080/api/image/39f317fa"
             width={500}
             height={200}
             alt="Format Excel"
