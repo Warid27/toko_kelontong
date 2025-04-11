@@ -16,7 +16,7 @@ const EMAIL_RECIPIENT = Bun.env.EMAIL_RECIPIENT;
 const BUN_ENV = Bun.env.BUN_ENV || "local";
 const PORT = Bun.env.PORT || 3000;
 const HOST_NAME = Bun.env.HOST_NAME;
-const BACKEND_URI = `https://tokokube.parisada.id`;
+const BACKEND_URI = `http://localhost:8080`;
 
 // MongoDB
 const MONGO_URI = Bun.env.MONGO_URI || "";
