@@ -1,8 +1,8 @@
 import React from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { HiMiniBuildingOffice } from "react-icons/hi2";
 import { FaPhoneAlt } from "react-icons/fa";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 
 const Footer = ({ logo = null, keterangan = "", address = "", phone = "" }) => {
   return (
@@ -22,11 +22,12 @@ const Footer = ({ logo = null, keterangan = "", address = "", phone = "" }) => {
           <div className="mr-4 h-full">
             <motion.div className="avatar h-full" whileHover={{ scale: 1.1 }}>
               <div className="relative flex overflow-hidden w-12 h-12 rounded-full border-2 border-[var(--bg-primary)]">
-                <Image
+                <ImageWithFallback
                   src={
                     logo ||
                     "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
                   }
+                  onError={"https://placehold.co/100x100"}
                   alt="logo"
                   width={40}
                   height={40}

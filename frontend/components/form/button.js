@@ -32,43 +32,59 @@ export const BaseButton = ({
   );
 };
 
-export const AddButton = ({ onClick, content = "+ Tambah Data" }) => (
+export const AddButton = ({
+  onClick = () => {},
+  content = "+ Tambah Data",
+  bgColor = "var(--bg-primary)",
+  gradient = `bg-gradient-to-r ${bgColor}`,
+}) => (
   <BaseButton
     onClick={onClick}
     content={content}
-    bgColor="var(--bg-primary)"
-    gradient="bg-gradient-to-r bg-[var(--bg-primary)]"
+    bgColor={bgColor}
+    gradient={gradient}
   />
 );
-
 export const SubmitButton = ({
   onClick = () => {},
   content = "Submit",
   type = "submit",
+  bgColor = "var(--bg-secondary)",
+  gradient = `bg-gradient-to-r ${bgColor}`,
 }) => (
   <BaseButton
     onClick={onClick}
     type={type}
     content={content}
-    bgColor="var(--bg-secondary)"
-    gradient="bg-gradient-to-r bg-[var(--bg-secondary)]"
+    bgColor={bgColor}
+    gradient={gradient}
   />
 );
 
-export const CloseButton = ({ onClick, content = "Cancel" }) => (
+export const CloseButton = ({
+  onClick = () => {},
+  content = "Cancel",
+  bgColor = "var(--bg-tertiary)",
+  gradient = `bg-gradient-to-r ${bgColor}`,
+}) => (
   <BaseButton
     onClick={onClick}
     content={content}
-    bgColor="var(--bg-tertiary)"
-    gradient="bg-gradient-to-r bg-[var(--bg-tertiary)]"
+    bgColor={bgColor}
+    gradient={gradient}
   />
 );
 
-export const DangerButton = ({ onClick, content = "danger" }) => (
+export const DangerButton = ({
+  onClick = () => {},
+  content = "danger",
+  bgColor = "var(--bg-danger)",
+  gradient = `bg-gradient-to-r ${bgColor}`,
+}) => (
   <BaseButton
     onClick={onClick}
     content={content}
-    bgColor="var(--bg-danger)"
-    gradient="bg-gradient-to-r bg-[var(--bg-danger)]"
+    bgColor={bgColor}
+    gradient={gradient}
   />
 );

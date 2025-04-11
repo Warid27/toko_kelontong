@@ -12,6 +12,7 @@ import Swal from "sweetalert2"; // Import sweetalert2
 import { IoClose } from "react-icons/io5";
 import { Modal } from "@/components/Modal";
 
+
 // const client = axios.create({
 //   baseURL: "http://http://20.10.16.130:31540/addsales", // Ganti dengan URL API Anda
 //   headers: {
@@ -28,8 +29,6 @@ const Cart = () => {
   useEffect(() => {
     const storedCartItems = JSON.parse(Cookies.get("cartItems") || "[]");
     setCartItems(storedCartItems);
-
-    console.log(storedCartItems);
   }, []);
 
   const handleButtonClick = (e) => {
@@ -76,8 +75,6 @@ const Cart = () => {
         Swal.fire("Order created successfully:", response.data);
       }
 
-      console.log("Product added:", response.data);
-
       // Tambahkan reload atau update state agar data muncul
       // onClose();
       window.location.reload();
@@ -85,14 +82,14 @@ const Cart = () => {
       // Cek apakah ada response dari server
       if (erroraddorder.response) {
         // Jika ada, tampilkan status dan data dari response
-        console.log(`ERROR STATUS: ${erroraddorder.response.status}`);
-        console.log(
+        toast.error(`ERROR STATUS: ${erroraddorder.response.status}`);
+        toast.error(
           `ERROR DATA: ${JSON.stringify(erroraddorder.response.data)}`
         );
       } else {
         // Jika tidak ada response, tampilkan pesan kesalahan umum
 
-        console.log(`ERRORNYA: ${erroraddorder.message}`);
+        toast.error(`ERRORNYA: ${erroraddorder.message}`);
       }
     }
   };

@@ -19,11 +19,13 @@ import { fetchOrderList } from "@/libs/fetching/order";
 import { fetchSalesCampaignList } from "@/libs/fetching/salesCampaign";
 import { fetchSalesList, updateSalesStatus } from "@/libs/fetching/sales";
 import { fetchPaymentList } from "@/libs/fetching/payment";
+import useUserStore from "@/stores/user-store";
 
 // Packages
 import { toast } from "react-toastify";
 
-const SalesMain = ({ userData }) => {
+const SalesMain = () => {
+  const { userData } = useUserStore();
   const id_store = userData?.id_store;
 
   // State
@@ -149,7 +151,7 @@ const SalesMain = ({ userData }) => {
         setOrderList(data);
       };
       const get_salesCampaign_list = async () => {
-        const data = await fetchSalesCampaignList();
+        const data = await fetchSalesCampaignList(id_store);
         setSalesCampaignList(data);
       };
       const get_sales_list = async () => {

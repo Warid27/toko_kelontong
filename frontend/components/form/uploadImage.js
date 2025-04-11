@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
 import { MdOutlineChangeCircle } from "react-icons/md";
 import { motion } from "framer-motion";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 
 const ImageUpload = ({
   image,
@@ -87,11 +87,12 @@ const ImageUpload = ({
                 transition={{ duration: 0.5 }}
                 className="absolute inset-0"
               >
-                <Image
-                  src={preview}
+                <ImageWithFallback
+                  src={preview || "https://placehold.co/100x100"}
                   alt="Uploaded Image"
                   width={192}
                   height={192}
+                  onError={"https://placehold.co/100x100"}
                   className="object-cover w-full h-full"
                 />
               </motion.div>

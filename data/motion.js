@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import ExpandableMenu from "@/components/menu/expendableMenu";
 import MenuItem from "@/components/menu/menuItem";
 import { tokenDecoded } from "@/utils/tokenDecoded";
-import ContentRenderer from "@/components/nav/renderContents";
 import { rolePermissions } from "@/utils/permission";
 import { motion } from "framer-motion";
 import {

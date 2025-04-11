@@ -14,6 +14,7 @@ import {
   addSalesCampaign,
   updateSalesCampaign,
 } from "@/libs/fetching/salesCampaign";
+import useUserStore from "@/stores/user-store";
 
 // Separate FormContent component
 const FormContent = React.memo(
@@ -125,6 +126,11 @@ const FormContent = React.memo(
 FormContent.displayName = "FormContent";
 
 const SalesCampaign = () => {
+  const { userData } = useUserStore();
+  const id_user = userData.id;
+  const id_store = userData.id_store;
+  const id_company = userData.id_company;
+
   const [salesCampaign, setSalesCampaign] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,7 +188,7 @@ const SalesCampaign = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const campaigns = await fetchSalesCampaignList();
+        const campaigns = await fetchSalesCampaignList(id_store);
         setSalesCampaign(campaigns);
       } catch (error) {
         toast.error("Failed to load data: " + error.message);
@@ -191,7 +197,7 @@ const SalesCampaign = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [id_store]);
 
   const validateForm = (data) => {
     const errors = {};
@@ -254,6 +260,9 @@ const SalesCampaign = () => {
       const reqBody = {
         ...salesCampaignDataAdd,
         value: parseFloat(salesCampaignDataAdd.value),
+        id_user: id_user,
+        id_store: id_store,
+        id_company: id_company,
       };
       const response = await addSalesCampaign(reqBody);
       if (response.status === 201) {
@@ -299,6 +308,9 @@ const SalesCampaign = () => {
       const reqBody = {
         ...salesCampaignDataUpdate,
         value: parseFloat(salesCampaignDataUpdate.value),
+        id_user: id_user,
+        id_store: id_store,
+        id_company: id_company,
       };
       const response = await updateSalesCampaign(
         salesCampaignDataUpdate.id,

@@ -6,9 +6,7 @@ import { MdOutlineChangeCircle } from "react-icons/md";
 import { RiLockPasswordLine } from "react-icons/ri";
 
 // Package
-import Image from "next/image";
-import client from "@/libs/axios";
-import Swal from "sweetalert2";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import { motion } from "framer-motion";
 import Loading from "@/components/loading";
 import { toast } from "react-toastify";
@@ -18,8 +16,13 @@ import { updateProfile } from "@/libs/fetching/user";
 import { getCompanyData } from "@/libs/fetching/company";
 import { getStoreData } from "@/libs/fetching/store";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
-const Profile = ({ userData }) => {
-  const statusUser = userData?.status;
+import { Modal } from "@/components/Modal";
+import useUserStore from "@/stores/user-store";
+import { ActivateAccount } from "@/components/form/payment/activateAccount";
+import Header from "@/components/section/header";
+
+const Profile = () => {
+  const { userData } = useUserStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -37,6 +40,7 @@ const Profile = ({ userData }) => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalActivate, setIsModalActivate] = useState(false);
 
   // Animation variants
   const containerVariants = {
@@ -85,7 +89,7 @@ const Profile = ({ userData }) => {
         // Update user data
         setUserDataUpdate({
           ...userData,
-          id: userData._id,
+          id: userData.id,
           password: "",
           status: userData.status ?? 1,
           companyName: userData.rule === 1 ? null : company?.name,
@@ -123,11 +127,15 @@ const Profile = ({ userData }) => {
           console.error(`Invalid params value: ${params}`);
           return;
       }
-
-      const response = await uploadImageCompress(file, params, pathPrefix);
+      const response = await uploadImageCompress(
+        file,
+        params,
+        pathPrefix,
+        userDataUpdate.id
+      );
 
       if (response.status == 201) {
-        const uploadedImageUrl = response.data.metadata.shortenedUrl;
+        const uploadedImageUrl = response.data.metadata.fileUrl;
         if (params === "avatar") {
           setUserDataUpdate((prevState) => ({
             ...prevState,
@@ -151,93 +159,45 @@ const Profile = ({ userData }) => {
       userDataUpdate.password === "" ||
       repeatPassword === ""
     ) {
-      Swal.fire({
-        title: "Error",
-        text: "Please fill in all required fields!",
-        icon: "error",
-        background: "#fff1f2",
-        iconColor: "#ef4444",
-        confirmButtonColor: "#ef4444",
-      });
+      toast.error("Please fill in all required fields!");
       return;
     }
 
     if (userDataUpdate.password !== repeatPassword) {
-      Swal.fire({
-        title: "Error",
-        text: "Password and repeated password do not match!",
-        icon: "error",
-        background: "#fff1f2",
-        iconColor: "#ef4444",
-        confirmButtonColor: "#ef4444",
-      });
+      toast.error("Password and repeated password do not match!");
       return;
     }
 
+    const reqBody = {
+      username: userDataUpdate.username,
+      password: currentPassword,
+    };
     try {
-      const response = await client.post("/login/checkpass", {
-        username: userDataUpdate.username,
-        password: currentPassword,
-      });
+      const response = await checkPass(reqBody);
 
       if (response.status === 200) {
         await handleSubmitUpdate(e);
-        Swal.fire({
-          title: "Password Updated!",
-          text: "Your password has been changed successfully",
-          icon: "success",
-          background: "#f0f9ff",
-          iconColor: "#3b82f6",
-          confirmButtonColor: "#3b82f6",
-        });
+        toast.success("Your password has been changed successfully");
       } else {
-        Swal.fire({
-          title: "Error",
-          text: "Current password is incorrect!",
-          icon: "error",
-          background: "#fff1f2",
-          iconColor: "#ef4444",
-          confirmButtonColor: "#ef4444",
-        });
+        toast.error("Current password is incorrect!");
       }
     } catch (error) {
       console.error("Error updating password:", error);
-      Swal.fire({
-        title: "Error",
-        text: "Password cannot be updated!",
-        icon: "error",
-        background: "#fff1f2",
-        iconColor: "#ef4444",
-        confirmButtonColor: "#ef4444",
-      });
+      toast.error("Server Error: Password cannot be updated!");
     }
   };
 
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
     if (!userDataUpdate.username) {
-      Swal.fire({
-        title: "Error",
-        text: "Please fill in all required fields!",
-        icon: "error",
-        background: "#fff1f2",
-        iconColor: "#ef4444",
-        confirmButtonColor: "#ef4444",
-      });
+      toast.error("Please fill in all required fields!");
       return;
     }
 
     try {
       const response = await updateProfile(userDataUpdate, userDataUpdate.id);
 
-      Swal.fire({
-        title: "Success!",
-        text: "Profile updated successfully!",
-        icon: "success",
-        background: "#f0f9ff",
-        iconColor: "#3b82f6",
-        confirmButtonColor: "#3b82f6",
-      });
+      toast.success("Profile updated successfully!");
 
       setCurrentPassword("");
       setRepeatPassword("");
@@ -246,20 +206,14 @@ const Profile = ({ userData }) => {
       setIsEditMode(false);
     } catch (error) {
       console.error("Error updating user:", error);
-      Swal.fire({
-        title: "Error",
-        text: "Profile could not be updated!",
-        icon: "error",
-        background: "#fff1f2",
-        iconColor: "#ef4444",
-        confirmButtonColor: "#ef4444",
-      });
+      toast.error("Profile could not be updated!");
     }
   };
 
   const modalOpen = (param, bool) => {
     const setters = {
       change: setIsModalOpen,
+      activate: setIsModalActivate,
     };
     if (setters[param]) {
       setters[param](bool);
@@ -277,7 +231,7 @@ const Profile = ({ userData }) => {
 
   // Determine the role name based on the user's rule
   const userRule = userDataUpdate.rule;
-  const nameRule = ruleMapping[userRule] || "Guest";
+  const userStatus = userDataUpdate.status;
 
   // Map user roles to their corresponding names
   const statusMapping = {
@@ -287,7 +241,7 @@ const Profile = ({ userData }) => {
   };
 
   // Determine the role name based on the user's status
-  const userStatus = userDataUpdate.status;
+  const nameRule = ruleMapping[userRule] || "Guest";
   const nameStatus = statusMapping[userStatus] || "-";
 
   // Role color mapping
@@ -323,36 +277,16 @@ const Profile = ({ userData }) => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Header */}
-      <motion.div
-        className="bg-gradient-to-r bg-white shadow-lg p-6 text-black"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
-        <div className="flex flex-row justify-between max-w-6xl mx-auto">
-          <motion.div
-            className="flex flex-col"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.p
-              className="text-3xl font-extrabold"
-              variants={itemVariants}
-            >
-              Profile Dashboard
-            </motion.p>
-            <motion.p variants={itemVariants} className="text-gray-600">
-              Manage your personal information
-            </motion.p>
-          </motion.div>
-        </div>
-      </motion.div>
+      <Header
+        title="Profile Dashboard"
+        subtitle="Manage your personal information"
+        isSearch={false}
+        isAdd={false}
+      />
 
       {/* Main Content */}
       <motion.div
-        className="max-w-6xl mx-auto p-6"
+        className="mx-auto p-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -405,7 +339,8 @@ const Profile = ({ userData }) => {
                         className="w-full h-full flex overflow-hidden"
                       >
                         {userDataUpdate.avatar ? (
-                          <Image
+                          <ImageWithFallback
+                            onError={"https://placehold.co/100x100"}
                             src={userDataUpdate.avatar}
                             alt="Profile"
                             className="uploaded-image object-cover"
@@ -413,8 +348,8 @@ const Profile = ({ userData }) => {
                             height={96}
                           />
                         ) : (
-                          // YUD ERROR
-                          <Image
+                          <ImageWithFallback
+                            onError={"https://placehold.co/100x100"}
                             src="/User-avatar.png"
                             alt="avatar"
                             width={96}
@@ -454,31 +389,46 @@ const Profile = ({ userData }) => {
                   </motion.div>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <motion.button
-                  onClick={() => modalOpen("change", true)}
-                  className="flex items-center justify-center space-x-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white py-2 px-4 rounded-lg shadow-md"
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  disabled={isEditMode}
-                >
-                  <RiLockPasswordLine className="text-lg" />
-                  <span>Change Password</span>
-                </motion.button>
-                <motion.button
-                  onClick={() => setIsEditMode(true)}
-                  className={`flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-2 px-4 rounded-lg shadow-md ${
-                    isEditMode ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  variants={buttonVariants}
-                  whileHover={!isEditMode ? "hover" : "idle"}
-                  whileTap={!isEditMode ? "tap" : "idle"}
-                  disabled={isEditMode}
-                >
-                  <FaUserEdit className="text-lg" />
-                  <span>Edit Profile</span>
-                </motion.button>
+              <div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <motion.button
+                    onClick={() => modalOpen("change", true)}
+                    className="flex items-center justify-center space-x-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white py-2 px-4 rounded-lg shadow-md"
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    disabled={isEditMode}
+                  >
+                    <RiLockPasswordLine className="text-lg" />
+                    <span>Change Password</span>
+                  </motion.button>
+                  <motion.button
+                    onClick={() => setIsEditMode(true)}
+                    className={`flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-2 px-4 rounded-lg shadow-md ${
+                      isEditMode ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    variants={buttonVariants}
+                    whileHover={!isEditMode ? "hover" : "idle"}
+                    whileTap={!isEditMode ? "tap" : "idle"}
+                    disabled={isEditMode}
+                  >
+                    <FaUserEdit className="text-lg" />
+                    <span>Edit Profile</span>
+                  </motion.button>
+                </div>
+                {userStatus == 1 && userRule == 2 && (
+                  <motion.button
+                    onClick={() => modalOpen("activate", true)}
+                    className="mt-3 w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-2 px-4 rounded-lg shadow-md"
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    disabled={isEditMode}
+                  >
+                    <RiLockPasswordLine className="text-lg" />
+                    <span>Activate Account</span>
+                  </motion.button>
+                )}
               </div>
             </div>
           </div>
@@ -634,130 +584,99 @@ const Profile = ({ userData }) => {
         </motion.div>
       </motion.div>
 
-      {/* Password Change Modal */}
-      {isModalOpen && (
-        <motion.div
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
-            initial={{ scale: 0.9, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            transition={{ type: "spring", damping: 15 }}
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Change Password
-              </h2>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => modalOpen("change", false)}
+        title="Change Password"
+        width="medium"
+      >
+        <div className="space-y-4">
+          <motion.div className="relative" variants={itemVariants}>
+            <label className="block text-gray-700 text-sm font-semibold mb-2">
+              Current Password
+            </label>
+            <div className="relative">
+              <input
+                className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="Enter your current password"
+                type={showPassword ? "text" : "password"}
+                name="currentPassword"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
               <button
-                onClick={() => modalOpen("change", false)}
-                className="text-gray-500 hover:text-gray-700"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
               </button>
             </div>
-
-            <motion.div
-              className="space-y-4"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <motion.div className="relative" variants={itemVariants}>
-                <label className="block text-gray-700 text-sm font-semibold mb-2">
-                  Current Password
-                </label>
-                <div className="relative">
-                  <input
-                    className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="Enter your current password"
-                    type={showPassword ? "text" : "password"}
-                    name="currentPassword"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
-                  >
-                    {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
-                  </button>
-                </div>
-              </motion.div>
-
-              <motion.div className="relative" variants={itemVariants}>
-                <label className="block text-gray-700 text-sm font-semibold mb-2">
-                  New Password
-                </label>
-                <input
-                  className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter new password"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={userDataUpdate.password}
-                  onChange={handleChangeUpdate}
-                />
-              </motion.div>
-
-              <motion.div className="relative" variants={itemVariants}>
-                <label className="block text-gray-700 text-sm font-semibold mb-2">
-                  Confirm New Password
-                </label>
-                <input
-                  className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Confirm new password"
-                  type={showPassword ? "text" : "password"}
-                  name="repeatPassword"
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                />
-              </motion.div>
-
-              <motion.div className="mt-8" variants={itemVariants}>
-                <motion.button
-                  type="button"
-                  onClick={(e) => handleChangePassword(e)}
-                  className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200"
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                >
-                  Update Password
-                </motion.button>
-              </motion.div>
-            </motion.div>
-
-            <motion.div
-              className="mt-4 text-sm text-gray-500"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <p>
-                Password must be at least 8 characters and include uppercase,
-                lowercase, numbers, and special characters.
-              </p>
-            </motion.div>
           </motion.div>
+
+          <motion.div className="relative" variants={itemVariants}>
+            <label className="block text-gray-700 text-sm font-semibold mb-2">
+              New Password
+            </label>
+            <input
+              className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              placeholder="Enter new password"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={userDataUpdate.password}
+              onChange={handleChangeUpdate}
+            />
+          </motion.div>
+
+          <motion.div className="relative" variants={itemVariants}>
+            <label className="block text-gray-700 text-sm font-semibold mb-2">
+              Confirm New Password
+            </label>
+            <input
+              className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 border-gray-300 bg-white text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              placeholder="Confirm new password"
+              type={showPassword ? "text" : "password"}
+              name="repeatPassword"
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
+            />
+          </motion.div>
+
+          <motion.div className="mt-8" variants={itemVariants}>
+            <motion.button
+              type="button"
+              onClick={(e) => handleChangePassword(e)}
+              className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200"
+              variants={buttonVariants}
+              whileHover="hover"
+              whileTap="tap"
+            >
+              Update Password
+            </motion.button>
+          </motion.div>
+        </div>
+
+        <motion.div
+          className="mt-4 text-sm text-gray-500"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <p>
+            Password must be at least 8 characters and include uppercase,
+            lowercase, numbers, and special characters.
+          </p>
         </motion.div>
-      )}
+      </Modal>
+
+      <Modal
+        isOpen={isModalActivate}
+        onClose={() => modalOpen("activate", false)}
+        title="Activate Account"
+        width="large"
+      >
+        <ActivateAccount onSubmit={() => modalOpen("activate", false)} />
+      </Modal>
     </motion.div>
   );
 };

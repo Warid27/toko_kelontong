@@ -29,7 +29,7 @@ const app = new Hono();
 // Middleware CORS
 app.use(
   cors({
-    origin: "http://localhost:8000",
+    origin: `http://${HOST_NAME}:${PORT}`,
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,

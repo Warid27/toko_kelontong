@@ -3,44 +3,6 @@ import { TypeModels } from "@models/type-models";
 import { authenticate, OPERATIONS } from "@middleware/authMiddleware";
 
 const router = new Hono();
-// const subscribers = new Set(); // Store active SSE connections
-
-// // SSE Stream to Broadcast Type Updates
-// router.get("/listtype/stream", async (c) => {
-//   console.log("Listtype SSE Active"); // ✅ Confirm route is hit
-
-//   const stream = new ReadableStream({
-//     start(controller) {
-//       const sendData = (data) => {
-//         console.log("Sending data to SSE:", data); // ✅ Check data before sending
-//         controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
-//       };
-
-//       subscribers.add(sendData);
-
-//       c.req.raw.signal.addEventListener("abort", () => {
-//         console.log("Client disconnected from SSE");
-//         subscribers.delete(sendData);
-//       });
-//     },
-//   });
-
-//   return new Response(stream, {
-//     headers: {
-//       "Content-Type": "text/event-stream",
-//       "Cache-Control": "no-cache",
-//       Connection: "keep-alive",
-//       "Access-Control-Allow-Origin": "*",
-//       "Access-Control-Allow-Methods": "GET",
-//     },
-//   });
-// });
-
-// // Function to send updates to all subscribers
-// const sendSSEUpdate = (data) => {
-//   console.log("Broadcasting update:", data);
-//   subscribers.forEach((sendData) => sendData(data));
-// };
 
 // Add Type and Broadcast Update
 router.post(

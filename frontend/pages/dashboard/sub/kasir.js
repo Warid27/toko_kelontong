@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import moment from "moment";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 
@@ -28,9 +28,9 @@ import { addSales } from "@/libs/fetching/sales";
 import { updateStock } from "@/libs/fetching/stock";
 import { fetchSalesCampaignList } from "@/libs/fetching/salesCampaign";
 import { fetchOrderList, updateOrder } from "@/libs/fetching/order";
-import { tokenDecoded } from "@/utils/tokenDecoded";
+import useUserStore from "@/stores/user-store";
 
-const Kasir = ({ userData }) => {
+const Kasir = () => {
   const [products, setProducts] = useState([]);
   const [tableList, setTableList] = useState([]);
   const [orderList, setOrderList] = useState([]);
@@ -61,6 +61,8 @@ const Kasir = ({ userData }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const tax = 0.12;
+  const { userData } = useUserStore();
+  const id_user = userData?.id;
   const id_store = userData?.id_store;
   const id_company = userData?.id_company;
   // Initial data fetch
@@ -78,8 +80,8 @@ const Kasir = ({ userData }) => {
           fetchProductsList(id_store, id_company, null, "order"),
           fetchPaymentList(),
           fetchTableList(),
-          fetchItemCampaignList(),
-          fetchSalesCampaignList(),
+          fetchItemCampaignList(id_store, id_company),
+          fetchSalesCampaignList(id_store, id_company),
           fetchOrderList(),
         ]);
 
@@ -303,10 +305,9 @@ const Kasir = ({ userData }) => {
       );
       const salesCode = `INV/${moment().format("DD-MM-YY HH:mm:ss")}`;
 
-      const userData = tokenDecoded();
       const salesData = {
         no: salesCode,
-        id_user: userData.id,
+        id_user: id_user,
         id_order: kasirItems[0]?.informasi?.id_order || null,
         id_sales_campaign: idSalesDiscount,
         id_payment_type: selectedMethod._id,
@@ -508,7 +509,8 @@ const Kasir = ({ userData }) => {
                   key={index}
                   className="flex items-center border p-4 rounded-lg bg-white shadow-md"
                 >
-                  <Image
+                  <ImageWithFallback
+                    onError={"https://placehold.co/100x100"}
                     src={item.product.image || "https://placehold.co/100x100"}
                     alt={item.product.name}
                     width={64}
@@ -738,7 +740,8 @@ const Kasir = ({ userData }) => {
           width="large"
         >
           <div>
-            <Image
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
               src={selectedProduct?.image || "https://placehold.co/100x100"}
               alt={selectedProduct?.name_product}
               width={500}

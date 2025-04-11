@@ -944,7 +944,7 @@ const ProductMenu = () => {
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <Image
-            src="http://localhost:8080/api/image/39f317fa"
+            src="https://tokokube.parisada.id/api/image/39f317fa"
             width={500}
             height={200}
             alt="Format Excel"

@@ -28,7 +28,7 @@ const OrderCust = ({ setSelectedLink, userData }) => {
     const fetchData = async () => {
       try {
         const getItemCampaignList = async () => {
-          const data = await fetchItemCampaignList();
+          const data = await fetchItemCampaignList(id_store);
           setItemCampaignList(data);
         };
         const getProductList = async () => {

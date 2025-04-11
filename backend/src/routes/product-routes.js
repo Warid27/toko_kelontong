@@ -242,10 +242,10 @@ async function processFilteredImages(images, requiredImages) {
 
     // Store URLs with both matching name and base name
     const matchingImageName = matchingRequiredImage.toLowerCase();
-    imageURLs[matchingImageName] = shortenedUrl;
+    imageURLs[matchingImageName] = publicUrl;
 
     if (baseImageName !== matchingImageName) {
-      imageURLs[baseImageName] = shortenedUrl;
+      imageURLs[baseImageName] = publicUrl;
     }
   }
 

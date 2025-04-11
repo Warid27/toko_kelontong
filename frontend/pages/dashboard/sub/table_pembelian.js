@@ -12,8 +12,9 @@ import { FaInfoCircle } from "react-icons/fa";
 // API Functions
 import { fetchPembelianList } from "@/libs/fetching/pembelian";
 import { fetchTableList } from "@/libs/fetching/table";
+import useUserStore from "@/stores/user-store";
 
-const PembelianList = ({ userData }) => {
+const PembelianList = () => {
   const [listPembelian, setListPembelian] = useState([]);
   const [tableList, setTableList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,6 +22,7 @@ const PembelianList = ({ userData }) => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [pembelianToUpdate, setPembelianToUpdate] = useState(null);
 
+  const { userData } = useUserStore();
   const id_store = userData?.id_store;
 
   // Fetch initial data

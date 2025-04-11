@@ -2,19 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import { loginServices } from "@/libs/fetching/auth";
-import { tokenDecoded } from "@/utils/tokenDecoded";
 import { toast } from "react-toastify";
 import Loading from "@/components/loading";
 import { InputText, InputPassword } from "@/components/form/input";
+import useUserStore from "@/stores/user-store";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeBubble, setActiveBubble] = useState(null);
   const router = useRouter();
+  const { userData } = useUserStore();
 
   // Create floating bubbles effect
   const bubbles = Array(8).fill(0);
@@ -40,6 +40,7 @@ const Login = () => {
     e.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
+
     try {
       const token = await loginServices({ username, password });
 
@@ -47,22 +48,21 @@ const Login = () => {
         throw new Error("No token received!");
       }
 
-      setTimeout(() => {
-        const userData = tokenDecoded();
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-        if (userData?.rule !== 5) {
-          router.push("/dashboard");
-        } else {
-          router.push("/");
-        }
-      }, 100);
+      if (userData?.rule !== 5) {
+        await router.push("/dashboard");
+      } else {
+        await router.push("/");
+      }
+
+      setIsLoading(false);
     } catch (error) {
       console.error(error);
       toast.error("Login Failed: Invalid username or password", {
         position: "top-right",
         autoClose: 5000,
       });
-    } finally {
       setIsLoading(false);
     }
   };

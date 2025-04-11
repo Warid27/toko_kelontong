@@ -71,3 +71,18 @@ export const addExtras = async (reqBody) => {
     console.error("Error add store:", error);
   }
 };
+
+export const deleteExtras = async (id_extras) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.delete(`/api/extras/${id_extras}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error update extras:", error);
+  }
+};

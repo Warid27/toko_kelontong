@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 
 const PaymentOption = ({ payment, selectedMethod, setSelectedMethod }) => {
   return (
@@ -32,12 +32,13 @@ const PaymentOption = ({ payment, selectedMethod, setSelectedMethod }) => {
 
       {/* Payment Name & Image */}
       <div className="flex items-center justify-center gap-5">
-        <Image
+        <ImageWithFallback
           width={100}
           height={100}
           src={payment.image}
           alt={`${payment.payment_name} logo`}
           className="object-contain w-8 h-8"
+          onError={"https://placehold.co/100x100"}
         />
         <span>{payment.payment_name}</span>
       </div>

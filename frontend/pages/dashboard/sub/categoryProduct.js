@@ -22,8 +22,10 @@ import {
 // Packages
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import useUserStore from "@/stores/user-store";
 
-const CategoryProduct = ({ userData }) => {
+const CategoryProduct = () => {
+  const { userData } = useUserStore();
   const id_store = userData?.id_store;
   const [isLoading, setIsLoading] = useState(true);
   const [loading, setLoading] = useState(false);

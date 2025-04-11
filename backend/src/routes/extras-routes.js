@@ -18,7 +18,6 @@ router.post(
     try {
       const body = await c.req.json().catch(() => ({}));
       const { id_store } = body;
-      console.log("BOD BOD", body);
       if (id_store) {
         if (typeof id_store !== "string") {
           return c.json({ error: "id_store must be a string" }, 400);

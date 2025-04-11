@@ -24,12 +24,16 @@ import Loading from "@/components/loading";
 import { fetchPaymentList, fetchPaymentAdd } from "@/libs/fetching/payment";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import { updatePayment, deletePayment } from "@/libs/fetching/payment";
+import useUserStore from "@/stores/user-store";
 
 // Packages
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
 const Payment = () => {
+  const { userData } = useUserStore();
+  const id_user = userData?.id_user;
+
   const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -193,14 +197,12 @@ const Payment = () => {
       if (response.status === 200) {
         modalOpen("update", false);
         toast.success("Pembayaran berhasil diupdate!");
-        console.log("response paymentt", response)
         setPayments((prevPayments) =>
           prevPayments.map((payment) =>
             payment._id === paymentDataUpdate.id ? response.data.data : payment
           )
         );
       } else {
-        console.log("response paymentt", response)
         toast.error("Gagal:", response.error);
       }
     } catch (error) {
@@ -217,9 +219,10 @@ const Payment = () => {
       const response = await uploadImageCompress(
         file,
         "payment",
-        "payment/images"
+        "payment/images",
+        id_user
       );
-      const uploadedImageUrl = response.data.metadata.shortenedUrl;
+      const uploadedImageUrl = response.data.metadata.fileUrl;
       if (response.status === 201) {
         setPaymentDataUpdate((prevState) => {
           const updatedPaymentName = [...prevState.paymentName];

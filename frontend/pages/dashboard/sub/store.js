@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import {
   FaRegEdit,
   FaInfoCircle,
@@ -15,7 +15,12 @@ import Swal from "sweetalert2";
 import Select from "react-select";
 
 // Components
-import { SubmitButton, CloseButton } from "@/components/form/button";
+import {
+  SubmitButton,
+  CloseButton,
+  AddButton,
+  DangerButton,
+} from "@/components/form/button";
 import { AddMenu } from "@/components/form/menu";
 import Table from "@/components/form/table";
 import ImageUpload from "@/components/form/uploadImage";
@@ -35,8 +40,10 @@ import {
 } from "@/libs/fetching/store";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import { downloadQR } from "@/utils/downloadQR";
+import useUserStore from "@/stores/user-store";
 
-const StoreData = ({ userData }) => {
+const StoreData = () => {
+  const { userData } = useUserStore();
   const statusUser = userData?.status;
   const qrRef = useRef();
   const [stores, setStores] = useState([]);
@@ -50,6 +57,7 @@ const StoreData = ({ userData }) => {
   const [openMenu, setOpenMenu] = useState("Info");
 
   const rule = userData?.rule;
+  const id_user = userData?.id;
   const id_store = userData?.id_store;
   const id_company = userData?.id_company;
 
@@ -96,24 +104,40 @@ const StoreData = ({ userData }) => {
     {
       key: "status",
       label: "Status",
-      render: (value, row) => (
-        <div className="relative">
-          <select
-            className="bg-white border border-green-300 p-2 rounded-lg shadow-xl focus:ring focus:ring-green-300 w-full cursor-pointer"
-            value={value}
-            onChange={(e) =>
-              handleStatusSelect(row._id, Number(e.target.value))
-            }
-            disabled={statusUser === 1}
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      ),
+      render: (value, row) => {
+        const selectedOption = statusOptions.find(
+          (option) => option.value === value
+        );
+
+        if (statusUser == 1) {
+          return (
+            <div className="relative">
+              {selectedOption ? selectedOption.label : "Unknown Status"}
+            </div>
+          );
+        } else if (statusUser == 0) {
+          return (
+            <div className="relative">
+              <select
+                className="bg-white border border-green-300 p-2 rounded-lg shadow-xl focus:ring focus:ring-green-300 w-full cursor-pointer"
+                value={value}
+                onChange={(e) =>
+                  handleStatusSelect(row._id, Number(e.target.value))
+                }
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          );
+        }
+
+        // Fallback in case statusUser has an unexpected value
+        return null;
+      },
     },
   ];
 
@@ -329,8 +353,13 @@ const StoreData = ({ userData }) => {
           return;
       }
 
-      const response = await uploadImageCompress(file, params, pathPrefix);
-      const uploadedImageUrl = response.data.metadata.shortenedUrl;
+      const response = await uploadImageCompress(
+        file,
+        params,
+        pathPrefix,
+        id_user
+      );
+      const uploadedImageUrl = response.data.metadata.fileUrl;
 
       if (response.status === 201) {
         if (params === "add" || params === "update") {
@@ -478,7 +507,7 @@ const StoreData = ({ userData }) => {
             content={<FaRegEdit />}
             isActive={openMenu === "Info"}
           />
-          {statusUser !== 1 && (
+          {statusUser != 1 && (
             <AddMenu
               onClick={() => setOpenMenu("QR Code")}
               content={<FaQrcode />}
@@ -700,21 +729,31 @@ const StoreData = ({ userData }) => {
                       </div>
                     </div>
                     <div className="flex gap-1 justify-between mt-2">
-                      <button className="text-white font-medium px-2 py-1 text-xs rounded-md bg-[var(--primary)]">
-                        Tambah
-                      </button>
-                      <button className="text-white font-medium px-2 py-1 text-xs rounded-md bg-[var(--secondary)]">
-                        Edit
-                      </button>
-                      <button className="text-white font-medium px-2 py-1 text-xs rounded-md bg-[var(--tertiary)]">
-                        Batal
-                      </button>
-                      <button className="text-white font-medium px-2 py-1 text-xs rounded-md bg-[var(--danger)]">
-                        Hapus
-                      </button>
+                      <AddButton
+                        content="Tambah"
+                        bgColor="var(--primary)"
+                        gradient="bg-gradient-to-r var(--primary)"
+                      />
+                      <SubmitButton
+                        type="button"
+                        content="Edit"
+                        bgColor="var(--secondary)"
+                        gradient="bg-gradient-to-r var(--secondary)]"
+                      />
+                      <CloseButton
+                        content="Close"
+                        bgColor="var(--tertiary)"
+                        gradient="bg-gradient-to-r var(--tertiary)"
+                      />
+                      <DangerButton
+                        content="Hapus"
+                        bgColor="var(--danger)"
+                        gradient="bg-gradient-to-r var(--danger)"
+                      />
                     </div>
                     {storeDataUpdate.decorationDetails.motive && (
-                      <Image
+                      <ImageWithFallback
+                        onError={"https://placehold.co/100x100"}
                         src={storeDataUpdate.decorationDetails.motive}
                         width={50}
                         height={50}
@@ -723,7 +762,8 @@ const StoreData = ({ userData }) => {
                       />
                     )}
                     {storeDataUpdate.decorationDetails.footer_motive && (
-                      <Image
+                      <ImageWithFallback
+                        onError={"https://placehold.co/100x100"}
                         src={storeDataUpdate.decorationDetails.footer_motive}
                         width={400}
                         height={100}

@@ -12,7 +12,7 @@ export const fetchSalesList = async (id_store) => {
         },
       }
     );
-
+    console.log("RESEPS", response)
     const data = response.data;
     return data;
   } catch (error) {

@@ -30,13 +30,17 @@ export const useRolePermissions = () => {
       const rules = await fetchRuleList();
       const rolePerms = {};
 
-      rules.forEach(({ rule, table_name, can_read }) => {
+      rules.forEach(({ rule, table_name, can_read, can_create }) => {
         if (!rolePerms[rule]) rolePerms[rule] = new Set([pageAccess.all]);
 
-        const superadminTables = ["rule_access", "company"];
+        const superadminTables = ["rule_access", "company", "users", "store"];
 
-        // Skip adding for restricted tables if role is not 1 (Superadmin)
-        if (superadminTables.includes(table_name) && rule != 1) {
+        // Skip adding for restricted tables if role is not 1 (Superadmin) or role not superadmin but doesnt have can_create
+        if (
+          superadminTables.includes(table_name) &&
+          rule != 1 && // Ensure Superadmins are not affected
+          !can_create
+        ) {
           return;
         }
 

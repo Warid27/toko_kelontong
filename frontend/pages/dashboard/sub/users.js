@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FaRegEye, FaRegEyeSlash, FaInfoCircle } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import Table from "@/components/form/table";
 import { Modal } from "@/components/Modal";
 import Select from "react-select";
@@ -10,7 +10,6 @@ import Swal from "sweetalert2";
 import Header from "@/components/section/header";
 import { SubmitButton, CloseButton } from "@/components/form/button";
 import ImageUpload from "@/components/form/uploadImage"; // Assuming this exists
-import client from "@/libs/axios";
 import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchStoreList } from "@/libs/fetching/store";
 import {
@@ -21,8 +20,11 @@ import {
 } from "@/libs/fetching/user";
 import { uploadImageCompress } from "@/libs/fetching/upload-service"; // Assuming this exists
 import Loading from "@/components/loading";
+import useUserStore from "@/stores/user-store";
 
-const User = ({ userData }) => {
+const User = () => {
+  const { userData } = useUserStore();
+  const id_user = userData?.id;
   const statusUser = userData?.status;
   const ruleUser = userData?.rule;
   const usernameUser = userData?.username;
@@ -122,7 +124,7 @@ const User = ({ userData }) => {
   const handleStatusSelect = async (userId, selectedStatus) => {
     try {
       setLoading(true);
-      reqBody = { status: selectedStatus };
+      const reqBody = { status: selectedStatus };
       const response = await updateUserData(reqBody, userId);
 
       if (response.status === 200) {
@@ -159,7 +161,8 @@ const User = ({ userData }) => {
       key: "avatar",
       render: (value) => (
         <div className="flex justify-center items-center overflow-hidden w-12 h-12 rounded-full mx-auto">
-          <Image
+          <ImageWithFallback
+            onError={"https://placehold.co/100x100"}
             src={value || "/default-avatar.png"} // Fallback image
             alt="Avatar"
             width={192}
@@ -338,8 +341,13 @@ const User = ({ userData }) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const response = await uploadImageCompress(file, "user", "user/avatar");
-      const uploadedImageUrl = response.data.metadata.shortenedUrl;
+      const response = await uploadImageCompress(
+        file,
+        "user",
+        "user/avatar",
+        id_user
+      );
+      const uploadedImageUrl = response.data.metadata.fileUrl;
       setUserDataAdd((prevState) => ({
         ...prevState,
         avatar: uploadedImageUrl,
@@ -666,9 +674,10 @@ const User = ({ userData }) => {
                   const response = await uploadImageCompress(
                     file,
                     "user",
-                    "user/avatar"
+                    "user/avatar",
+                    id_user
                   );
-                  const url = response.data.metadata.shortenedUrl;
+                  const url = response.data.metadata.fileUrl;
                   setUserDataUpdate((prev) => ({ ...prev, avatar: url }));
                 }
               }}

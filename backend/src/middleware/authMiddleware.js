@@ -52,15 +52,11 @@ export const authenticate = async (
       return;
     }
 
-    console.log("USER ROLE", userRole);
-
     // Find the access rule for this user role and table
     const accessRule = await RuleAccessModels.findOne({
       rule: userRole,
       table_name: tableName,
     });
-
-    console.log("ACESS RULE", accessRule);
 
     // If no access rule found or the specific operation is not allowed
     if (!accessRule || accessRule[operation] !== 1) {

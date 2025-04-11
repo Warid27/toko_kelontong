@@ -1,6 +1,4 @@
 import React, { useEffect, useState, useCallback } from "react";
-import dynamic from "next/dynamic";
-import { IoSearchOutline } from "react-icons/io5";
 import { MdDelete } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import { SubmitButton, CloseButton } from "@/components/form/button";
@@ -17,6 +15,7 @@ import {
 } from "@/libs/fetching/itemCampaign";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import useUserStore from "@/stores/user-store";
 
 // Separate FormContent component
 const FormContent = React.memo(
@@ -130,6 +129,11 @@ const FormContent = React.memo(
 FormContent.displayName = "FormContent";
 
 const ItemCampaign = () => {
+  const { userData } = useUserStore();
+  const id_store = userData.id_store;
+  const id_user = userData.id;
+  const id_company = userData.id_company;
+
   const [itemCampaign, setItemCampaign] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -265,7 +269,11 @@ const ItemCampaign = () => {
       const reqBody = {
         ...itemCampaignDataAdd,
         value: parseFloat(itemCampaignDataAdd.value) / 100,
+        id_store: id_store,
+        id_user: id_user,
+        id_company: id_company,
       };
+
       const response = await addItemCampaign(reqBody);
       if (response.status === 201) {
         setItemCampaign((prev) => [...prev, response.data]);
@@ -310,6 +318,9 @@ const ItemCampaign = () => {
       const reqBody = {
         ...itemCampaignDataUpdate,
         value: parseFloat(itemCampaignDataUpdate.value) / 100,
+        id_user: id_user,
+        id_store: id_store,
+        id_company: id_company,
       };
       const response = await updateItemCampaign(
         itemCampaignDataUpdate.id,

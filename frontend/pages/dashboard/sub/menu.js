@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 
 // Icons
 import { MdDelete } from "react-icons/md";
@@ -19,7 +19,8 @@ import Loading from "@/components/loading";
 import BarcodeGenerator from "@/components/BarcodeGenerator";
 
 // Libraries
-import { fetchExtrasList } from "@/libs/fetching/extras";
+import { fetchExtrasList, deleteExtras } from "@/libs/fetching/extras";
+import { fetchSizeList, deleteSize } from "@/libs/fetching/size";
 import { fetchCategoryList } from "@/libs/fetching/category";
 import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
 import {
@@ -30,7 +31,7 @@ import {
   deleteProduct,
   AddProductByExcel,
 } from "@/libs/fetching/product";
-import { fetchSizeList } from "@/libs/fetching/size";
+import { deleteStock} from "@/libs/fetching/stock";
 import { uploadImageCompress } from "@/libs/fetching/upload-service";
 
 // Packages
@@ -38,9 +39,12 @@ import { toast } from "react-toastify";
 import Select from "react-select";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
+import useUserStore from "@/stores/user-store";
 
-const ProductMenu = ({ userData }) => {
+const ProductMenu = () => {
+  const { userData } = useUserStore();
   const statusUser = userData?.status;
+  const id_user = userData?.id;
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBatch, setIsLoadingBatch] = useState(false);
@@ -115,7 +119,8 @@ const ProductMenu = ({ userData }) => {
       render: (value) => (
         <div className="avatar">
           <div className="mask mask-squircle h-12 w-12">
-            <Image
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
               src={
                 value ||
                 "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
@@ -156,7 +161,7 @@ const ProductMenu = ({ userData }) => {
   const actions = [
     {
       icon: <MdDelete size={20} />,
-      onClick: (row) => deleteProductById(row._id),
+      onClick: (row) => deleteProductById(row._id, row.id_extras, row.id_size),
       className: "bg-red-500 hover:bg-red-600",
     },
     {
@@ -196,7 +201,7 @@ const ProductMenu = ({ userData }) => {
         setCategoryList(data);
       };
       const get_itemCampaign_list = async () => {
-        const data = await fetchItemCampaignList();
+        const data = await fetchItemCampaignList(id_store, id_company);
         setItemCampaignList(data);
       };
       const get_size_list = async () => {
@@ -261,8 +266,25 @@ const ProductMenu = ({ userData }) => {
       if (result.isConfirmed) {
         try {
           const response = await deleteProduct(id);
-          if (response.status === 200) {
-            toast.success("Produk berhasil dihapus!");
+          const extra = extrasList.find(d => d.id_product === id);
+          if (extra) {
+            const responseExtras = await deleteExtras(extra._id);
+          } else {
+            console.log('Extra not found for id_product:', id);
+          }
+          const size = sizeList.find(d => d.id_product === id);
+          if (size) {
+            const responseSize = await deleteSize(size._id);
+          } else {
+            console.log('Extra not found for id_product:', id);
+          }
+          const responseStock = deleteStock(products.find(d => d._id === id).id_stock)
+          if (
+            response.status === 200 && responseStock.status === 200
+          ) {
+            toast.success(
+              "Produk se extras dan sizenya sudah berhasil dihapus!"
+            );
             setProducts((prev) => prev.filter((p) => p._id !== id));
           }
         } catch (error) {
@@ -423,8 +445,13 @@ const ProductMenu = ({ userData }) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const response = await uploadImageCompress(file, params, "product");
-      const uploadedImageUrl = response.data.metadata.shortenedUrl;
+      const response = await uploadImageCompress(
+        file,
+        params,
+        "product",
+        id_user
+      );
+      const uploadedImageUrl = response.data.metadata.fileUrl;
       if (response.status === 201) {
         if (params === "add") {
           setProductDataAdd((prev) => ({ ...prev, image: uploadedImageUrl }));
@@ -971,8 +998,9 @@ const ProductMenu = ({ userData }) => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <Image
-            src="http://localhost:8080/api/image/39f317fa"
+          <ImageWithFallback
+            onError={"https://placehold.co/100x100"}
+            src="https://tokokube.parisada.id/api/image/39f317fa"
             width={500}
             height={200}
             alt="Format Excel"

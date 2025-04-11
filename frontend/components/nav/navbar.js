@@ -1,21 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 import Avatar from "@/components/nav/sub/avatar";
-import StoreIcon from "@/components/nav/sub/storeIcon";
 import { motion } from "framer-motion";
+import { SidebarToggle } from "../form/sidebarToggle";
+import IconSelector from "@/components/nav/sub/iconSelector";
 
-export default function Navbar({
-  handleLogout,
-  setSelectedLink,
-  userData,
-  updateLocalStorage,
-}) {
-  const [userRole, setUserRole] = useState(null);
-
-  useEffect(() => {
-    setUserRole(userData.rule);
-  }, [userData.rule]);
-
+export default function Navbar() {
   return (
     <motion.div
       className="navbar fixed top-0 left-0 right-0 z-50
@@ -25,14 +15,11 @@ export default function Navbar({
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="flex justify-between items-center w-full">
-        <StoreIcon idStore={userData.id_store} role={userRole} />
-        <Avatar
-          updateLocalStorage={updateLocalStorage}
-          selector={userRole == 1 ? "superadmin" : userRole == 2 ? "admin" : ""}
-          setSelectedLink={setSelectedLink}
-          handleLogout={handleLogout}
-          userData={userData}
-        />
+        <div className="flex items-center">
+          <SidebarToggle />
+          <IconSelector />
+        </div>
+        <Avatar />
       </div>
     </motion.div>
   );

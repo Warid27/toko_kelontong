@@ -9,7 +9,7 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 
 // Next.js Imports
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import { useRouter } from "next/router";
 
 // Fetching
@@ -36,10 +36,12 @@ import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import MapPicker from "@/components/MapPicker";
+
 const Features = () => {
   const router = useRouter();
   const motiveLength = 8;
-  const baseURL = "http://localhost:8080";
+  const baseURL = "https://tokokube.parisada.id";
 
   // State Management
   const [username, setUsername] = useState("");
@@ -128,14 +130,16 @@ const Features = () => {
 
       {/* Floating Elements Wrapper (Move Before Content) */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-40 overflow-hidden">
-        <Image
+        <ImageWithFallback
+          onError={"https://placehold.co/100x100"}
           src={`${baseURL}/uploads/store/motive/default-motive.png`}
           width={150}
           height={150}
           className="absolute top-16 left-0 -translate-x-1/2 -translate-y-1/2"
           alt="MOTIVE"
         />
-        <Image
+        <ImageWithFallback
+          onError={"https://placehold.co/100x100"}
           src={`/header-motive-tokel.png`}
           width={150}
           height={150}
@@ -146,7 +150,8 @@ const Features = () => {
           const topValue = `${(index + 1) * 20 + 5}rem`;
 
           return (
-            <Image
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
               key={index}
               src={`${baseURL}/uploads/store/motive/default-motive.png`}
               width={150}
@@ -166,7 +171,8 @@ const Features = () => {
       {/* Banner Section */}
       <div className="h-16"></div>
       <div className="flex justify-center max-h-[70vh] overflow-hidden relative z-30">
-        <Image
+        <ImageWithFallback
+          onError={"https://placehold.co/100x100"}
           src="/toko-kelontong-header.png"
           alt="header"
           width={500}
@@ -190,7 +196,8 @@ const Features = () => {
           <h3 className="text-4xl">Analytics</h3>
           <div className="flex justify-center mt-4">
             <div className="overflow-hidden w-[32rem] h-[32rem] rounded-lg">
-              <Image
+              <ImageWithFallback
+                onError={"https://placehold.co/100x100"}
                 src="https://api-storage.cli.pics/toko-kelontong/product/a18c4167-1702-4a14-b2df-685a7407cd16.png"
                 alt="Analytics"
                 width={200}
@@ -246,7 +253,8 @@ const Features = () => {
 
         <div className="flex flex-col items-center">
           <div className="overflow-hidden w-96 h-56 rounded-lg -translate-x-1/4">
-            <Image
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
               src="https://api-storage.cli.pics/toko-kelontong/product/7e16532b-e2f3-48e1-a369-8e5f004343f5.png"
               alt="Dashboard"
               width={200}
@@ -255,7 +263,8 @@ const Features = () => {
             />
           </div>
           <div className="overflow-hidden w-64 h-96 rounded-lg -translate-y-1/4 translate-x-1/4">
-            <Image
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
               src="https://api-storage.cli.pics/toko-kelontong/product/bcc99df7-15eb-4d59-89d0-fc7c61fcb3fb.png"
               alt="Modal"
               width={200}
@@ -317,7 +326,8 @@ const Features = () => {
           <h3 className="text-4xl">Reports</h3>
           <div className="flex justify-center mt-4">
             <div className="overflow-hidden w-[32rem] h-[32rem] rounded-lg">
-              <Image
+              <ImageWithFallback
+                onError={"https://placehold.co/100x100"}
                 src="https://api-storage.cli.pics/toko-kelontong/product/d53a38db-a909-49a6-b3ac-708d9d20d010.png"
                 alt="Reports"
                 width={200}
@@ -346,7 +356,8 @@ const Features = () => {
         </div>
         <div className="flex flex-col items-center translate-y-20">
           <div className="overflow-hidden w-96 h-56 rounded-lg -translate-x-1/4">
-            <Image
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
               src="https://api-storage.cli.pics/toko-kelontong/product/9e50f518-7f40-454b-826d-73273a50fb6b.png"
               alt="Pesanan Masuk"
               width={200}
@@ -355,7 +366,8 @@ const Features = () => {
             />
           </div>
           <div className="overflow-hidden w-96 h-[32rem] rounded-lg -translate-y-1/4 translate-x-1/4">
-            <Image
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
               src="https://api-storage.cli.pics/toko-kelontong/product/134e4aa8-bdfb-4b20-bc96-5bf9ff03db14.png"
               alt="Sales"
               width={200}
@@ -456,12 +468,9 @@ const Features = () => {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.9 }}
               >
-                <InputText
-                  id="address"
-                  label="Address"
+                <p className="font-semibold mt-4">Address</p>
+                <MapPicker
                   name="address"
-                  value={address}
-                  text_color="text-white"
                   onChange={(e) => setAddress(e.target.value)}
                 />
               </motion.div>
@@ -622,7 +631,8 @@ const Features = () => {
 
       {/* Footer Motive */}
       <div className="flex justify-center max-h-[30vh] min-h-[30vh] overflow-hidden mt-24 relative w-full z-40">
-        <Image
+        <ImageWithFallback
+          onError={"https://placehold.co/100x100"}
           src={`${baseURL}/uploads/store/motive/default-footer-motive.png`}
           width={400}
           height={100}

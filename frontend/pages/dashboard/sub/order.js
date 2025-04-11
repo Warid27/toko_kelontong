@@ -13,8 +13,9 @@ import Loading from "@/components/loading";
 // API Functions
 import { fetchOrderList } from "@/libs/fetching/order";
 import { fetchTableList } from "@/libs/fetching/table";
+import useUserStore from "@/stores/user-store";
 
-const Order = ({ userData }) => {
+const Order = () => {
   const [listOrder, setListOrder] = useState([]);
   const [tableList, setTableList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +23,7 @@ const Order = ({ userData }) => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [orderToUpdate, setOrderToUpdate] = useState(null);
 
+  const { userData } = useUserStore();
   const id_store = userData?.id_store;
 
   // Fetch initial data

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { PiShoppingCartSimpleBold } from "react-icons/pi";
 import { FiLogIn } from "react-icons/fi";
 import { useRouter } from "next/router";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 
 const Topbar = ({ onCartUpdate, homePage = false }) => {
   const router = useRouter();
@@ -28,12 +28,13 @@ const Topbar = ({ onCartUpdate, homePage = false }) => {
         className="relative flex overflow-hidden w-12 h-12 rounded-full border-2 border-white"
         onClick={() => router.push("/")}
       >
-        <Image
-          src="/icon_kelontong.svg"
+        <ImageWithFallback
+          src={"/icon_kelontong.svg"}
           alt="storeIcon"
           width={48}
           height={48}
           className="object-cover"
+          onError={"https://placehold.co/100x100"}
         />
       </button>
       {!homePage && (

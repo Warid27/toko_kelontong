@@ -1,4 +1,5 @@
 import client from "@/libs/axios";
+import { toast } from "react-toastify";
 
 export const fetchStoreList = async (id_company = null) => {
   try {
@@ -47,7 +48,7 @@ export const getStoreData = async (id) => {
         const data = response.data;
         return data;
       } else {
-        Swal.fire("Gagal", response.error, "error");
+        toast.error(response.error);
       }
     } else {
       return null;

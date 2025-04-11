@@ -13,7 +13,9 @@ router.post(
   (c, next) => authenticate(c, next, "sales", OPERATIONS.READ),
   async (c) => {
     try {
-      const sales = await SalesModels.find().populate({
+      const { id_store } = await c.req.json();
+
+      const sales = await SalesModels.find({ id_store }).populate({
         path: "salesDetails.id_product",
         strictPopulate: false,
       });

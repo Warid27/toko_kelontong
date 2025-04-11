@@ -133,7 +133,6 @@ const ExportData = ({ data, columns, fileName }) => {
                       .map((col) => {
                         if (col.key === "avatar") {
                           let imageUrl = row[col.key];
-
                           return `
                             <td>
                               <div class="image-container">

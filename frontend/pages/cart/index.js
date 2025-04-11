@@ -1,18 +1,18 @@
 import React, { useEffect, useState, useRef } from "react";
 import moment from "moment";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import Topbar from "@/components/Topbar";
 import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
 import { IoMdArrowRoundBack, IoIosArrowDropdown } from "react-icons/io";
 import { CgNotes } from "react-icons/cg";
 import { VscTrash } from "react-icons/vsc";
-// import axios from "axios";
-import client from "@/libs/axios";
 import Swal from "sweetalert2"; // Import sweetalert2
-import { IoClose } from "react-icons/io5";
 import { Modal } from "@/components/Modal";
-import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign"
-import { fetchProductsList } from "@/libs/fetching/product"
+import { fetchItemCampaignList } from "@/libs/fetching/itemCampaign";
+import { fetchProductsList } from "@/libs/fetching/product";
+import { toast } from "react-toastify";
+import { addOrder, fetchOrderList } from "@/libs/fetching/order";
+import { fetchTableList } from "@/libs/fetching/table";
 
 const Cart = () => {
   // const [payments, setPayments] = useState([]);
@@ -53,16 +53,15 @@ const Cart = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const token = localStorage.getItem("token")
-        const response = await client.post("/product/listproduct", {
-          params: "order",
-        },{
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const fullProductList = response.data; // Store all fetched products
-        // Retrieve cart items stored in localStorage (which only contain IDs)
+        const response = await fetchProductsList(
+          null,
+          null,
+          null,
+          "order",
+          null
+        );
+        const fullProductList = response.data;
+
         const storedCartItems = JSON.parse(
           localStorage.getItem("cartItems") || "[]"
         );
@@ -126,7 +125,7 @@ const Cart = () => {
 
         setCartItems(updatedCartItems);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        toast.error("Error fetching products:", error);
       }
     };
 
@@ -136,61 +135,53 @@ const Cart = () => {
   useEffect(() => {
     const fetchTable_cust = async () => {
       try {
-        const token = localStorage.getItem("token")
-        const response = await client.post("/table/listtable", {}, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetchTableList();
         const data = response.data;
 
         // Validate that the response is an array
         if (!Array.isArray(data)) {
-          console.error("Unexpected data format from /table/listtable:", data);
+          toast.error("Unexpected data format from /table/listtable:", data);
           setTable_custList([]);
         } else {
           setTable_custList(data);
         }
       } catch (error) {
-        console.error("Error fetching table_cust:", error);
+        toast.error("Error fetching table_cust:", error);
         setTable_custList([]);
       }
     };
     fetchTable_cust();
   }, []);
   useEffect(() => {
-  const fetchOrder = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await client.post("/order/listorder", {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = response.data;
+    const fetchOrder = async () => {
+      try {
+        const response = await fetchOrderList(null, "all");
+        const data = response.data;
 
-      // Validate that the response is an array
-      if (!Array.isArray(data)) {
-        console.error("Unexpected data format from /order/listorder:", data);
+        // Validate that the response is an array
+        if (!Array.isArray(data)) {
+          toast.error("Unexpected data format from order", data);
+          setOrderList([]);
+        } else {
+          // Append new orders to the existing orderList state
+          setOrderList((prevOrderList) => {
+            const uniqueOrders = [
+              ...prevOrderList,
+              ...data.filter(
+                (newOrder) =>
+                  !prevOrderList.some(
+                    (oldOrder) => oldOrder._id === newOrder._id
+                  )
+              ),
+            ];
+            return uniqueOrders;
+          });
+        }
+      } catch (error) {
+        toast.error("Error fetching orders:", error);
         setOrderList([]);
-      } else {
-        // Append new orders to the existing orderList state
-        setOrderList((prevOrderList) => {
-          const uniqueOrders = [
-            ...prevOrderList,
-            ...data.filter(
-              (newOrder) =>
-                !prevOrderList.some((oldOrder) => oldOrder._id === newOrder._id)
-            ),
-          ];
-          return uniqueOrders;
-        });
       }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      setOrderList([]);
-    }
-  };
+    };
     fetchOrder();
   }, []);
 
@@ -211,13 +202,13 @@ const Cart = () => {
     try {
       // Validate input data
       if (!infoBuyyer || !infoBuyyer.nama) {
-        console.error("Customer name is missing.");
+        toast.error("Customer name is missing.");
         alert("Error: Please provide a valid customer name.");
         return;
       }
 
       if (!tableNumber || !tableNumber.nomor) {
-        console.error("Table number is missing.");
+        toast.error("Table number is missing.");
         alert("Error: Please select a valid table.");
         return;
       }
@@ -276,9 +267,7 @@ const Cart = () => {
         (total, item) => total + item.quantity,
         0
       );
-
-      // Send POST request to create the order
-      const response = await client.post("order/addorder", {
+      const reqBody = {
         no: no,
         code: orderCodeReal,
         person_name: infoBuyyer.nama,
@@ -292,21 +281,23 @@ const Cart = () => {
             ? "user belum menuliskan Keterangan"
             : infoBuyyer.keterangan,
         orderDetails: orderDetails,
-      });
+      };
+      // Send POST request to create the order
+      const response = await addOrder(reqBody);
 
       if (response.status === 201) {
         Swal.fire("Sukses!", "Berhasil Order.", "success");
-        await clearCart();
+        clearCart();
       }
     } catch (erroraddorder) {
       // Handle errors
       if (erroraddorder.response) {
-        console.log(`ERROR STATUS: ${erroraddorder.response.status}`);
-        console.log(
+        toast.error(`ERROR STATUS: ${erroraddorder.response.status}`);
+        toast.error(
           `ERROR DATA: ${JSON.stringify(erroraddorder.response.data)}`
         );
       } else {
-        console.log(`ERRORNYA: ${erroraddorder.message}`);
+        toast.error(`ERRORNYA: ${erroraddorder.message}`);
       }
     }
   };
@@ -412,7 +403,7 @@ const Cart = () => {
       });
       localStorage.setItem("cartItems", JSON.stringify([])); // Update localStorage
     } catch (error) {
-      console.error("Error clearing cart items:", error.message);
+      toast.error("Error clearing cart items:", error.message);
       Swal.fire("Error!", "Failed to clear cart items.", "error");
     }
   };
@@ -497,7 +488,8 @@ const Cart = () => {
                     key={index}
                     className="flex items-center border p-4 rounded-lg bg-white shadow-md"
                   >
-                    <Image
+                    <ImageWithFallback
+                      onError={"https://placehold.co/100x100"}
                       src={image || "https://placehold.co/100x100"}
                       alt={name || "Produk Tidak Diketahui"}
                       className="w-16 h-16 object-cover rounded-lg mr-4"

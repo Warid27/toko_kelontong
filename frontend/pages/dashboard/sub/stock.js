@@ -8,8 +8,11 @@ import Loading from "@/components/loading";
 
 // API Functions
 import { fetchStockList } from "@/libs/fetching/stock";
+import useUserStore from "@/stores/user-store";
 
 const StockList = () => {
+  const { userData } = useUserStore();
+  const id_store = userData?.id_store;
   const [stockList, setStockList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -18,7 +21,7 @@ const StockList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await fetchStockList();
+        const data = await fetchStockList(id_store);
         setStockList(data);
       } catch (error) {
         toast.error("Failed to load stock data");
@@ -27,7 +30,7 @@ const StockList = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [id_store]);
 
   // Table configuration
   const ExportHeaderTable = [

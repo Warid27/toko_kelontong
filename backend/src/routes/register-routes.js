@@ -50,7 +50,7 @@ router.post("/", async (c) => {
       return c.json(
         { message: "User already exists. Please choose a different username." },
         409
-      ); // Conflict
+      );
     }
 
     // Hash the password
@@ -62,7 +62,7 @@ router.post("/", async (c) => {
       password: hashedPassword,
       rule: rule,
       status: status,
-      id_company: id_company, 
+      id_company: id_company,
       id_store: id_store,
     });
 

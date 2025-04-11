@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import moment from "moment";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import Swal from "sweetalert2";
 
 // Icons
@@ -22,9 +22,9 @@ import { fetchProductsList, fetchGetProducts } from "@/libs/fetching/product";
 import { fetchPembelianAdd } from "@/libs/fetching/pembelian";
 import { updateStock } from "@/libs/fetching/stock";
 import { toast } from "react-toastify";
-import { tokenDecoded } from "@/utils/tokenDecoded";
+import useUserStore from "@/stores/user-store";
 
-const Pembelian = ({ userData }) => {
+const Pembelian = () => {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [pembelianItems, setPembelianItems] = useState([]);
@@ -38,6 +38,8 @@ const Pembelian = ({ userData }) => {
   const [infoBuyer, setInfoBuyer] = useState({ keterangan: "" });
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { userData } = useUserStore();
+  const id_user = userData?.id;
   const id_store = userData?.id_store;
   const id_company = userData?.id_company;
   // Fetch initial data
@@ -201,9 +203,6 @@ const Pembelian = ({ userData }) => {
       );
       const pembelianCode = `PEM/${moment().format("YYYYMMDDHHmmss")}`;
 
-      const userData = tokenDecoded();
-      const id_user = userData.id;
-
       const pembelianDetails = pembelianItems.map((item) => ({
         id_product: item.product.id,
         id_company: item.product.id_company,
@@ -216,7 +215,7 @@ const Pembelian = ({ userData }) => {
       }));
       const pembelianData = {
         no: pembelianCode,
-        id_user,
+        id_user: id_user,
         id_payment_type: "67ae07107f2282a509936fb7",
         status: 1,
         total_price: totalPrice,
@@ -311,7 +310,8 @@ const Pembelian = ({ userData }) => {
                   key={index}
                   className="flex items-center border p-4 rounded-lg bg-white shadow-md"
                 >
-                  <Image
+                  <ImageWithFallback
+                    onError={"https://placehold.co/100x100"}
                     src={item.product.image || "https://placehold.co/100x100"}
                     alt={item.product.name}
                     width={64}
@@ -469,7 +469,8 @@ const Pembelian = ({ userData }) => {
         width="large"
       >
         <div>
-          <Image
+          <ImageWithFallback
+            onError={"https://placehold.co/100x100"}
             src={selectedProduct?.image || "https://placehold.co/100x100"}
             alt={selectedProduct?.name_product}
             width={500}

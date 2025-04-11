@@ -3,35 +3,126 @@ import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import { FaCheck } from "react-icons/fa";
 import { toast } from "react-toastify";
+import Select from "react-select";
 import { InputText, InputPassword } from "@/components/form/input";
 import { registerService } from "@/libs/fetching/auth";
+import { addDemoCompany } from "@/libs/fetching/company";
+import { fetchListType } from "@/libs/fetching/type";
+import MapPicker from "@/components/MapPicker";
+import { authMessage } from "@/libs/fetching/contact-service";
+import CryptoJS from "crypto-js";
+import { Modal } from "@/components/Modal";
+import { SubmitButton, CloseButton } from "@/components/form/button";
 
 const Register = () => {
+  // Router
+  const router = useRouter();
+
+  // State Management
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [id_type, setIdType] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const router = useRouter();
+  const [typeList, setTypeList] = useState([]);
+  const [codeAuth, setCodeAuth] = useState("");
+  const [inputAuth, setInputAuth] = useState("");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Create floating bubbles effect
   const bubbles = Array(8).fill(0);
+
+  const modalOpen = (param, bool) => {
+    setIsAuthModalOpen(bool);
+  };
+
+  // Fetch company types on component mount
+  useEffect(() => {
+    const fetching_requirement = async () => {
+      const get_type_list = async () => {
+        const data_type = await fetchListType();
+        setTypeList(data_type);
+      };
+      get_type_list();
+    };
+    fetching_requirement();
+  }, []);
+
+  const generateOTP = () => {
+    const randomBytes = CryptoJS.lib.WordArray.random(4);
+    const hex = randomBytes.toString();
+
+    const intValue = parseInt(hex.slice(0, 8), 16);
+
+    const otp = (intValue % 1000000).toString().padStart(6, "0");
+
+    return otp;
+  };
+
+  const authCheck = async (e) => {
+    e.preventDefault();
+
+    if (inputAuth != "") {
+      if (inputAuth === codeAuth) {
+        toast.success("Verifikasi Sukses!");
+        handleRegister(e);
+      } else {
+        toast.error("Kode OTP Salah");
+      }
+    } else {
+      toast.warning("input masih kosong");
+    }
+  };
+  const handleAuth = async (e) => {
+    e.preventDefault();
+
+    if (email != "") {
+      const code = generateOTP();
+      setCodeAuth(code);
+      const reqBody = {
+        email: email,
+        message: code,
+      };
+      authMessage(reqBody);
+      modalOpen("open", true);
+    }
+  };
 
   // Handle Registration
   const handleRegister = async (e) => {
     e.preventDefault();
     setErrorMessage("");
 
-    const registerData = {
-      username,
-      password,
+    const companyData = {
+      name,
+      address,
+      id_type,
+      status: 1,
+      phone,
+      email,
     };
 
     try {
-      const response = await registerService(registerData);
-      if (response.status === 200) {
-        toast.success("Register berhasil!");
-        router.push("/login");
+      const companyResponse = await addDemoCompany(companyData);
+
+      if (companyResponse.status === 201) {
+        const registerData = {
+          id_company: companyResponse._id,
+          username,
+          password,
+          rule: 2,
+          status: 1,
+        };
+        const response = await registerService(registerData);
+        if (response.status === 200) {
+          toast.success("Register akun demo berhasil!");
+          router.push("/login");
+        }
       }
     } catch (error) {
       setIsError(true);
@@ -166,7 +257,7 @@ const Register = () => {
             Join us and experience the future of shopping
           </motion.p>
 
-          <form className="w-full space-y-6" onSubmit={handleRegister}>
+          <form className="w-full space-y-6" onSubmit={handleAuth}>
             <motion.div
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -183,23 +274,6 @@ const Register = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 bg-gray-800/70 border-gray-700 hover:border-emerald-500 focus:border-green-500 transition-all rounded-lg"
                 />
-                {/* <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-green-500 transition-colors">
-                  <FaUserAstronaut />
-                </div>
-                <label
-                  htmlFor="username"
-                  className="block text-gray-300 text-sm font-medium mb-2"
-                >
-                  Username
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-gray-800/70 border border-gray-700 text-white rounded-lg py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-                  required
-                /> */}
               </div>
             </motion.div>
 
@@ -219,33 +293,136 @@ const Register = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 bg-gray-800/70 border-gray-700 hover:border-emerald-500 focus:border-green-500 transition-all rounded-lg"
                 />
-                {/* <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-green-500 transition-colors">
-                  <FaLock />
-                </div>
-                <label
-                  htmlFor="password"
-                  className="block text-gray-300 text-sm font-medium mb-2"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-gray-800/70 border border-gray-700 text-white rounded-lg py-2 px-4 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-green-400 transition-colors"
-                  >
-                    {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
-                  </button>
-                </div> */}
               </div>
+            </motion.div>
+
+            {/* Additional Company Fields */}
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
+            >
+              <InputText
+                id="name"
+                label="Company Name"
+                name="name"
+                value={name}
+                text_color="text-white"
+                onChange={(e) => setName(e.target.value)}
+                className="bg-gray-800/70 border-gray-700 hover:border-emerald-500 focus:border-green-500 transition-all rounded-lg"
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.9 }}
+              className="space-y-2"
+            >
+              <p className="font-semibold text-gray-300 text-sm">Address</p>
+              <MapPicker
+                name="address"
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 1.0 }}
+              className="space-y-2"
+            >
+              <p className="font-semibold text-gray-300 text-sm">
+                Company Type
+              </p>
+              <Select
+                id="type"
+                className="basic-single"
+                classNamePrefix="select"
+                options={typeList.map((c) => ({
+                  value: c._id,
+                  label: c.type,
+                }))}
+                value={
+                  typeList
+                    .map((c) => ({ value: c._id, label: c.type }))
+                    .find((opt) => opt.value === id_type) || null
+                }
+                onChange={(selectedOption) =>
+                  setIdType(selectedOption ? selectedOption.value : "")
+                }
+                isSearchable
+                required
+                placeholder="Select company type..."
+                noOptionsMessage={() => "No type available"}
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    background: "rgba(31, 41, 55, 0.7)",
+                    borderColor: "#4B5563",
+                    "&:hover": {
+                      borderColor: "#10B981",
+                    },
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    background: "rgba(31, 41, 55, 0.9)",
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isFocused
+                      ? "rgba(16, 185, 129, 0.2)"
+                      : "transparent",
+                    "&:hover": {
+                      backgroundColor: "rgba(16, 185, 129, 0.2)",
+                    },
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: "white",
+                  }),
+                  input: (base) => ({
+                    ...base,
+                    color: "white",
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: "#9CA3AF",
+                  }),
+                }}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 1.1 }}
+            >
+              <InputText
+                id="phone"
+                label="Phone Number"
+                name="phone"
+                value={phone}
+                text_color="text-white"
+                onChange={(e) => setPhone(e.target.value)}
+                className="bg-gray-800/70 border-gray-700 hover:border-emerald-500 focus:border-green-500 transition-all rounded-lg"
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 1.2 }}
+            >
+              <InputText
+                id="email"
+                label="Email Address"
+                name="email"
+                value={email}
+                text_color="text-white"
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-gray-800/70 border-gray-700 hover:border-emerald-500 focus:border-green-500 transition-all rounded-lg"
+              />
             </motion.div>
 
             {errorMessage && (
@@ -261,7 +438,7 @@ const Register = () => {
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
+              transition={{ duration: 0.5, delay: 1.3 }}
               className="flex items-center"
             >
               <div className="relative">
@@ -319,7 +496,7 @@ const Register = () => {
             className="text-sm text-gray-400 mt-6 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.9 }}
+            transition={{ duration: 0.5, delay: 1.4 }}
           >
             Already have an account?{" "}
             <motion.a
@@ -335,12 +512,38 @@ const Register = () => {
             className="text-xs text-gray-500 mt-8 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1 }}
+            transition={{ duration: 0.5, delay: 1.5 }}
           >
             ©2024 All Rights Reserved. Carakan.
           </motion.p>
         </motion.div>
       </motion.div>
+      <Modal
+        isOpen={isAuthModalOpen}
+        onClose={() => modalOpen("open", false)}
+        title="Authentikasi"
+        width="large"
+      >
+        <form onSubmit={authCheck}>
+          <div className="space-y-4">
+            <p className="font-semibold text-black">
+              Kami sudah mengirimkan kode otp ke email kamu
+            </p>
+            <input
+              type="text"
+              name="otp"
+              value={inputAuth}
+              onChange={(e) => setInputAuth(e.target.value)}
+              className="border rounded-md p-2 w-full bg-gray-100 text-black"
+            />
+          </div>
+
+          <div className="flex justify-end mt-5 space-x-2">
+            <CloseButton onClick={() => modalOpen("open", false)} />
+            <SubmitButton label={"confirm"} />
+          </div>
+        </form>
+      </Modal>
     </motion.div>
   );
 };

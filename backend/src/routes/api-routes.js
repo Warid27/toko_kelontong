@@ -36,59 +36,6 @@ import { password } from "bun";
 
 const router = new Hono();
 
-// const clients = new Set();
-
-//Web Socket
-// router.get('/ws', (c) => {
-//   const upgrade = c.req.raw.upgrade
-//   if (upgrade) {
-//     const ws = upgrade()
-//     clients.add(ws)
-
-//     ws.onmessage = (event) => {
-//       console.log('Received:', event.data)
-//     }
-
-//     ws.onclose = () => {
-//       clients.delete(ws)
-//     }
-//   }
-// })
-
-/* WEBSOCKET INI TIDAK DIGUNAKAN!!!
-router.get("/ws", (c) => {
-  console.log("WebSocket request received");
-
-  if (c.req.raw.upgrade) {
-    const ws = c.req.raw.upgrade();
-    console.log("WebSocket connected!");
-
-    clients.add(ws);
-
-    ws.onmessage = (event) => {
-      console.log("Received:", event.data);
-    };
-
-    ws.onclose = () => {
-      console.log("WebSocket disconnected");
-      clients.delete(ws);
-    };
-  } else {
-    console.log("WebSocket upgrade failed!");
-    return c.json({ error: "WebSocket upgrade failed" }, 400);
-  }
-});
-*/
-// const broadcast = (message) => {
-//   console.log("Broadcasting:", message); // Debugging log
-//   for (const client of clients) {
-//     if (client.readyState === 1) {
-//       // Cek jika masih terhubung
-//       client.send(JSON.stringify(message));
-//     }
-//   }
-// };
-
 // Utility function to generate a short key
 function generateShortKey(length = 8) {
   return crypto
@@ -569,6 +516,63 @@ router.put(
   }
 );
 
+router.put("/company_status/:id", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+
+  const validationError = validateIdFormat(id);
+  if (validationError) return c.json(validationError, 400);
+
+  const validStatuses = [0, 1, 2];
+  if (!validStatuses.includes(Number(body.status))) {
+    return c.json({ error: "Invalid status value" }, 400);
+  }
+
+  try {
+    const currentCompany = await CompanyModels.findById(id);
+    if (!currentCompany) return c.json({ error: "Company not found" }, 404);
+
+    const currentStatus = Number(currentCompany.status);
+    const targetStatus = Number(body.status);
+
+    const isActivationChange = currentStatus === 1 && targetStatus === 0;
+    const isDeactivationChange = currentStatus === 0 && targetStatus === 1;
+
+    const { error, data, status: responseStatus } = await handleUpdate(
+      CompanyModels,
+      id,
+      body,
+      "Company"
+    );
+
+    if (error) return c.json({ error }, responseStatus);
+
+    const objectIdCompany = new mongoose.Types.ObjectId(id);
+
+    if (isDeactivationChange) {
+      await StoreModels.updateMany({ id_company: objectIdCompany }, { status: 1 });
+      await UserModels.updateMany({ id_company: objectIdCompany }, { status: 2 });
+    } else if (isActivationChange) {
+      // Optional: uncomment ini kalau mau aktifkan lagi
+      /*
+      await StoreModels.updateMany({ id_company: objectIdCompany }, { status: 0 });
+      await UserModels.updateMany({ id_company: objectIdCompany }, { status: 0 });
+      */
+    }
+
+    return c.json({
+      ...data,
+      message: isActivationChange || isDeactivationChange
+        ? "Company and related entities updated successfully"
+        : "Company updated successfully"
+    }, responseStatus);
+
+  } catch (error) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+
 router.delete(
   "/company/:id",
   (c, next) => authenticate(c, next, "company", OPERATIONS.DELETE),
@@ -861,6 +865,23 @@ router.post(
   }
 );
 
+router.delete(
+  "/size/:id",
+  (c, next) => authenticate(c, next, "size", OPERATIONS.DELETE),
+  async (c) => {
+    const id = c.req.param("id");
+    const validationError = validateIdFormat(id);
+    if (validationError) return c.json(validationError, 400);
+
+    const { error, message, status } = await handleDelete(
+      SizeModels,
+      id,
+      "Size"
+    );
+    return error ? c.json({ error }, status) : c.json({ message }, status);
+  }
+);
+
 // === CATEGORY ===
 router.put(
   "/category/:id",
@@ -952,6 +973,11 @@ router.put("/profile/:id", authenticate, async (c) => {
       reqBody.username = body.username;
     }
 
+    // Include avatar if provided
+    if (body.avatar) {
+      reqBody.avatar = body.avatar;
+    }
+
     // Hash the password if provided
     if (body.password) {
       try {
@@ -1041,6 +1067,7 @@ router.delete(
     return error ? c.json({ error }, status) : c.json({ message }, status);
   }
 );
+
 // === PAYMENT ===
 router.put(
   "/payment/:id",

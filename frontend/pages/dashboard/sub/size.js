@@ -14,11 +14,12 @@ import Loading from "@/components/loading";
 // Libraries
 import { fetchProductsList } from "@/libs/fetching/product";
 import { fetchSizeGet, updateSize } from "@/libs/fetching/size";
+import useUserStore from "@/stores/user-store";
 
 // Packages
 import { toast } from "react-toastify";
 
-const Size = ({ userData }) => {
+const Size = () => {
   const [sizeData, setSizeData] = useState({});
   const [productList, setProductList] = useState([]);
   const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
@@ -33,6 +34,7 @@ const Size = ({ userData }) => {
   const [loading, setLoading] = useState(false);
 
   // Extract id_store and id_company from userData
+  const { userData } = useUserStore();
   const id_store = userData?.id_store;
   const id_company = userData?.id_company;
 
@@ -48,7 +50,7 @@ const Size = ({ userData }) => {
     {
       label: "Nama Ukuran",
       key: "size_name",
-      render: (_, row) => sizeData[row._id]?.name || "Loading...",
+      render: (_, row) => sizeData[row._id]?.name || "Loading",
     },
   ];
 

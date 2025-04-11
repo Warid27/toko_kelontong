@@ -1,7 +1,7 @@
 import { QRCodeCanvas } from "qrcode.react";
 
 const QRCodeGenerator = ({ id_store, id_company }) => {
-  const qrUrl = `http://localhost:8000/product/${id_store}?id_company=${id_company}`;
+  const qrUrl = `https://tokoku.parisada.id/product/${id_store}?id_company=${id_company}`;
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 border pt-12 rounded-lg shadow">

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import client from "@/libs/axios";
 import { Modal } from "@/components/Modal";
 import { toast } from "react-toastify";
 import Header from "@/components/section/header";

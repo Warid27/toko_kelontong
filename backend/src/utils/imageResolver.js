@@ -1,21 +1,19 @@
-import { fileMetadataModels } from "@models/fileMetadata-models"; // Import file metadata model
+import { fileMetadataModels } from "@models/fileMetadata-models";
 
-/**
- * Resolves an image URL from its short key.
- * @param {string} shortKey - The short key of the image.
- * @returns {Promise<string>} - The resolved image URL or a fallback image.
- */
-export async function resolveImage(shortKey) {
-  if (!shortKey) {
-    return "https://placehold.co/500x500"; // Default placeholder image
+export async function resolveImage(imagePathOrShortKey) {
+  // If it's already a full URL, return it directly
+  if (imagePathOrShortKey?.startsWith("https")) {
+    return imagePathOrShortKey;
   }
+
+  // Fallback: try resolving it as a shortKey
   try {
     const fileMetadata = await fileMetadataModels.findOne({
-      shortkey: shortKey,
+      shortkey: imagePathOrShortKey,
     });
-    return fileMetadata ? fileMetadata.fileUrl : "https://placehold.co/500x500";
-  } catch (error) {
-    console.error("Error resolving image:", error);
-    return "https://placehold.co/500x500"; // Fallback image
+    return fileMetadata?.fileUrl || "https://placehold.co/500x500";
+  } catch (err) {
+    console.error("Error resolving image:", err);
+    return "https://placehold.co/500x500";
   }
 }

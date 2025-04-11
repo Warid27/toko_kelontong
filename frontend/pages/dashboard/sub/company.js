@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 
 // Icons
 import { LiaCloudUploadAltSolid } from "react-icons/lia";
@@ -22,10 +22,12 @@ import { uploadImageCompress } from "@/libs/fetching/upload-service";
 import {
   fetchCompanyList,
   updateCompany,
+  updateStatusCompany,
   addCompany,
   deleteCompany,
 } from "@/libs/fetching/company";
 import { validatePhoneNumber } from "@/utils/validatePhoneNumber";
+import useUserStore from "@/stores/user-store";
 
 // Packages
 import { toast } from "react-toastify";
@@ -33,6 +35,10 @@ import Select from "react-select";
 import Swal from "sweetalert2";
 
 const CompanyData = () => {
+  const { userData } = useUserStore();
+
+  const id_user = userData?.id;
+
   const [companies, setCompanies] = useState([]);
   const [typeList, setTypeList] = useState([]);
 
@@ -68,7 +74,7 @@ const CompanyData = () => {
     logo: "",
     header: "",
   });
-  
+
   const statusOptions = [
     { value: 0, label: "Active" },
     { value: 1, label: "Inactive" },
@@ -108,11 +114,11 @@ const CompanyData = () => {
   ];
 
   const actions = [
-    {
-      icon: <MdDelete size={20} />,
-      onClick: (row) => deleteCompanyById(row._id),
-      className: "bg-red-500 hover:bg-red-600",
-    },
+    // {
+    //   icon: <MdDelete size={20} />,
+    //   onClick: (row) => deleteCompanyById(row._id),
+    //   className: "bg-red-500 hover:bg-red-600",
+    // },
     {
       icon: <FaInfoCircle size={20} />,
       onClick: (row) => handleUpdateCompany(row, "update"),
@@ -154,7 +160,7 @@ const CompanyData = () => {
       const reqBody = {
         status: selectedStatus,
       };
-      const response = await updateCompany(companyId, reqBody);
+      const response = await updateStatusCompany(companyId, reqBody);
       const newStatus = statusOptions?.find(
         (opt) => opt.value === selectedStatus
       )?.label;
@@ -228,7 +234,7 @@ const CompanyData = () => {
       }
       const validation = validatePhoneNumber(companiesDataAdd.phone);
       if (!validation.isValid) {
-        return toast.error("GAGAL:", validation.message);
+        return toast.error("GAGAL PADA NOMOR TELEPON:", validation.message);
       }
       const reqBody = {
         name: companiesDataAdd.name,
@@ -364,8 +370,13 @@ const CompanyData = () => {
           return;
       }
 
-      const response = await uploadImageCompress(file, params, pathPrefix);
-      const uploadedImageUrl = response.data.metadata.shortenedUrl;
+      const response = await uploadImageCompress(
+        file,
+        params,
+        pathPrefix,
+        id_user
+      );
+      const uploadedImageUrl = response.data.metadata.fileUrl;
       if (response.status == 201) {
         if (params == "add" || params == "update") {
           const stateUpdater =
@@ -621,8 +632,12 @@ const CompanyData = () => {
                       />
                       <div className="upload-content cursor-pointer min-h-48 max-h-48 flex relative overflow-hidden">
                         {companiesDataUpdate.header ? (
-                          <Image
-                            src={companiesDataUpdate.header}
+                          <ImageWithFallback
+                            onError={"https://placehold.co/100x100"}
+                            src={
+                              companiesDataUpdate.header ||
+                              "https://placehold.co/100x100"
+                            }
                             alt="Uploaded Image"
                             width={100}
                             height={200}

@@ -9,12 +9,11 @@ const decorationDetailsSchema = new Schema({
   danger: { type: String, default: "#ef4444" },
   motive: {
     type: String,
-    default: "http://localhost:8080/uploads/store/motive/default-motive.png",
+    default: "/uploads/store/motive/default-motive.png",
   },
   footer_motive: {
     type: String,
-    default:
-      "http://localhost:8080/uploads/store/motive/default-footer-motive.png",
+    default: "/uploads/store/motive/default-footer-motive.png",
   },
   created_at: { type: Date, default: Date.now },
 });

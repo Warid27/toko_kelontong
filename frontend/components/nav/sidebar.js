@@ -1,9 +1,22 @@
+// Core React imports
 import React, { useState, useMemo } from "react";
+
+// Components
 import ExpandableMenu from "@/components/menu/expendableMenu";
 import MenuItem from "@/components/menu/menuItem";
 import ContentRenderer from "@/components/nav/renderContents";
+import Loading from "@/components/loading";
+
+// State management
+import useUserStore from "@/stores/user-store";
+
+// Custom hooks
 import { useRolePermissions } from "@/utils/permission";
+
+// Animation library
 import { motion } from "framer-motion";
+
+// FontAwesome Icons
 import {
   FaCrown,
   FaUserShield,
@@ -11,6 +24,8 @@ import {
   FaUserTag,
   FaUserAlt,
 } from "react-icons/fa";
+
+// Bootstrap Icons
 import {
   BsFillShieldLockFill,
   BsShieldFillCheck,
@@ -18,6 +33,8 @@ import {
   BsPersonBadgeFill,
   BsPersonCircle,
 } from "react-icons/bs";
+
+// Material Design Icons
 import {
   MdSupervisorAccount,
   MdAdminPanelSettings,
@@ -25,6 +42,8 @@ import {
   MdPointOfSale,
   MdPerson,
 } from "react-icons/md";
+
+// HeroIcons
 import {
   HiShieldCheck,
   HiUserCircle,
@@ -32,6 +51,8 @@ import {
   HiCash,
   HiUser,
 } from "react-icons/hi";
+
+// Tabler Icons
 import {
   TbUsersGroup,
   TbReportMoney,
@@ -119,7 +140,10 @@ const RoleIcon = ({ role, iconSet = "fa", size = 24 }) => {
   );
 };
 
-const Sidebar = ({ numericRole, setSelectedLink, selectedLink, userData }) => {
+const Sidebar = () => {
+  const { selectedLink, setSelectedLink, userData, isSidebarOpen } =
+    useUserStore();
+  const numericRole = userData.rule;
   const [expandedMenus, setExpandedMenus] = useState({});
   const rolePermissions = useRolePermissions();
 
@@ -236,32 +260,26 @@ const Sidebar = ({ numericRole, setSelectedLink, selectedLink, userData }) => {
   ) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="p-4 text-3xl text-gray-500">Loading...</div>
+        <Loading />
       </div>
     );
   }
 
   return (
     <div className="drawer lg:drawer-open">
-      <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
+      {/* <input id="my-drawer-2" type="checkbox" className="drawer-toggle" /> */}
+      <input
+        id="sidebar-drawer"
+        type="checkbox"
+        className={`${isSidebarOpen ? "drawer-toggle" : ""} hidden`}
+      />
       <motion.div
         className="drawer-content flex flex-col overflow-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <motion.label
-          htmlFor="my-drawer-2"
-          className="btn btn-primary drawer-button lg:hidden z-20 px-6 py-3 text-lg"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          Menu
-        </motion.label>
         <ContentRenderer
-          userData={userData}
-          selectedLink={selectedLink}
-          setSelectedLink={setSelectedLink}
           userRole={numericRole}
           filteredMenuConfig={filteredMenu}
         />

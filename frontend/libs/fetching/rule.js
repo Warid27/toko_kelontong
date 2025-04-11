@@ -1,4 +1,5 @@
 import client from "@/libs/axios";
+import { toast } from "react-toastify";
 
 export const fetchRuleList = async () => {
   try {
@@ -47,7 +48,7 @@ export const getRuleData = async (id) => {
       const data = response.data;
       return data;
     } else {
-      Swal.fire("Gagal", response.error, "error");
+      toast.error(response.error);
     }
   } catch (error) {
     console.error("Error fetching rule:", error);

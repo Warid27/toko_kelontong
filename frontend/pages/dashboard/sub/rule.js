@@ -64,7 +64,6 @@ const RuleAccessData = () => {
       try {
         const tableData = await fetchCollectionList();
         setTableList(tableData.data);
-        console.log("tablenya", tableData.data);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching collection data:", error);
@@ -303,7 +302,6 @@ const RuleAccessData = () => {
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
-    console.log("data add", ruleDataAdd);
 
     try {
       if (!ruleDataAdd.table_name) {
@@ -352,7 +350,6 @@ const RuleAccessData = () => {
 
   const getRuleLabel = (ruleValue) => {
     const option = ruleOptions.find((opt) => opt.value === ruleValue);
-    console.log("rule", option);
     return option ? option.label : "Unknown";
   };
 

@@ -1,0 +1,10 @@
+mongodump --uri="mongodb+srv://warid:warid@cluster0.amkot.mongodb.net/Login-tut?retryWrites=true&w=majority&appName=Cluster0" --out=./dump
+
+mongorestore --uri="mongodb://carakan:Palagan01!@20.10.17.210:27017/toko_kelontong?authSource=admin" ./dump/Login-tut
+
+{
+  "uri": "mongodb://<username>:<password>@mongodb1/toko_kelontong",
+  "nsInclude": "Login-tut.*",
+  "drop": true
+}
+

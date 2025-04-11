@@ -10,17 +10,11 @@ import {
 } from "recharts";
 import { formatNumber } from "@/utils/formatNumber";
 import { fetchSalesChart } from "@/libs/fetching/sales";
+import useUserStore from "@/stores/user-store";
 
-const formatRupiah = (value) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(value);
-};
-
-const SalesChart = ({ userData }) => {
+const SalesChart = () => {
   const [salesData, setSalesData] = useState([]);
+  const { userData } = useUserStore();
   const id_company = userData?.id_company;
   const id_store = userData?.id_store;
 

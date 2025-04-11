@@ -1,7 +1,6 @@
 import { IoSearchOutline } from "react-icons/io5";
 import { motion } from "framer-motion";
 import { AddButton } from "@/components/form/button";
-import { fetchRuleList } from "@/libs/fetching/rule";
 
 const Header = ({
   searchQuery,

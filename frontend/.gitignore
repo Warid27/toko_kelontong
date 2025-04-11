@@ -39,3 +39,4 @@ w
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+next.config.mjs

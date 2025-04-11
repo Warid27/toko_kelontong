@@ -3,21 +3,13 @@ import Footer from "@/components/Footer";
 import Topbar from "@/components/Topbar";
 import Carousel from "@/components/carousel/carousel";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
-import {
-  InputText,
-  InputNumber,
-  InputEmail,
-  InputPassword,
-  InputFile,
-  TextArea,
-} from "@/components/form/input";
+import { InputText, InputEmail, TextArea } from "@/components/form/input";
 import { SubmitButton, AddButton } from "@/components/form/button";
 
 // React Imports
 import React, { useState, useEffect } from "react";
 
 // Next.js Imports
-import Image from "next/image";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
 
@@ -36,6 +28,7 @@ import {
   FaFacebook,
   FaLinkedin,
 } from "react-icons/fa";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 
 export default function Home() {
   const [companyData, setCompanyData] = useState([]);
@@ -43,7 +36,7 @@ export default function Home() {
   const [productData, setProductData] = useState([]);
   const router = useRouter();
   const motiveLength = 8;
-  const baseURL = "http://localhost:8080";
+  const baseURL = "https://tokokube.parisada.id";
 
   const [contactData, setContactData] = useState({
     name: "",
@@ -60,7 +53,64 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const setAndCacheStyles = async () => {
+      // Define the style variables
+      const styles = {
+        "--bg-primary": "#24d164",
+        "--bg-secondary": "#3b82f6",
+        "--bg-tertiary": "#9ca3af",
+        "--bg-danger": "#ef4444",
+        "--tw-text-opacity": "1",
+        "--color-white": "rgb(255 255 255 / var(--tw-text-opacity, 1))",
+      };
+
+      try {
+        // Open the cache
+        const cache = await caches.open("main-style");
+
+        // Check if styles are already cached
+        const cachedResponse = await cache.match("root-styles");
+        let shouldUpdateStyles = true;
+
+        if (cachedResponse) {
+          const cachedStyles = await cachedResponse.json();
+          // Compare cached styles with current styles
+          shouldUpdateStyles = Object.entries(styles).some(
+            ([key, value]) => cachedStyles[key] !== value
+          );
+          // Apply cached styles immediately
+          Object.entries(cachedStyles).forEach(([property, value]) => {
+            document.documentElement.style.setProperty(property, value);
+          });
+        }
+
+        // If no cache exists or styles have changed, update styles and cache
+        if (!cachedResponse || shouldUpdateStyles) {
+          // Set CSS custom properties on :root
+          Object.entries(styles).forEach(([property, value]) => {
+            document.documentElement.style.setProperty(property, value);
+          });
+
+          // Cache the styles
+          const cacheResponse = new Response(JSON.stringify(styles));
+          await cache.put("root-styles", cacheResponse);
+
+          console.log("Styles updated and cached");
+        } else {
+          console.log("Loaded styles from cache");
+        }
+      } catch (error) {
+        console.error("Error caching styles:", error);
+        // Fallback: set styles directly if caching fails
+        Object.entries(styles).forEach(([property, value]) => {
+          document.documentElement.style.setProperty(property, value);
+        });
+      }
+    };
+
     const fetchingRequirements = async () => {
+      await setAndCacheStyles();
+
       const storeLength = async () => {
         try {
           const response = await listStoreStatus();
@@ -138,7 +188,6 @@ export default function Home() {
           message: "",
         });
       } else {
-        console.error("RESEP ERROR", response);
         toast.error(
           `Pesan Gagal Dikirim: ${response.statusText || "Unknown error"}`
         );
@@ -159,15 +208,20 @@ export default function Home() {
 
       {/* Floating Elements Wrapper (Move Before Content) */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-40 overflow-hidden">
-        <Image
-          src={`${baseURL}/uploads/store/motive/default-motive.png`}
+        <ImageWithFallback
+          src={
+            `${baseURL}/uploads/store/motive/default-motive.png` ||
+            "https://placehold.co/100x100"
+          }
           width={150}
           height={150}
           className="absolute top-16 left-0 -translate-x-1/2 -translate-y-1/2"
           alt="MOTIVE"
+          onError={"https://placehold.co/100x100"}
         />
-        <Image
-          src={`/header-motive-tokel.png`}
+        <ImageWithFallback
+          src={`/header-motive-tokel.png` || "https://placehold.co/100x100"}
+          onError={"https://placehold.co/100x100"}
           width={150}
           height={150}
           className="absolute top-20 right-0 translate-x-1/2"
@@ -177,9 +231,13 @@ export default function Home() {
           const topValue = `${(index + 1) * 20 + 5}rem`;
 
           return (
-            <Image
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
               key={index}
-              src={`${baseURL}/uploads/store/motive/default-motive.png`}
+              src={
+                `${baseURL}/uploads/store/motive/default-motive.png` ||
+                "https://placehold.co/100x100"
+              }
               width={150}
               height={150}
               style={{ top: topValue }}
@@ -197,7 +255,8 @@ export default function Home() {
       {/* Banner Section */}
       <div className="h-16"></div>
       <div className="flex justify-center max-h-[70vh] overflow-hidden relative z-30">
-        <Image
+        <ImageWithFallback
+          onError={"https://placehold.co/100x100"}
           src="/toko-kelontong-header.png"
           alt="header"
           width={500}
@@ -239,7 +298,8 @@ export default function Home() {
                   : "rounded-tl-[3rem] rounded-br-[3rem]"
               }`}
             >
-              <Image
+              <ImageWithFallback
+                onError={"https://placehold.co/100x100"}
                 src={`/Explores/Image-${index + 1}.jpg`}
                 width={300}
                 height={300}
@@ -287,7 +347,8 @@ export default function Home() {
                     index === 0 ? "w-56 h-56" : "w-64 h-64"
                   } overflow-hidden shadow-lg rounded border-4 border-white`}
                 >
-                  <Image
+                  <ImageWithFallback
+                    onError={"https://placehold.co/100x100"}
                     src={`/About Us/About-Us-${num}.png`}
                     width={index === 0 ? 224 : 256}
                     height={index === 0 ? 224 : 256}
@@ -399,7 +460,8 @@ export default function Home() {
 
       {/* Footer Motive */}
       <div className="flex justify-center max-h-[30vh] min-h-[30vh] overflow-hidden mt-24 relative w-full z-40">
-        <Image
+        <ImageWithFallback
+          onError={"https://placehold.co/100x100"}
           src={`${baseURL}/uploads/store/motive/default-footer-motive.png`}
           width={400}
           height={100}

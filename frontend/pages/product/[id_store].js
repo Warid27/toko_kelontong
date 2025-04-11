@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import Topbar from "@/components/Topbar";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import Card from "@/components/Card";
-import client from "@/libs/axios";
 import { Modal } from "@/components/Modal";
 import { useRouter } from "next/router";
 import { FaMinus, FaPlus } from "react-icons/fa6";
@@ -41,17 +40,26 @@ export default function Home() {
   }, [router.isReady]);
 
   useEffect(() => {
+    console.log("useEffect triggered", {
+      queryReady,
+      windowExists: typeof window !== "undefined",
+    });
+
     if (!queryReady || typeof window === "undefined") return;
 
     const { id_store, id_company, id_category_product } = router.query;
+    console.log("Query params:", { id_store, id_company, id_category_product });
 
     const login = async () => {
       try {
-        (reqBody = {
+        const reqBody = {
           username: "customer",
           password: "customer",
-        }),
-          await loginServices(reqBody);
+        };
+        console.log("Attempting login with:", reqBody);
+        const response = await loginServices(reqBody);
+        console.log("Login successful:", response);
+        return response;
       } catch (error) {
         console.error("Login error:", error);
       }
@@ -59,8 +67,9 @@ export default function Home() {
 
     const fetchCategoryProduct = async () => {
       try {
-        // const {id_store} = router.query
+        console.log("Fetching categories for store:", id_store);
         const response = await fetchCategoryList(id_store);
+        console.log("RESEP CATEGORY", response);
         setCategoryProductList(response);
         return response;
       } catch (error) {
@@ -71,9 +80,9 @@ export default function Home() {
 
     const fetchItemCampaign = async () => {
       try {
-        const response = await fetchItemCampaignList();
-        console.log("MUTU");
-        console.log("RESPO", response);
+        console.log("Fetching item campaign:", { id_store, id_company });
+        const response = await fetchItemCampaignList(id_store, id_company);
+        console.log("RESEP ITEM KEMPING", response);
         setItemCampaignList(response);
         return response;
       } catch (error) {
@@ -84,16 +93,21 @@ export default function Home() {
 
     const fetchProducts = async () => {
       try {
-        const response = fetchProductsList(
+        console.log("Fetching products with params:", {
+          id_store,
+          id_company,
+          id_category_product,
+        });
+        const data = await fetchProductsList(
           id_store,
           id_company,
           0,
           "order",
           id_category_product
         );
-
-        setProducts(response.data);
-        return response.data;
+        console.log("RESEP PRODUK", data);
+        setProducts(data);
+        return data;
       } catch (error) {
         console.error("Error fetching products:", error);
         return [];
@@ -106,13 +120,11 @@ export default function Home() {
           console.error("id_store is missing in query");
           return [];
         }
-
-        const response = await getStoreData(id_store);
-
-        const storeData = response.data;
-
-        setStores(storeData); //warod warod warod warod warod warod awrod awrods
-        return storeData;
+        console.log("Fetching store data for:", id_store);
+        const data = await getStoreData(id_store);
+        console.log("RESEP SETOR", data);
+        setStores(data);
+        return data;
       } catch (error) {
         console.error("Error fetching stores:", error);
         return [];
@@ -120,19 +132,20 @@ export default function Home() {
     };
 
     const cek_product = async () => {
+      console.log("Starting cek_product");
       await login();
+
       if (id_store && id_company && id_category_product) {
-        // fetchProducts_category();
-        fetchProducts();
+        console.log("Fetching products - all params present");
+        await fetchProducts();
       }
+
       if (id_store && id_company) {
         try {
-          // Open the cache
+          console.log("Opening cache for:", id_store);
           const cache = await caches.open("product-data");
 
-          // Check if cached data exists
-          // const response_product = await cache.match("product");
-          const response_product = await cache.match(`product_list${id_store}`); // YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUD YUDY YUD YUD
+          const response_product = await cache.match(`product_list${id_store}`);
           const response_category = await cache.match(
             `category_product${id_store}`
           );
@@ -140,73 +153,80 @@ export default function Home() {
             `item_campaign${id_store}`
           );
           const response_store = await cache.match(`store${id_store}`);
-          // const response_company_image = await cache.match("company_image");
           const response_timestamp = await cache.match(
             `cache_timestamp${id_store}`
           );
 
-          let shouldRevalidate = false;
+          console.log("Cache status:", {
+            hasProduct: !!response_product,
+            hasCategory: !!response_category,
+            hasCampaign: !!response_item_campaign,
+            hasStore: !!response_store,
+            hasTimestamp: !!response_timestamp,
+          });
 
-          // Check if we need to revalidate based on cache age
-          if (
-            response_product &&
-            response_category &&
-            response_item_campaign &&
-            response_store &&
-            // response_company_image &&
-            response_timestamp
-          ) {
+          let shouldRevalidate = false;
+          if (response_timestamp) {
             const timestampData = await response_timestamp.json();
             const cacheAge = Date.now() - timestampData.timestamp;
-            // Revalidate if cache is older than 1 hour
             shouldRevalidate = cacheAge > 3600000;
-            // 1 jam
+            console.log("Cache age check:", { cacheAge, shouldRevalidate });
           }
 
-          // Use cached data if available
           if (
             response_product &&
             response_category &&
             response_item_campaign &&
             response_store
           ) {
-            const data_product = await response_product.json();
-            const data_category = await response_category.json();
-            const data_item_campaign = await response_item_campaign.json();
-            const data_store = await response_store.json();
-            // For image, we need to get the text content
-            // const data_company_image = await response_company_image.text();
+            const [
+              data_product,
+              data_category,
+              data_item_campaign,
+              data_store,
+            ] = await Promise.all([
+              response_product.json(),
+              response_category.json(),
+              response_item_campaign.json(),
+              response_store.json(),
+            ]);
+            console.log("Loaded from cache:", {
+              products: data_product,
+              categories: data_category,
+              campaigns: data_item_campaign,
+              stores: data_store,
+            });
 
             setProducts(data_product);
             setCategoryProductList(data_category);
             setItemCampaignList(data_item_campaign);
             setStores(data_store);
-            // if (stores.decorationDetails) {
-
-            // }
-            // setImageHeader(data_company_image);
             setIsLoading(false);
-            console.log("Data fetched from cache");
           }
 
-          // Fetch fresh data if no cache or cache needs revalidation
           if (
             !response_product ||
             !response_category ||
             !response_item_campaign ||
             !response_store ||
-            // !response_company_image ||
             shouldRevalidate
           ) {
-            console.log("Fetching fresh data...");
+            console.log(
+              "Fetching fresh data due to cache miss or revalidation"
+            );
+            const [
+              data_product,
+              data_category_product,
+              data_item_campaign,
+              data_store,
+            ] = await Promise.all([
+              fetchProducts(),
+              fetchCategoryProduct(),
+              fetchItemCampaign(),
+              getStores(),
+            ]);
 
-            const data_product = await fetchProducts();
-            const data_category_product = await fetchCategoryProduct();
-            const data_item_campaign = await fetchItemCampaign();
-            const data_store = await getStores();
-            // const data_company_image = await fetchCompany();
-
-            // Store fresh data in cache
+            console.log("Updating cache with fresh data");
             const cache_product = new Response(JSON.stringify(data_product));
             const cache_category = new Response(
               JSON.stringify(data_category_product)
@@ -215,63 +235,48 @@ export default function Home() {
               JSON.stringify(data_item_campaign)
             );
             const cache_store = new Response(JSON.stringify(data_store));
-            // const cache_image = new Response(data_company_image);
             const cache_timestamp = new Response(
               JSON.stringify({ timestamp: Date.now() })
             );
 
-            // await cache.put("product", cache_product);
-            await cache.put(
-              `product_list${id_store}`,
-              new Response(JSON.stringify(data_product))
-            );
+            await Promise.all([
+              cache.put(`product_list${id_store}`, cache_product),
+              cache.put(`category_product${id_store}`, cache_category),
+              cache.put(`item_campaign${id_store}`, cache_item_campaign),
+              cache.put(`store${id_store}`, cache_store),
+              cache.put(`cache_timestamp${id_store}`, cache_timestamp),
+            ]);
 
-            await cache.put(`category_product${id_store}`, cache_category);
-            await cache.put(`item_campaign${id_store}`, cache_item_campaign);
-            await cache.put(`store${id_store}`, cache_store);
-            // await cache.put("company_image", cache_image);
-            await cache.put(`cache_timestamp${id_store}`, cache_timestamp);
             setIsLoading(false);
 
-            // Update UI only if we didn't already load from cache
             if (
               !response_product ||
               !response_category ||
               !response_item_campaign ||
               !response_store
-              // !response_company_image
             ) {
+              console.log("Setting fresh data to state");
               setProducts(data_product);
               setCategoryProductList(data_category_product);
               setItemCampaignList(data_item_campaign);
               setStores(data_store);
-              // setImageHeader(data_company_image);
               setIsLoading(false);
-              // if (stores.decorationDetails) {
-              //   const { primary, secondary, tertiary, danger } =
-              //     stores.decorationDetails;
-
-              //   document.documentElement.style.setProperty("--bg-primary", primary);
-              //   document.documentElement.style.setProperty(
-              //     "--bg-secondary",
-              //     secondary
-              //   );
-              //   document.documentElement.style.setProperty("--bg-tertiary", tertiary);
-              //   document.documentElement.style.setProperty("--bg-danger", danger);
-              // }
             }
           }
         } catch (error) {
           console.error("Error in cek_product:", error);
           setIsLoading(false);
-          // setError(true);
         }
       } else {
-        console.warn("Missing one or more query parameters!");
+        console.warn("Missing one or more query parameters!", {
+          id_store,
+          id_company,
+        });
         setIsLoading(false);
       }
     };
 
+    console.log("Calling cek_product");
     cek_product();
   }, [queryReady, router.query]);
 
@@ -372,11 +377,9 @@ export default function Home() {
                 : "self-end translate-x-1/2"
             }`}
           >
-            <Image
-              src={
-                stores?.decorationDetails?.motive ||
-                "http://localhost:8080/uploads/store/motive/default-motive.png"
-              }
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
+              src={stores?.decorationDetails?.motive || "/default-motive.png"}
               width={50}
               height={50}
               className="w-full h-full object-cover"
@@ -387,7 +390,8 @@ export default function Home() {
       </div>
       <div className="p-10 z-30">
         <div className="flex justify-center max-h-[55vh] overflow-hidden relative  z-30">
-          <Image
+          <ImageWithFallback
+            onError={"https://placehold.co/100x100"}
             src={stores.banner || "https://placehold.co/500x500"}
             alt="banner"
             layout="responsive"
@@ -487,10 +491,11 @@ export default function Home() {
         </div>
       </div>
       <div className="flex justify-center max-h-[30vh] min-h-[30vh] overflow-hidden relative w-full">
-        <Image
+        <ImageWithFallback
+          onError={"https://placehold.co/100x100"}
           src={
             stores.decorationDetails.footer_motive ||
-            "http://localhost:8080/uploads/store/motive/default-footer-motive.png"
+            "/default-footer-motive.png"
           }
           width={400}
           height={100}
@@ -515,7 +520,8 @@ export default function Home() {
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-4xl w-full relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-64 max-h-64">
             <div className="w-full max-h-64 rounded-xl flex justify-center p-3 border border-slate-300">
-              <Image
+              <ImageWithFallback
+                onError={"https://placehold.co/100x100"}
                 src={selectedProduct?.image}
                 alt={selectedProduct?.name_product}
                 width={100}
@@ -535,7 +541,6 @@ export default function Home() {
 
               {/* Category & Stock */}
               <div className="flex flex-wrap gap-3 text-sm">
-                {console.log("SELEKTED", selectedProduct)}
                 <span
                   className={`px-4 py-1 rounded-full font-medium ${
                     selectedProduct?.id_stock?.amount -

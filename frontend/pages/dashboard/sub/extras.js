@@ -12,8 +12,9 @@ import Loading from "@/components/loading";
 // API Functions
 import { fetchProductsList } from "@/libs/fetching/product";
 import { fetchExtrasGet, updateExtras } from "@/libs/fetching/extras";
+import useUserStore from "@/stores/user-store";
 
-const Extras = ({ userData }) => {
+const Extras = () => {
   // State Declarations
   const [extrasData, setExtrasData] = useState({});
   const [productList, setProductList] = useState([]);
@@ -29,6 +30,7 @@ const Extras = ({ userData }) => {
   const [loading, setLoading] = useState(false);
 
   // Constants
+  const { userData } = useUserStore();
   const id_store = userData?.id_store;
   const id_company = userData?.id_company;
 
@@ -43,7 +45,7 @@ const Extras = ({ userData }) => {
     {
       label: "Nama Varian",
       key: "extras_name",
-      render: (_, row) => extrasData[row._id]?.name || "Loading...",
+      render: (_, row) => extrasData[row._id]?.name || "Loading",
     },
   ];
 

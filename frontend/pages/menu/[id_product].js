@@ -1,8 +1,7 @@
-// CONTOH LINK: http://localhost:8000/menu/67c1799ec5fc83617945eddd
+// CONTOH LINK: https://tokokube.parisada.id/menu/67c1799ec5fc83617945eddd
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Image from "next/image";
-
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import { fetchGetProducts } from "@/libs/fetching/product";
 export default function Home() {
   const [productData, setProductData] = useState(null);
@@ -63,8 +62,9 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-64 max-h-64">
           {/* Product Image */}
           <div className="w-full max-h-64 rounded-xl flex justify-center p-3 border border-slate-300">
-            <Image
-              src={productData.image}
+            <ImageWithFallback
+              onError={"https://placehold.co/100x100"}
+              src={productData.image || "https://placehold.co/100x100"}
               alt={productData.name_product}
               width={100}
               height={100}

@@ -70,3 +70,18 @@ export const fetchSizeList = async () => {
       console.error("Error add store:", error);
     }
   };
+
+  export const deleteSize = async (id_size) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await client.delete(`/api/size/${id_size}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      return response;
+    } catch (error) {
+      console.error("Error update size:", error);
+    }
+  };

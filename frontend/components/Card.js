@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 
 const Card = ({
   lebar = "80",
@@ -15,7 +16,6 @@ const Card = ({
 }) => {
   const stockClass =
     stock === null ? "" : Number(stock) <= 0 ? "opacity-50" : "";
-  console.log("SETOK", stock);
   return (
     <motion.div
       className={`card bg-base-300 w-${lebar} shadow-xl cursor-pointer overflow-hidden relative ${stockClass}`}
@@ -36,12 +36,13 @@ const Card = ({
         </motion.div>
       )}
       <figure className="w-full h-48 flex items-center justify-center bg-green-300">
-        <Image
-          src={image}
+        <ImageWithFallback
+          src={image || "https://placehold.co/100x100"}
           alt="Product"
           width={tinggi || 100}
           height={lebar || 100}
           className="object-fill w-full h-full"
+          onError={"https://placehold.co/100x100"}
         />
       </figure>
       <div className="card-body bg-white p-4 text-left">

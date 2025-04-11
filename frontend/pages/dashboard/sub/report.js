@@ -7,19 +7,14 @@ import {
 } from "react-icons/md";
 import { FaRegCalendarAlt, FaChartLine, FaUsers } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import DatePickers from "@/components/DatePicker";
-import client from "@/libs/axios";
 import { Modal } from "@/components/Modal";
 import { formatNumber } from "@/utils/formatNumber";
-import {
-  fetchTransaksiHistory
-} from "@/libs/fetching/sales";
-import {
-  fetchOrderTransaksiHistory
-} from "@/libs/fetching/order";
+import { fetchTransaksiHistory } from "@/libs/fetching/sales";
+import { fetchOrderTransaksiHistory } from "@/libs/fetching/order";
+import useUserStore from "@/stores/user-store";
 
-export const Report = ({userData}) => {
+export const Report = () => {
   const [salesReportList, setSalesReportList] = useState([]);
   const [orderReportList, setOrderReportList] = useState([]);
   const [filterBy, setFilterBy] = useState("daily");
@@ -28,6 +23,7 @@ export const Report = ({userData}) => {
   const [orderDetailsList, setOrderDetailsList] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const { userData } = useUserStore();
   const id_store = userData?.id_store;
   const id_company = userData?.id_company;
 
@@ -40,69 +36,69 @@ export const Report = ({userData}) => {
     }
   };
 
- useEffect(() => {
-     const TransaksiHistory = async () => {
-      setIsLoading(true)
-       try {
-         const reqBody = {
-           id_store,
-           id_company,
-           filterBy,
-           selectedDate,
-         };
-         const response = await fetchTransaksiHistory(reqBody);
-         const data = response.data;
- 
-         if (!Array.isArray(data)) {
-           console.error(
-             "Unexpected data format from /sales/transaksi-history:",
-             data
-           );
-           setSalesReportList([]);
-         } else {
+  useEffect(() => {
+    const TransaksiHistory = async () => {
+      setIsLoading(true);
+      try {
+        const reqBody = {
+          id_store,
+          id_company,
+          filterBy,
+          selectedDate,
+        };
+        const response = await fetchTransaksiHistory(reqBody);
+        const data = response.data;
+
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /sales/transaksi-history:",
+            data
+          );
+          setSalesReportList([]);
+        } else {
           setSalesReportList(data);
-         }
-       } catch (error) {
-         console.error("Error fetching sales:", error);
-         setSalesReportList([]);
-       } finally {
-        setIsLoading(false)
-       }
-     };
-     TransaksiHistory();
-   }, [filterBy, selectedDate, id_company, id_store]);
+        }
+      } catch (error) {
+        console.error("Error fetching sales:", error);
+        setSalesReportList([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    TransaksiHistory();
+  }, [filterBy, selectedDate, id_company, id_store]);
 
   useEffect(() => {
-      const TransaksiHistory = async () => {
-        setIsLoading(true)
-        try {
-          const reqBody = {
-            id_store,
-            id_company,
-            filterBy,
-            selectedDate,
-          };
-          const response = await fetchOrderTransaksiHistory(reqBody);
-          const data = response.data;
-  
-          if (!Array.isArray(data)) {
-            console.error(
-              "Unexpected data format from /order/transaksi-history:",
-              data
-            );
-            setOrderReportList([]);
-          } else {
-            setOrderReportList(data);
-          }
-        } catch (error) {
-          console.error("Error fetching order:", error);
+    const TransaksiHistory = async () => {
+      setIsLoading(true);
+      try {
+        const reqBody = {
+          id_store,
+          id_company,
+          filterBy,
+          selectedDate,
+        };
+        const response = await fetchOrderTransaksiHistory(reqBody);
+        const data = response.data;
+        console.log("RESEPS", response);
+        if (!Array.isArray(data)) {
+          console.error(
+            "Unexpected data format from /order/transaksi-history:",
+            data
+          );
           setOrderReportList([]);
-        } finally {
-          setIsLoading(false)
+        } else {
+          setOrderReportList(data);
         }
-      };
-      TransaksiHistory();
-    }, [filterBy, selectedDate, id_company, id_store]);
+      } catch (error) {
+        console.error("Error fetching order:", error);
+        setOrderReportList([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    TransaksiHistory();
+  }, [filterBy, selectedDate, id_company, id_store]);
 
   // Calculate total sales and orders
   const totalSales = salesReportList.reduce(
@@ -368,6 +364,7 @@ export const Report = ({userData}) => {
                 </div>
               ) : (
                 <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                  {console.log("ORDER REPORT LIST", orderReportList)}
                   <AnimatePresence>
                     {orderReportList.map((orl, index) => (
                       <motion.div
@@ -379,6 +376,7 @@ export const Report = ({userData}) => {
                         whileHover={{ scale: 1.01, backgroundColor: "#f9fafb" }}
                         className="flex justify-between items-center bg-white p-4 rounded-lg border border-gray-100 shadow-sm transition-all duration-200"
                       >
+                        {console.log("OER EL", orl)}
                         <div className="flex items-center">
                           <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
                             <span className="text-green-500 font-bold text-xs">
@@ -413,9 +411,7 @@ export const Report = ({userData}) => {
                           <div className="text-right">
                             <p className="text-gray-500 text-sm">Total</p>
                             <p className="font-bold text-green-600">
-                              {formatNumber(
-                                orl.total_price
-                              )}
+                              {formatNumber(orl.total_price)}
                             </p>
                           </div>
                           <motion.button
@@ -424,7 +420,6 @@ export const Report = ({userData}) => {
                             className="ml-4 px-4 py-1 bg-green-500 text-white rounded-lg text-sm flex items-center justify-center"
                             onClick={() => {
                               setOrderDetailsList(orl);
-                              console.log(orl);
                               modalOpen("detail", true);
                             }}
                           >
@@ -658,7 +653,10 @@ export const Report = ({userData}) => {
                               {item.name_product || "Item #" + (index + 1)}
                             </td>
                             <td className="py-3 px-3 text-center">
-                             Rp. {new Intl.NumberFormat("id-ID").format(item.price_item)}
+                              Rp.{" "}
+                              {new Intl.NumberFormat("id-ID").format(
+                                item.price_item
+                              )}
                             </td>
                             <td className="py-3 px-3 text-center">
                               {item.quantity}
@@ -667,12 +665,12 @@ export const Report = ({userData}) => {
                               {item.discount}%
                             </td>
                             <td className="py-3 px-3 text-center font-medium">
-                            Rp. {new Intl.NumberFormat("id-ID").format(
-                                  item.price_item *
-                                    item.quantity *
-                                    (1 - item.discount / 100)
-                                )
-                              }
+                              Rp.{" "}
+                              {new Intl.NumberFormat("id-ID").format(
+                                item.price_item *
+                                  item.quantity *
+                                  (1 - item.discount / 100)
+                              )}
                             </td>
                           </tr>
                         ))}

@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 
 // Load environment variables using Bun's built-in support
 
-
 // JWT
 const SECRET_KEY = Bun.env.JWT_SECRET;
 const JWT_SECRET = Bun.env.JWT_SECRET;
@@ -17,7 +16,7 @@ const EMAIL_RECIPIENT = Bun.env.EMAIL_RECIPIENT;
 const BUN_ENV = Bun.env.BUN_ENV || "local";
 const PORT = Bun.env.PORT || 3000;
 const HOST_NAME = Bun.env.HOST_NAME;
-const BACKEND_URI = `http://${HOST_NAME}:${PORT}`;
+const BACKEND_URI = `https://tokokube.parisada.id`;
 
 // MongoDB
 const MONGO_URI = Bun.env.MONGO_URI || "";

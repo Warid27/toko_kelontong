@@ -1,13 +1,9 @@
 import client from "@/libs/axios";
 import { toast } from "react-toastify";
 
-export const fetchStockList = async () => {
+export const fetchStockList = async (id_store) => {
   try {
     const token = localStorage.getItem("token");
-    const id_store =
-      localStorage.getItem("id_store") == "undefined"
-        ? null
-        : localStorage.getItem("id_store");
     const response = await client.post(
       "/stock/liststock",
       {
@@ -40,5 +36,20 @@ export const updateStock = async (reqBody) => {
     return response;
   } catch (error) {
     console.error("Error fetching pembelian:", error);
+  }
+};
+
+export const deleteStock = async (id_stock) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await client.delete(`/api/stock/${id_stock}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error update stock:", error);
   }
 };

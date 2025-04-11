@@ -17,7 +17,7 @@ import {
 } from "react-icons/fa";
 import { FiActivity, FiBarChart2, FiUsers, FiDollarSign } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+import ImageWithFallback from "@/utils/ImageWithFallback";
 import DatePickers from "@/components/DatePicker";
 import SalesChart from "@/components/SalesChart";
 import { formatNumber } from "@/utils/formatNumber";
@@ -31,8 +31,10 @@ import {
   fetchSalesProfit,
   fetchSalesCount,
 } from "@/libs/fetching/sales";
+import { toast } from "react-toastify";
+import useUserStore from "@/stores/user-store";
 
-export const Analytics = ({ userData }) => {
+export const Analytics = () => {
   const [bestSellingList, setBestSellingList] = useState([]);
   const [transaksiHistoryList, setTransaksiHistoryList] = useState([]);
   const [productList, setProductList] = useState([]);
@@ -47,6 +49,7 @@ export const Analytics = ({ userData }) => {
   const [salesCountData, setSalesCountData] = useState(0);
   const [salesProfitData, setSalesProfitData] = useState(0);
   const [showSidebar, setShowSidebar] = useState(true);
+  const { userData } = useUserStore();
   const id_store = userData?.id_store;
   const id_company = userData?.id_company;
 
@@ -136,10 +139,9 @@ export const Analytics = ({ userData }) => {
 
         const response = await fetchBestSelling(payload);
         const data = response.data;
-        console.log(data);
         setBestSellingList(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Error fetching sales:", error);
+        toast.error("Error fetching sales:", error);
         setBestSellingList([]);
       }
     };
@@ -157,7 +159,7 @@ export const Analytics = ({ userData }) => {
         };
         const response = await fetchTransaksiHistory(reqBody);
 
-        const data = response.data
+        const data = response.data;
         if (!response.success) {
           console.error(
             "Unexpected data format from /sales/transaksi-history:",
@@ -312,7 +314,8 @@ export const Analytics = ({ userData }) => {
                 whileHover={{ scale: 1.05 }}
                 className="w-10 h-10 rounded-full overflow-hidden border-2 border-green-500"
               >
-                <Image
+                <ImageWithFallback
+                  onError={"https://placehold.co/100x100"}
                   src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
                   alt="avatar"
                   width={40}

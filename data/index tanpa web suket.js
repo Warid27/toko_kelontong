@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { PORT } from "@config/config";
+import { PORT, HOST_NAME } from "@config/config";
 import loginRoutes from "@routes/login-routes";
 import registerRoutes from "@routes/register-routes";
 import productRoutes from "@routes/product-routes";
@@ -72,4 +72,4 @@ Bun.serve({
   fetch: app.fetch,
 });
 console.log(`Server listening on PORT ${PORT}`);
-console.log(`http://localhost:${PORT}`);
+console.log(`http://${HOST_NAME}:${PORT}`);

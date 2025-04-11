@@ -3,6 +3,7 @@ import { JWT_SECRET } from "@config/config";
 import { UserModels } from "@models/user-models";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
+import { authenticate, OPERATIONS } from "@middleware/authMiddleware";
 
 const router = new Hono();
 
@@ -98,44 +99,50 @@ router.post("/", async (c) => {
 });
 
 // The /checkpass route remains unchanged
-router.post("/checkpass", async (c) => {
-  try {
-    const { username, password, error } = await parseRequestBody(c);
-    if (error) {
-      return c.json({ message: error }, 400);
-    }
+router.post(
+  "/checkpass",
+  (c, next) => authenticate(c, next, "users", OPERATIONS.READ),
+  async (c) => {
+    try {
+      const { username, password, error } = await parseRequestBody(c);
+      if (error) {
+        return c.json({ message: error }, 400);
+      }
 
-    const user = await UserModels.findOne({ username }).select(
-      "+password +status"
-    );
-    if (!user || !(await argon2.verify(user.password, password))) {
-      return c.json({ message: "Invalid credentials" }, 401);
-    }
+      const user = await UserModels.findOne({ username }).select(
+        "+password +status"
+      );
+      if (!user || !(await argon2.verify(user.password, password))) {
+        return c.json({ message: "Invalid credentials" }, 401);
+      }
 
-    const isPasswordMatch = await argon2.verify(user.password, password);
-    if (!isPasswordMatch) {
-      return c.json({ message: "Wrong username or password" }, 401);
-    }
+      const isPasswordMatch = await argon2.verify(user.password, password);
+      if (!isPasswordMatch) {
+        return c.json({ message: "Wrong password!" }, 401);
+      }
 
-    if (user.status !== 0 && user.status !== 1) {
+      if (user.status !== 0 && user.status !== 1) {
+        return c.json(
+          {
+            message: "Login failed, user account not activated",
+          },
+          403
+        );
+      }
+
       return c.json(
         {
-          message: "Login failed, user account not activated",
+          message: "password correct",
         },
-        403
+        200
+      );
+    } catch (error) {
+      return c.json(
+        { message: "An error occurred", error: error.message },
+        500
       );
     }
-
-    return c.json(
-      {
-        message: "password correct",
-      },
-      200
-    );
-  } catch (error) {
-    console.error("password incorrect:", error.message);
-    return c.json({ message: "An error occurred", error: error.message }, 500);
   }
-});
+);
 
 export default router;

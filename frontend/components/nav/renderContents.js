@@ -22,14 +22,13 @@ import PembelianList from "@/pages/dashboard/sub/table_pembelian";
 import Pembelian from "@/pages/dashboard/sub/pembelian";
 import Report from "@/pages/dashboard/sub/report";
 import RuleAccessData from "@/pages/dashboard/sub/rule";
+import Loading from "@/components/loading";
 
-const ContentRenderer = ({
-  selectedLink,
-  setSelectedLink,
-  userRole,
-  filteredMenuConfig,
-  userData,
-}) => {
+import useUserStore from "@/stores/user-store";
+
+const ContentRenderer = ({ userRole, filteredMenuConfig }) => {
+  const { selectedLink } = useUserStore();
+
   const rolePermissions = useRolePermissions();
   const allowedKeys = filteredMenuConfig
     .flatMap((item) =>
@@ -39,7 +38,7 @@ const ContentRenderer = ({
 
   // Show loading if permissions aren't fetched yet or only "profile" is present
   if (!rolePermissions[userRole] || rolePermissions[userRole].length <= 1) {
-    return <div className="p-4 text-3xl text-gray-500">Loading...</div>;
+    return <Loading />;
   }
 
   const hasPermission =
@@ -78,13 +77,7 @@ const ContentRenderer = ({
   };
 
   const Component = components[selectedLink] || Profile;
-  return (
-    <Component
-      {...(selectedLink === "order_cust"
-        ? { setSelectedLink, userData }
-        : { userData })}
-    />
-  );
+  return <Component />;
 };
 
 export default ContentRenderer;

@@ -3,8 +3,11 @@ import Select from "react-select";
 import { fetchCompanyList } from "@/libs/fetching/company";
 import { fetchStoreList } from "@/libs/fetching/store";
 import { motion, AnimatePresence } from "framer-motion";
+import useUserStore from "@/stores/user-store";
 
-const CompanySelector = ({ updateLocalStorage }) => {
+const CompanySelector = () => {
+  const { updateLocalStorage } = useUserStore();
+
   const dropdownRef = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [companyList, setCompanyList] = useState([]);
@@ -48,7 +51,7 @@ const CompanySelector = ({ updateLocalStorage }) => {
       }
     };
     fetchStores();
-  }, [companySelect, updateLocalStorage, storeSelect]); // Added updateLocalStorage to dependencies
+  }, [companySelect, updateLocalStorage, storeSelect]);
 
   useEffect(() => {
     if (companySelect && companySelect !== "null") {
@@ -56,7 +59,7 @@ const CompanySelector = ({ updateLocalStorage }) => {
     } else {
       updateLocalStorage("id_company", null); // Updated here
     }
-  }, [companySelect, updateLocalStorage]); // Added updateLocalStorage to dependencies
+  }, [companySelect, updateLocalStorage]);
 
   useEffect(() => {
     if (storeSelect) {
@@ -64,7 +67,7 @@ const CompanySelector = ({ updateLocalStorage }) => {
     } else {
       updateLocalStorage("id_store", null); // Updated here
     }
-  }, [storeSelect, updateLocalStorage]); // Added updateLocalStorage to dependencies
+  }, [storeSelect, updateLocalStorage]);
 
   const clearSelector = () => {
     updateLocalStorage("id_company", null);

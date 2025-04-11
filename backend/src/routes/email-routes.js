@@ -33,4 +33,27 @@ router.post("/send", async (c) => {
     return c.json({ success: false, error: "Failed to send email" }, 500);
   }
 });
+
+router.post("/get-oauth", async (c) => {
+  try {
+    const { email, message } = await c.req.json();
+
+    if (!email || !message) {
+      return c.json({ success: false, error: "All fields are required" }, 400);
+    }
+
+    // Send Email
+    await client.sendAsync({
+      text: `Name: Tokoku\nEmail: ${SMTP_EMAIL}\nMessage:\n${message}`,
+      from: SMTP_EMAIL,
+      to: email,
+      subject: `New Message from tokoku.parisada.id`,
+    });
+
+    return c.json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Email error:", error);
+    return c.json({ success: false, error: "Failed to send email" }, 500);
+  }
+});
 export default router;

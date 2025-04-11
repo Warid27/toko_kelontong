@@ -103,44 +103,6 @@ router.post(
   }
 );
 
-router.post(
-  "/getStoreImage",
-  (c, next) => authenticate(c, next, "store", OPERATIONS.READ),
-  async (c) => {
-    try {
-      const body = await c.req.json();
-      const id = body.id;
-      const params = body.params;
-      if (!id) {
-        return c.json({ message: "ID Store diperlukan." }, 400);
-      }
-
-      const store = await StoreModels.findById(id);
-
-      if (!store) {
-        return c.json({ message: "Store tidak ditemukan." }, 404);
-      }
-      let result;
-      if (params == "icon") {
-        result = store.icon;
-      } else if (params == "banner") {
-        result = store.banner;
-      } else {
-        return c.json({ message: "Params tidak ditemukan." }, 400);
-      }
-      return c.json(result, 200);
-    } catch (error) {
-      return c.json(
-        {
-          message: "Terjadi kesalahan saat mengambil Store.",
-          error: error.message,
-        },
-        500
-      );
-    }
-  }
-);
-
 router.post("/liststatus", async (c) => {
   try {
     // Fetch only name and logo fields from the database where status = 0
