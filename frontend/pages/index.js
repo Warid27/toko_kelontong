@@ -36,7 +36,7 @@ export default function Home() {
   const [productData, setProductData] = useState([]);
   const router = useRouter();
   const motiveLength = 8;
-  const baseURL = "https://tokokube.parisada.id";
+  const baseURL = "http://localhost:8080";
 
   const [contactData, setContactData] = useState({
     name: "",
