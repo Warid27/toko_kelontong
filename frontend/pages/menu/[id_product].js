@@ -1,4 +1,4 @@
-// CONTOH LINK: https://tokokube.parisada.id/menu/67c1799ec5fc83617945eddd
+// CONTOH LINK: http://localhost:8080/menu/67c1799ec5fc83617945eddd
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import ImageWithFallback from "@/utils/ImageWithFallback";
