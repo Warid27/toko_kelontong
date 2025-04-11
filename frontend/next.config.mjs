@@ -1,15 +1,13 @@
 /** @type {import('next').NextConfig} */
-
 const nextConfig = {
   reactStrictMode: true,
-
   images: {
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "api-storage.cli.pics",
-        port: "443",
-        pathname: "/toko-kelontong/**",
+        protocol: "http",
+        hostname: "localhost",
+        port: "8080",
+        pathname: "/api/image/**", // Allow images from your API
       },
     ],
     domains: [
@@ -17,20 +15,19 @@ const nextConfig = {
       "pbs.twimg.com",
       "placehold.co",
       "png.pngtree.com",
-      "api-storage.cli.pics",
-      "tokokube.parisada.id",
       "localhost",
+      "api-storage.cli.pics",
     ],
-    dangerouslyAllowSVG: true,
+    dangerouslyAllowSVG: true, // Allow SVG files
   },
 
   async rewrites() {
-    const apiRewrite = {
-      source: "/api/v1/:path*",
-      destination: `https://tokokube.parisada.id/:path*`,
-    };
-
-    return [apiRewrite];
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: "http://localhost:8080/:path*",
+      },
+    ];
   },
 };
 
